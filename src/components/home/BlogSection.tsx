@@ -14,7 +14,7 @@ const BlogSection: React.FC = () => {
       image: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8c2V4JTIwZWR1Y2F0aW9ufGVufDB8fDB8fHww&auto=format&fit=crop&w=500&q=60",
     },
     {
-      title: "Hiểu các bệnh lây truyền qua đường tình dục",
+      title: "Hiểu về các bệnh lây truyền qua đường tình dục",
       excerpt: "Những thông tin quan trọng về các bệnh lây truyền qua đường tình dục và cách phòng ngừa hiệu quả.",
       image: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8aGVhbHRoJTIwZWR1Y2F0aW9ufGVufDB8fDB8fHww&auto=format&fit=crop&w=500&q=60",
     },
@@ -71,16 +71,20 @@ const BlogSection: React.FC = () => {
                 transition={{ delay: index * 0.1 }}
                 className="bg-white rounded-lg shadow-md overflow-hidden h-full flex flex-col"
               >
-                <div className="aspect-w-16 aspect-h-9 h-48">
+                <div className="h-48 overflow-hidden">
                   <img 
                     src={post.image} 
                     alt={post.title} 
                     className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
                   />
                 </div>
-                <div className="p-6 flex flex-col flex-grow">
-                  <h3 className="text-xl font-semibold mb-3 line-clamp-2">{post.title}</h3>
-                  <p className="text-gray-600 mb-4 flex-grow line-clamp-3">{post.excerpt}</p>
+                <div className="p-6 flex flex-col flex-1 min-h-[200px]">
+                  <div className="mb-3 h-[3.6em] overflow-hidden">
+                    <h3 className="text-xl font-semibold line-clamp-2 h-full">{post.title}</h3>
+                  </div>
+                  <div className="mb-4 flex-1 min-h-[4.5em]">
+                    <p className="text-gray-600 line-clamp-3">{post.excerpt}</p>
+                  </div>
                   <a href="#" className="text-teal-600 font-medium hover:text-teal-700 inline-flex items-center mt-auto">
                     Đọc thêm 
                     <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
