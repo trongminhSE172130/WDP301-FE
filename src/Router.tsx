@@ -9,6 +9,7 @@ import AdminLayout from './layouts/AdminLayout';
 // Public pages
 import HomePage from './pages/HomePage';
 import UnderDevelopmentPage from './pages/UnderDevelopmentPage';
+import LoginPage from './pages/LoginPage';
 
 // Define routes with their corresponding layouts
 const router = createBrowserRouter([
@@ -18,8 +19,8 @@ const router = createBrowserRouter([
     element: <GuestLayout />,
     children: [
       { index: true, element: <HomePage /> },
-      { path: 'login', element: <UnderDevelopmentPage /> },
-      { path: 'register', element: <UnderDevelopmentPage /> },
+      { path: 'login', element: <LoginPage /> },
+      { path: 'register', element: <LoginPage /> },
       { path: 'services', element: <UnderDevelopmentPage /> },
       { path: 'blog', element: <UnderDevelopmentPage /> },
       { path: 'contact', element: <UnderDevelopmentPage /> },
