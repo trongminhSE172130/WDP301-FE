@@ -2,15 +2,30 @@ import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import doctorTeam from "../assets/img/freepik-export-202406130959061bQ8 1.png";
 import logo from "../assets/img/streamline_health-care-2-solid.png";
-import { FiEye, FiEyeOff, FiX } from "react-icons/fi";
-import { FaGoogle, FaFacebook, FaApple } from "react-icons/fa";
 import Login from "../components/auth/Login";
 import Register from "../components/auth/Register";
 
 const LoginPage = () => {
   const location = useLocation();
   const [isLogin, setIsLogin] = useState(true);
-  const [formData, setFormData] = useState({ email: "", password: "" });
+
+  // Form data cho đăng nhập
+  const [loginFormData, setLoginFormData] = useState({
+    email: "",
+    password: "",
+  });
+
+  // Form data cho đăng ký
+  const [registerFormData, setRegisterFormData] = useState({
+    email: "",
+    fullName: "",
+    phone: "",
+    gender: "",
+    dob: "",
+    password: "",
+    confirmPassword: "",
+  });
+
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -21,9 +36,10 @@ const LoginPage = () => {
     else setIsLogin(true);
   }, [location.pathname]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Xử lý đăng nhập/đăng ký
+    console.log(isLogin ? loginFormData : registerFormData);
   };
 
   return (
@@ -33,7 +49,7 @@ const LoginPage = () => {
         {/* Logo */}
         <div className="absolute top-10 left-10 z-20">
           <div className="flex items-center gap-3">
-            <div className="  p-2  flex items-center justify-center">
+            <div className="p-2 flex items-center justify-center">
               <img src={logo} alt="logo" className="text-3xl" />
             </div>
             <div className="flex flex-col">
@@ -58,25 +74,21 @@ const LoginPage = () => {
           </svg>
         </div>
         {/* Hình ảnh team bác sĩ */}
-        <div className="absolute bottom-0 left-0 right-0 flex justify-center">
+        <div className="absolute bottom-0 left-0 right-0 w-full flex justify-center">
           <img
             src={doctorTeam}
             alt="Medical Team"
-            className="max-h-[80vh] object-contain"
+            className="w-full h-auto object-cover max-h-[95vh]"
             style={{ filter: "drop-shadow(0 10px 15px rgba(0,0,0,0.2))" }}
           />
         </div>
       </div>
       {/* Phần bên phải - Form đăng nhập */}
-      <div className="w-full md:w-1/2 bg-white flex flex-col justify-center items-center p-6 md:p-10 relative">
-        {/* Nút đóng */}
-        <button className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
-          <FiX size={24} />
-        </button>
+      <div className="w-full md:w-1/2 bg-white flex flex-col justify-center items-center p-6 md:p-10 relative overflow-y-auto">
         {isLogin ? (
           <Login
-            formData={formData}
-            setFormData={setFormData}
+            formData={loginFormData}
+            setFormData={setLoginFormData}
             showPassword={showPassword}
             setShowPassword={setShowPassword}
             rememberMe={rememberMe}
@@ -86,8 +98,8 @@ const LoginPage = () => {
           />
         ) : (
           <Register
-            formData={formData}
-            setFormData={setFormData}
+            formData={registerFormData}
+            setFormData={setRegisterFormData}
             showPassword={showPassword}
             setShowPassword={setShowPassword}
             showConfirmPassword={showConfirmPassword}
