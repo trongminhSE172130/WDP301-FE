@@ -5,10 +5,16 @@ import React from 'react';
 import GuestLayout from './layouts/GuestLayout';
 import CustomerLayout from './layouts/CustomerLayout';
 import AdminLayout from './layouts/AdminLayout';
+import ProfileLayout from './layouts/ProfileLayout';
 
 // Public pages
 import HomePage from './pages/HomePage';
 import UnderDevelopmentPage from './pages/UnderDevelopmentPage';
+import ServicesPage from './pages/ServicesPage';
+import ProfilePage from './pages/ProfilePage';
+import ConsultationHistoryPage from './pages/ConsultationHistoryPage';
+import CycleTrackingPage from './pages/CycleTrackingPage';
+import PurchasedServicesPage from './pages/PurchasedServicesPage';
 
 // Define routes with their corresponding layouts
 const router = createBrowserRouter([
@@ -20,9 +26,18 @@ const router = createBrowserRouter([
       { index: true, element: <HomePage /> },
       { path: 'login', element: <UnderDevelopmentPage /> },
       { path: 'register', element: <UnderDevelopmentPage /> },
-      { path: 'services', element: <UnderDevelopmentPage /> },
+      { path: 'services', element: <ServicesPage /> },
       { path: 'blog', element: <UnderDevelopmentPage /> },
       { path: 'contact', element: <UnderDevelopmentPage /> },
+      {
+        element: <ProfileLayout />,
+        children: [
+          { path: 'profile', element: <ProfilePage /> },
+          { path: 'consultation-history', element: <ConsultationHistoryPage /> },
+          { path: 'cycle-tracking', element: <CycleTrackingPage /> },
+          { path: 'purchased-services', element: <PurchasedServicesPage /> },
+        ],
+      },
     ],
   },
   
