@@ -15,13 +15,9 @@ import ProfilePage from './pages/ProfilePage';
 import ConsultationHistoryPage from './pages/ConsultationHistoryPage';
 import CycleTrackingPage from './pages/CycleTrackingPage';
 import PurchasedServicesPage from './pages/PurchasedServicesPage';
-import GuestLayout from "./layouts/GuestLayout";
-import CustomerLayout from "./layouts/CustomerLayout";
-import AdminLayout from "./layouts/AdminLayout";
+
 
 // Public pages
-import HomePage from "./pages/HomePage";
-import UnderDevelopmentPage from "./pages/UnderDevelopmentPage";
 import LoginPage from "./pages/LoginPage";
 import ServicePage from "./pages/ServicePage";
 
@@ -33,11 +29,11 @@ const router = createBrowserRouter([
     element: <GuestLayout />,
     children: [
       { index: true, element: <HomePage /> },
-      { path: 'login', element: <UnderDevelopmentPage /> },
-      { path: 'register', element: <UnderDevelopmentPage /> },
-      { path: 'services', element: <ServicesPage /> },
-      { path: 'blog', element: <UnderDevelopmentPage /> },
+      { path: 'login', element: <LoginPage /> },
+      { path: 'register', element: <LoginPage /> },
       { path: 'contact', element: <UnderDevelopmentPage /> },
+      { path: "services", element: <ServicePage /> },
+      { path: "blog", element: <ServicesPage /> },
       {
         element: <ProfileLayout />,
         children: [
@@ -46,12 +42,7 @@ const router = createBrowserRouter([
           { path: 'cycle-tracking', element: <CycleTrackingPage /> },
           { path: 'purchased-services', element: <PurchasedServicesPage /> },
         ],
-      },
-      { path: "login", element: <LoginPage /> },
-      { path: "register", element: <LoginPage /> },
-      { path: "services", element: <ServicePage /> },
-      { path: "blog", element: <UnderDevelopmentPage /> },
-      { path: "contact", element: <UnderDevelopmentPage /> },
+      }
     ],
   },
 
