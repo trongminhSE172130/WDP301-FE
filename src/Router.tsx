@@ -2,6 +2,19 @@ import { createBrowserRouter } from "react-router-dom";
 import React from "react";
 
 // Layouts
+import GuestLayout from './layouts/GuestLayout';
+import CustomerLayout from './layouts/CustomerLayout';
+import AdminLayout from './layouts/AdminLayout';
+import ProfileLayout from './layouts/ProfileLayout';
+
+// Public pages
+import HomePage from './pages/HomePage';
+import UnderDevelopmentPage from './pages/UnderDevelopmentPage';
+import ServicesPage from './pages/ServicesPage';
+import ProfilePage from './pages/ProfilePage';
+import ConsultationHistoryPage from './pages/ConsultationHistoryPage';
+import CycleTrackingPage from './pages/CycleTrackingPage';
+import PurchasedServicesPage from './pages/PurchasedServicesPage';
 import GuestLayout from "./layouts/GuestLayout";
 import CustomerLayout from "./layouts/CustomerLayout";
 import AdminLayout from "./layouts/AdminLayout";
@@ -20,6 +33,20 @@ const router = createBrowserRouter([
     element: <GuestLayout />,
     children: [
       { index: true, element: <HomePage /> },
+      { path: 'login', element: <UnderDevelopmentPage /> },
+      { path: 'register', element: <UnderDevelopmentPage /> },
+      { path: 'services', element: <ServicesPage /> },
+      { path: 'blog', element: <UnderDevelopmentPage /> },
+      { path: 'contact', element: <UnderDevelopmentPage /> },
+      {
+        element: <ProfileLayout />,
+        children: [
+          { path: 'profile', element: <ProfilePage /> },
+          { path: 'consultation-history', element: <ConsultationHistoryPage /> },
+          { path: 'cycle-tracking', element: <CycleTrackingPage /> },
+          { path: 'purchased-services', element: <PurchasedServicesPage /> },
+        ],
+      },
       { path: "login", element: <LoginPage /> },
       { path: "register", element: <LoginPage /> },
       { path: "services", element: <ServicePage /> },
