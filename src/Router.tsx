@@ -2,13 +2,22 @@ import { createBrowserRouter } from "react-router-dom";
 import React from "react";
 
 // Layouts
-import GuestLayout from "./layouts/GuestLayout";
-import CustomerLayout from "./layouts/CustomerLayout";
-import AdminLayout from "./layouts/AdminLayout";
+import GuestLayout from './layouts/GuestLayout';
+import CustomerLayout from './layouts/CustomerLayout';
+import AdminLayout from './layouts/AdminLayout';
+import ProfileLayout from './layouts/ProfileLayout';
 
 // Public pages
-import HomePage from "./pages/HomePage";
-import UnderDevelopmentPage from "./pages/UnderDevelopmentPage";
+import HomePage from './pages/HomePage';
+import UnderDevelopmentPage from './pages/UnderDevelopmentPage';
+import ServicesPage from './pages/ServicesPage';
+import ProfilePage from './pages/ProfilePage';
+import ConsultationHistoryPage from './pages/ConsultationHistoryPage';
+import CycleTrackingPage from './pages/CycleTrackingPage';
+import PurchasedServicesPage from './pages/PurchasedServicesPage';
+
+
+// Public pages
 import LoginPage from "./pages/LoginPage";
 import ServicePage from "./pages/ServicePage";
 
@@ -28,11 +37,20 @@ const router = createBrowserRouter([
     element: <GuestLayout />,
     children: [
       { index: true, element: <HomePage /> },
-      { path: "login", element: <LoginPage /> },
-      { path: "register", element: <LoginPage /> },
+      { path: 'login', element: <LoginPage /> },
+      { path: 'register', element: <LoginPage /> },
+      { path: 'contact', element: <UnderDevelopmentPage /> },
       { path: "services", element: <ServicePage /> },
-      { path: "blog", element: <UnderDevelopmentPage /> },
-      { path: "contact", element: <UnderDevelopmentPage /> },
+      { path: "blog", element: <ServicesPage /> },
+      {
+        element: <ProfileLayout />,
+        children: [
+          { path: 'profile', element: <ProfilePage /> },
+          { path: 'consultation-history', element: <ConsultationHistoryPage /> },
+          { path: 'cycle-tracking', element: <CycleTrackingPage /> },
+          { path: 'purchased-services', element: <PurchasedServicesPage /> },
+        ],
+      }
     ],
   },
 
