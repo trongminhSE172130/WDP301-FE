@@ -12,6 +12,14 @@ import UnderDevelopmentPage from "./pages/UnderDevelopmentPage";
 import LoginPage from "./pages/LoginPage";
 import ServicePage from "./pages/ServicePage";
 
+// Admin pages
+import DashboardPage from "./pages/admin/DashboardPage";
+import UsersPage from "./pages/admin/UsersPage";
+import AdminLoginPage from "./pages/admin/AdminLoginPage";
+import AppointmentPage from "./pages/admin/AppointmentPage";
+import PatientPage from "./pages/admin/PatientPage";
+import ServiceManagePage from "./pages/admin/ServicePage";
+
 // Define routes with their corresponding layouts
 const router = createBrowserRouter([
   // Guest/Public routes
@@ -27,6 +35,9 @@ const router = createBrowserRouter([
       { path: "contact", element: <UnderDevelopmentPage /> },
     ],
   },
+
+  // Admin Login (không sử dụng AdminLayout vì chưa đăng nhập)
+  { path: "/admin/login", element: <AdminLoginPage /> },
 
   // Customer routes
   {
@@ -75,7 +86,12 @@ const router = createBrowserRouter([
     path: "/admin",
     element: <AdminLayout role="Admin" />,
     children: [
-      { index: true, element: <UnderDevelopmentPage /> },
+      { index: true, element: <DashboardPage /> },
+      { path: "dashboard", element: <DashboardPage /> },
+      { path: "users", element: <UsersPage /> },
+      { path: "appointments", element: <AppointmentPage /> },
+      { path: "patients", element: <PatientPage /> },
+      { path: "services", element: <ServiceManagePage /> },
       { path: "*", element: <UnderDevelopmentPage /> },
     ],
   },

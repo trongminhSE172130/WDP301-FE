@@ -1,92 +1,85 @@
-import React from 'react';
-import { Outlet } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
+import { Layout, ConfigProvider, theme } from 'antd';
+import AdminSidebar from '../components/admin/AdminSidebar';
+import AdminHeader from '../components/admin/AdminHeader';
+
+const { Content } = Layout;
 
 interface AdminLayoutProps {
   role: 'Consultant' | 'Staff' | 'Manager' | 'Admin';
 }
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ role }) => {
-  // Different menu items based on role
-  const getMenuItems = () => {
-    const commonItems = [
-      { name: 'Dashboard', link: `/${role.toLowerCase()}/dashboard` },
-      { name: 'Hồ sơ cá nhân', link: `/${role.toLowerCase()}/profile` },
-    ];
+  const [collapsed, setCollapsed] = useState(false);
+  const location = useLocation();
     
-    // Role-specific menu items
-    switch (role) {
-      case 'Consultant':
-        return [
-          ...commonItems,
-          { name: 'Lịch tư vấn', link: '/consultant/schedule' },
-          { name: 'Hỏi đáp', link: '/consultant/questions' },
-          { name: 'Phiên tư vấn', link: '/consultant/sessions' },
-        ];
-      case 'Staff':
-        return [
-          ...commonItems,
-          { name: 'Quản lý xét nghiệm', link: '/staff/tests' },
-          { name: 'Quản lý đơn hàng', link: '/staff/orders' },
-          { name: 'Quản lý khách hàng', link: '/staff/customers' },
-        ];
-      case 'Manager':
-        return [
-          ...commonItems,
-          { name: 'Quản lý nhân viên', link: '/manager/staff' },
-          { name: 'Quản lý dịch vụ', link: '/manager/services' },
-          { name: 'Báo cáo', link: '/manager/reports' },
-          { name: 'Quản lý blog', link: '/manager/blog' },
-        ];
-      case 'Admin':
-        return [
-          ...commonItems,
-          { name: 'Quản lý người dùng', link: '/admin/users' },
-          { name: 'Cấu hình hệ thống', link: '/admin/settings' },
-          { name: 'Quản lý quyền', link: '/admin/permissions' },
-          { name: 'Logs hệ thống', link: '/admin/logs' },
-        ];
-      default:
-        return commonItems;
+  // Xác định menu item hiện tại dựa trên path
+  const getCurrentMenuItem = () => {
+    const path = location.pathname;
+    let menuName = '';
+    
+    if (path.includes('dashboard')) {
+      menuName = 'Bảng điều khiển';
+    } else if (path.includes('users')) {
+      menuName = 'Quản lý người dùng';
+    } else if (path.includes('profile')) {
+      menuName = 'Hồ sơ cá nhân';
+    } else {
+      menuName = role === 'Admin' ? 'Quản trị viên' : role;
     }
+    
+    return menuName;
   };
 
-  const menuItems = getMenuItems();
-
   return (
-    <div className="flex flex-col min-h-screen">
-      <header className="bg-indigo-700 text-white shadow-md">
-        <div className="container mx-auto py-4 px-6 flex justify-between items-center">
-          <h1 className="text-xl font-bold">{role} Dashboard</h1>
-          <div className="flex items-center space-x-4">
-            <span>Xin chào, [Tên người dùng]</span>
-            <button className="bg-indigo-800 px-3 py-1 rounded">Đăng xuất</button>
-          </div>
-        </div>
-      </header>
-      
-      <div className="flex flex-grow">
-        <aside className="bg-gray-800 text-white w-64 min-h-screen p-4">
-          <nav>
-            <ul className="space-y-2">
-              {menuItems.map((item, index) => (
-                <li key={index}>
-                  <a 
-                    href={item.link} 
-                    className="block p-2 rounded hover:bg-gray-700"
-                  >
-                    {item.name}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </nav>
-        </aside>
+    <ConfigProvider
+      theme={{
+        algorithm: theme.defaultAlgorithm,
+        token: {
+          colorPrimary: '#1677ff',
+        },
+        components: {
+          Layout: {
+            siderBg: '#f0f2f5',
+            headerBg: '#fff',
+          },
+        },
+      }}
+    >
+      <Layout className="min-h-[100vh]">
+        {/* Sidebar Component */}
+        <AdminSidebar 
+          collapsed={collapsed} 
+          role={role} 
+        />
         
-        <main className="flex-grow p-6 bg-gray-100">
+        {/* Main Content Area */}
+        <Layout className={`transition-all duration-200 ${collapsed ? 'ml-20' : 'ml-50'}`}>
+          {/* Header Component */}
+          <AdminHeader 
+            collapsed={collapsed} 
+            setCollapsed={setCollapsed} 
+            role={role} 
+            currentMenuItem={getCurrentMenuItem()}
+          />
+          
+          {/* Content Area */}
+          <Content
+            style={{
+              margin: '24px 16px',
+              padding: 24,
+              background: '#fff',
+              borderRadius: '4px',
+              minHeight: 280,
+              boxShadow: '0 1px 4px rgba(0,21,41,.08)'
+            }}
+          >
           <Outlet />
-        </main>
-      </div>
-    </div>
+          </Content>
+        </Layout>
+      </Layout>
+    </ConfigProvider>
   );
 };
 
