@@ -16,6 +16,7 @@ import {
   BarChartOutlined,
   BookOutlined,
   MedicineBoxOutlined,
+  FileOutlined,
 } from '@ant-design/icons';
 import { GiHealthNormal } from 'react-icons/gi';
 
@@ -75,6 +76,8 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, role }) => {
           { key: 'appointments', icon: <CalendarOutlined />, label: 'Cuộc hẹn', link: '/admin/appointments' },
           { key: 'patients', icon: <MedicineBoxOutlined />, label: 'Quản lý bệnh nhân', link: '/admin/patients' },
           { key: 'services', icon: <AppstoreOutlined />, label: 'Quản lý dịch vụ', link: '/admin/services' },
+          { key: 'schedule', icon: <CalendarOutlined />, label: 'Quản lý lịch trình', link: '/admin/schedule' },
+          { key: 'documents', icon: <FileOutlined />, label: 'Quản lý tài liệu', link: '/admin/documents' },
         ];
       default:
         return commonItems;

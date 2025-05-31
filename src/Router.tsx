@@ -28,6 +28,8 @@ import AdminLoginPage from "./pages/admin/AdminLoginPage";
 import AppointmentPage from "./pages/admin/AppointmentPage";
 import PatientPage from "./pages/admin/PatientPage";
 import ServiceManagePage from "./pages/admin/ServicePage";
+import SchedulePage from "./pages/admin/SchedulePage";
+import DocumentPage from "./pages/admin/DocumentPage";
 
 // Define routes with their corresponding layouts
 const router = createBrowserRouter([
@@ -110,6 +112,8 @@ const router = createBrowserRouter([
       { path: "appointments", element: <AppointmentPage /> },
       { path: "patients", element: <PatientPage /> },
       { path: "services", element: <ServiceManagePage /> },
+      { path: "schedule", element: <SchedulePage /> },
+      { path: "documents", element: <DocumentPage /> },
       { path: "*", element: <UnderDevelopmentPage /> },
     ],
   },
