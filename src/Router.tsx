@@ -30,6 +30,7 @@ import PatientPage from "./pages/admin/PatientPage";
 import ServiceManagePage from "./pages/admin/ServicePage";
 import SchedulePage from "./pages/admin/SchedulePage";
 import DocumentPage from "./pages/admin/DocumentPage";
+import BlogPage from "./pages/admin/BlogPage";
 
 // Define routes with their corresponding layouts
 const router = createBrowserRouter([
@@ -97,6 +98,7 @@ const router = createBrowserRouter([
     element: <AdminLayout role="Manager" />,
     children: [
       { index: true, element: <UnderDevelopmentPage /> },
+      { path: "blog", element: <BlogPage /> },
       { path: "*", element: <UnderDevelopmentPage /> },
     ],
   },
@@ -114,6 +116,7 @@ const router = createBrowserRouter([
       { path: "services", element: <ServiceManagePage /> },
       { path: "schedule", element: <SchedulePage /> },
       { path: "documents", element: <DocumentPage /> },
+      { path: "blog", element: <BlogPage /> },
       { path: "*", element: <UnderDevelopmentPage /> },
     ],
   },

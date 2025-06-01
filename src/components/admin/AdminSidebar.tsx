@@ -17,6 +17,7 @@ import {
   BookOutlined,
   MedicineBoxOutlined,
   FileOutlined,
+  ReadOutlined,
 } from '@ant-design/icons';
 import { GiHealthNormal } from 'react-icons/gi';
 
@@ -27,6 +28,7 @@ interface MenuItem {
   icon: React.ReactNode;
   label: string;
   link: string;
+  children?: MenuItem[];
 }
 
 interface AdminSidebarProps {
@@ -42,7 +44,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, role }) => {
   const getMenuItems = (): MenuItem[] => {
     const commonItems = [
       { key: 'dashboard', icon: <DashboardOutlined />, label: 'Tổng quan', link: `/${role.toLowerCase()}/dashboard` },
-      { key: 'profile', icon: <UserOutlined />, label: 'Hồ sơ cá nhân', link: `/${role.toLowerCase()}/profile` },
     ];
     
     // Role-specific menu items
@@ -78,6 +79,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, role }) => {
           { key: 'services', icon: <AppstoreOutlined />, label: 'Quản lý dịch vụ', link: '/admin/services' },
           { key: 'schedule', icon: <CalendarOutlined />, label: 'Quản lý lịch trình', link: '/admin/schedule' },
           { key: 'documents', icon: <FileOutlined />, label: 'Quản lý tài liệu', link: '/admin/documents' },
+          { key: 'blog', icon: <ReadOutlined />, label: 'Quản lý blog', link: '/admin/blog' },
         ];
       default:
         return commonItems;
@@ -85,6 +87,30 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, role }) => {
   };
 
   const menuItems = getMenuItems();
+
+  const renderMenu = (items: MenuItem[]) => {
+    return items.map(item => {
+      if (item.children) {
+        return {
+          key: item.key,
+          icon: item.icon,
+          label: item.label,
+          children: item.children.map(child => ({
+            key: child.key,
+            icon: child.icon,
+            label: child.label,
+            onClick: () => navigate(child.link)
+          }))
+        };
+      }
+      return {
+        key: item.key,
+        icon: item.icon,
+        label: item.label,
+        onClick: () => navigate(item.link)
+      };
+    });
+  };
 
   return (
     <Sider 
@@ -118,12 +144,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, role }) => {
         mode="inline"
         defaultSelectedKeys={['dashboard']}
         selectedKeys={[location.pathname.split('/').pop() || 'dashboard']}
-        items={menuItems.map(item => ({
-          key: item.key,
-          icon: item.icon,
-          label: item.label,
-          onClick: () => navigate(item.link),
-        }))}
+        items={renderMenu(menuItems)}
       />
     </Sider>
   );
