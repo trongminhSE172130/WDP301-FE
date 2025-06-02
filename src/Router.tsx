@@ -1,5 +1,6 @@
-import { createBrowserRouter } from "react-router-dom";
-import React from "react";
+import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { isAuthorizedRole } from "./service/api/adminloginAPI";
 
 // Layouts
 import GuestLayout from './layouts/GuestLayout';
@@ -33,6 +34,38 @@ import ServiceManagePage from "./pages/admin/ServicePage";
 import SchedulePage from "./pages/admin/SchedulePage";
 import DocumentPage from "./pages/admin/DocumentPage";
 import BlogPage from "./pages/admin/BlogPage";
+import BlogCategoriesPage from "./pages/admin/BlogCategoriesPage";
+
+// Auth protection
+const ProtectedRoute = ({ allowedRoles = ["admin", "consultant"] }) => {
+  const isAuthenticated = localStorage.getItem("accessToken") !== null;
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+  
+  useEffect(() => {
+    if (isAuthenticated) {
+      setIsAuthorized(isAuthorizedRole(allowedRoles));
+    } else {
+      setIsAuthorized(false);
+    }
+  }, [isAuthenticated, allowedRoles]);
+
+  // Chờ kiểm tra quyền truy cập
+  if (isAuthorized === null) {
+    return <div>Đang kiểm tra quyền truy cập...</div>;
+  }
+  
+  // Chưa đăng nhập hoặc không có quyền
+  if (!isAuthenticated) {
+    return <Navigate to="/admin/login" replace />;
+  }
+
+  // Đã đăng nhập nhưng không có quyền
+  if (!isAuthorized) {
+    return <Navigate to="/unauthorized" replace />;
+  }
+  
+  return <Outlet />;
+};
 
 // Define routes with their corresponding layouts
 const router = createBrowserRouter([
@@ -61,6 +94,18 @@ const router = createBrowserRouter([
 
   // Admin Login (không sử dụng AdminLayout vì chưa đăng nhập)
   { path: "/admin/login", element: <AdminLoginPage /> },
+  
+  // Unauthorized page
+  { path: "/unauthorized", element: <div className="h-screen flex items-center justify-center flex-col">
+    <h1 className="text-2xl font-bold mb-4">Không có quyền truy cập</h1>
+    <p className="mb-4">Bạn không có quyền truy cập vào trang này.</p>
+    <button 
+      onClick={() => window.location.href = "/admin/login"} 
+      className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+    >
+      Quay lại trang đăng nhập
+    </button>
+  </div> },
 
   // Customer routes
   {
@@ -74,54 +119,82 @@ const router = createBrowserRouter([
     ],
   },
 
-  // Consultant routes
+  // Consultant routes - Cho phép consultant truy cập các trang admin
   {
     path: "/consultant",
-    element: <AdminLayout role="Consultant" />,
+    element: <ProtectedRoute allowedRoles={["consultant"]} />,
     children: [
-      { index: true, element: <UnderDevelopmentPage /> },
-      { path: "*", element: <UnderDevelopmentPage /> },
+      {
+        element: <AdminLayout role="Consultant" />,
+        children: [
+          { index: true, element: <DashboardPage /> },
+          { path: "dashboard", element: <DashboardPage /> },
+          { path: "appointments", element: <AppointmentPage /> },
+          { path: "appointments/:id", element: <AppointmentDetailPage /> },
+          { path: "patients", element: <PatientPage /> },
+          { path: "patients/:id", element: <PatientDetailPage /> },
+          { path: "schedule", element: <SchedulePage /> },
+          { path: "documents", element: <DocumentPage /> },
+          { path: "*", element: <UnderDevelopmentPage /> },
+        ],
+      },
     ],
   },
 
-  // Staff routes
+  // Staff routes - Chỉ cho phép staff
   {
     path: "/staff",
-    element: <AdminLayout role="Staff" />,
+    element: <ProtectedRoute allowedRoles={["staff"]} />,
     children: [
-      { index: true, element: <UnderDevelopmentPage /> },
-      { path: "*", element: <UnderDevelopmentPage /> },
+      {
+        element: <AdminLayout role="Staff" />,
+        children: [
+          { index: true, element: <UnderDevelopmentPage /> },
+          { path: "*", element: <UnderDevelopmentPage /> },
+        ],
+      },
     ],
   },
 
-  // Manager routes
+  // Manager routes - Chỉ cho phép manager và admin
   {
     path: "/manager",
-    element: <AdminLayout role="Manager" />,
+    element: <ProtectedRoute allowedRoles={["manager", "admin"]} />,
     children: [
-      { index: true, element: <UnderDevelopmentPage /> },
-      { path: "blog", element: <BlogPage /> },
-      { path: "*", element: <UnderDevelopmentPage /> },
+      {
+        element: <AdminLayout role="Manager" />,
+        children: [
+          { index: true, element: <UnderDevelopmentPage /> },
+          { path: "blog", element: <BlogPage /> },
+          { path: "*", element: <UnderDevelopmentPage /> },
+        ],
+      },
     ],
   },
 
-  // Admin routes
+  // Admin routes - Chỉ cho phép admin và consultant
   {
     path: "/admin",
-    element: <AdminLayout role="Admin" />,
+    element: <ProtectedRoute allowedRoles={["admin", "consultant"]} />,
     children: [
-      { index: true, element: <DashboardPage /> },
-      { path: "dashboard", element: <DashboardPage /> },
-      { path: "users", element: <UsersPage /> },
-      { path: "appointments", element: <AppointmentPage /> },
-      { path: "appointments/:id", element: <AppointmentDetailPage /> },
-      { path: "patients", element: <PatientPage /> },
-      { path: "patients/:id", element: <PatientDetailPage /> },
-      { path: "services", element: <ServiceManagePage /> },
-      { path: "schedule", element: <SchedulePage /> },
-      { path: "documents", element: <DocumentPage /> },
-      { path: "blog", element: <BlogPage /> },
-      { path: "*", element: <UnderDevelopmentPage /> },
+      {
+        element: <AdminLayout role="Admin" />,
+        children: [
+          { index: true, element: <DashboardPage /> },
+          { path: "dashboard", element: <DashboardPage /> },
+          { path: "users", element: <UsersPage /> },
+          { path: "appointments", element: <AppointmentPage /> },
+          { path: "appointments/:id", element: <AppointmentDetailPage /> },
+          { path: "patients", element: <PatientPage /> },
+          { path: "patients/:id", element: <PatientDetailPage /> },
+          { path: "services", element: <ServiceManagePage /> },
+          { path: "schedule", element: <SchedulePage /> },
+          { path: "documents", element: <DocumentPage /> },
+          { path: "blog", element: <BlogPage /> },
+          { path: "blog-categories", element: <BlogCategoriesPage /> },
+          { path: "*", element: <UnderDevelopmentPage /> },
+        ],
+      },
     ],
   },
 
