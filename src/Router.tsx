@@ -1,6 +1,6 @@
 import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import React, { useEffect, useState } from "react";
-import { isAuthorizedRole } from "./service/api/adminloginAPI";
+// import { isAuthorizedRole } from "./service/api/adminloginAPI";
 
 // Layouts
 import GuestLayout from './layouts/GuestLayout';
@@ -37,35 +37,35 @@ import BlogPage from "./pages/admin/BlogPage";
 import BlogCategoriesPage from "./pages/admin/BlogCategoriesPage";
 
 // Auth protection
-const ProtectedRoute = ({ allowedRoles = ["admin", "consultant"] }) => {
-  const isAuthenticated = localStorage.getItem("accessToken") !== null;
-  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+// const ProtectedRoute = ({ allowedRoles = ["admin", "consultant"] }) => {
+//   const isAuthenticated = localStorage.getItem("accessToken") !== null;
+//   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   
-  useEffect(() => {
-    if (isAuthenticated) {
-      setIsAuthorized(isAuthorizedRole(allowedRoles));
-    } else {
-      setIsAuthorized(false);
-    }
-  }, [isAuthenticated, allowedRoles]);
+//   useEffect(() => {
+//     if (isAuthenticated) {
+//       setIsAuthorized(isAuthorizedRole(allowedRoles));
+//     } else {
+//       setIsAuthorized(false);
+//     }
+//   }, [isAuthenticated, allowedRoles]);
 
-  // Chờ kiểm tra quyền truy cập
-  if (isAuthorized === null) {
-    return <div>Đang kiểm tra quyền truy cập...</div>;
-  }
+//   // Chờ kiểm tra quyền truy cập
+//   if (isAuthorized === null) {
+//     return <div>Đang kiểm tra quyền truy cập...</div>;
+//   }
   
-  // Chưa đăng nhập hoặc không có quyền
-  if (!isAuthenticated) {
-    return <Navigate to="/admin/login" replace />;
-  }
+//   // Chưa đăng nhập hoặc không có quyền
+//   if (!isAuthenticated) {
+//     return <Navigate to="/admin/login" replace />;
+//   }
 
-  // Đã đăng nhập nhưng không có quyền
-  if (!isAuthorized) {
-    return <Navigate to="/unauthorized" replace />;
-  }
+//   // Đã đăng nhập nhưng không có quyền
+//   if (!isAuthorized) {
+//     return <Navigate to="/unauthorized" replace />;
+//   }
   
-  return <Outlet />;
-};
+//   return <Outlet />;
+// };
 
 // Define routes with their corresponding layouts
 const router = createBrowserRouter([
@@ -122,7 +122,7 @@ const router = createBrowserRouter([
   // Consultant routes - Cho phép consultant truy cập các trang admin
   {
     path: "/consultant",
-    element: <ProtectedRoute allowedRoles={["consultant"]} />,
+    // element: <ProtectedRoute allowedRoles={["consultant"]} />,
     children: [
       {
         element: <AdminLayout role="Consultant" />,
@@ -144,7 +144,7 @@ const router = createBrowserRouter([
   // Staff routes - Chỉ cho phép staff
   {
     path: "/staff",
-    element: <ProtectedRoute allowedRoles={["staff"]} />,
+    // element: <ProtectedRoute allowedRoles={["staff"]} />,
     children: [
       {
         element: <AdminLayout role="Staff" />,
@@ -159,7 +159,7 @@ const router = createBrowserRouter([
   // Manager routes - Chỉ cho phép manager và admin
   {
     path: "/manager",
-    element: <ProtectedRoute allowedRoles={["manager", "admin"]} />,
+    // element: <ProtectedRoute allowedRoles={["manager", "admin"]} />,
     children: [
       {
         element: <AdminLayout role="Manager" />,
@@ -175,7 +175,7 @@ const router = createBrowserRouter([
   // Admin routes - Chỉ cho phép admin và consultant
   {
     path: "/admin",
-    element: <ProtectedRoute allowedRoles={["admin", "consultant"]} />,
+    // element: <ProtectedRoute allowedRoles={["admin", "consultant"]} />,
     children: [
       {
         element: <AdminLayout role="Admin" />,
