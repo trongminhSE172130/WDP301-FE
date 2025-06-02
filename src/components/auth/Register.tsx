@@ -70,6 +70,7 @@ const Register = ({
     hover: { scale: 1.02, transition: { duration: 0.2 } },
     tap: { scale: 0.98 },
   };
+  
 
   return (
     <motion.div

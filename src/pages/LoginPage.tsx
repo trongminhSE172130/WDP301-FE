@@ -1,12 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import doctorTeam from "../assets/img/freepik-export-202406130959061bQ8 1.png";
 import logo from "../assets/img/streamline_health-care-2-solid.png";
 import Login from "../components/auth/Login";
 import Register from "../components/auth/Register";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import { registerUser, loginUser } from "../service/api/authApi";
 
 const LoginPage = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
 
   // Form data cho đăng nhập
@@ -36,10 +40,72 @@ const LoginPage = () => {
     else setIsLogin(true);
   }, [location.pathname]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Xử lý đăng nhập/đăng ký
-    console.log(isLogin ? loginFormData : registerFormData);
+    if (isLogin) {
+      try {
+        type LoginResponse = { data?: { token?: string } };
+        const res: LoginResponse = await loginUser(loginFormData);
+        console.log('Login response:', res);
+        if (
+          res &&
+          typeof res === 'object' &&
+          'data' in res &&
+          res.data &&
+          typeof res.data === 'object' &&
+          'token' in res.data &&
+          typeof res.data.token === 'string' &&
+          res.data.token
+        ) {
+          localStorage.setItem("token", res.data.token);
+          // Log user trong localStorage
+          console.log('User in localStorage:', localStorage.getItem('user'));
+          alert("Đăng nhập thành công!");
+          navigate("/");
+        } else {
+          alert("Đăng nhập thất bại. Không nhận được token.");
+        }
+      } catch (error: unknown) {
+        type AxiosError = { response?: { data?: { message?: string } } };
+        let message = "Đăng nhập thất bại. Vui lòng thử lại!";
+        if (
+          typeof error === "object" &&
+          error !== null &&
+          "response" in error &&
+          (error as AxiosError).response &&
+          typeof (error as AxiosError).response === "object" &&
+          "data" in (error as AxiosError).response &&
+          (error as AxiosError).response?.data &&
+          typeof (error as AxiosError).response?.data === "object" &&
+          "message" in ((error as AxiosError).response?.data ?? {}) &&
+          typeof (error as AxiosError).response?.data?.message === "string"
+        ) {
+          message = (error as AxiosError).response?.data?.message || message;
+        }
+        alert(message);
+      }
+    } else {
+      // Xử lý đăng ký
+      try {
+        const registerData = {
+          full_name: registerFormData.fullName,
+          email: registerFormData.email,
+          phone: registerFormData.phone,
+          gender: registerFormData.gender,
+          dob: registerFormData.dob,
+          password: registerFormData.password,
+          role: "user"
+        };
+        await registerUser(registerData);
+        alert("Đăng ký thành công! Hãy đăng nhập.");
+        setIsLogin(true);
+      } catch (error: unknown) {
+        // Đơn giản hóa lấy message lỗi từ backend
+        const err = error as any;
+        const message = err?.response?.data?.message || "Đăng ký thất bại. Vui lòng thử lại!";
+        alert(message);
+      }
+    }
   };
 
   return (
