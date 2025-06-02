@@ -3,7 +3,6 @@ import { Layout, Menu } from 'antd';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   DashboardOutlined,
-  UserOutlined,
   TeamOutlined,
   CalendarOutlined,
   QuestionCircleOutlined,
@@ -17,7 +16,8 @@ import {
   BookOutlined,
   MedicineBoxOutlined,
   FileOutlined,
-  ReadOutlined,
+  FormOutlined,
+  TagsOutlined,
 } from '@ant-design/icons';
 import { GiHealthNormal } from 'react-icons/gi';
 
@@ -27,7 +27,7 @@ interface MenuItem {
   key: string;
   icon: React.ReactNode;
   label: string;
-  link: string;
+  link?: string;
   children?: MenuItem[];
 }
 
@@ -39,6 +39,7 @@ interface AdminSidebarProps {
 const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, role }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const currentPath = location.pathname;
 
   // Different menu items based on role
   const getMenuItems = (): MenuItem[] => {
@@ -68,7 +69,15 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, role }) => {
           { key: 'staff', icon: <UsergroupAddOutlined />, label: 'Quản lý nhân viên', link: '/manager/staff' },
           { key: 'services', icon: <AppstoreOutlined />, label: 'Quản lý dịch vụ', link: '/manager/services' },
           { key: 'reports', icon: <BarChartOutlined />, label: 'Báo cáo', link: '/manager/reports' },
-          { key: 'blog', icon: <BookOutlined />, label: 'Quản lý blog', link: '/manager/blog' },
+          { 
+            key: 'blog', 
+            icon: <BookOutlined />, 
+            label: 'Quản lý blog',
+            children: [
+              { key: 'blog-posts', icon: <FormOutlined />, label: 'Bài viết', link: '/manager/blog' },
+              { key: 'blog-categories', icon: <TagsOutlined />, label: 'Danh mục', link: '/manager/blog-categories' },
+            ]
+          },
         ];
       case 'Admin':
         return [
@@ -79,7 +88,15 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, role }) => {
           { key: 'services', icon: <AppstoreOutlined />, label: 'Quản lý dịch vụ', link: '/admin/services' },
           { key: 'schedule', icon: <CalendarOutlined />, label: 'Quản lý lịch trình', link: '/admin/schedule' },
           { key: 'documents', icon: <FileOutlined />, label: 'Quản lý tài liệu', link: '/admin/documents' },
-          { key: 'blog', icon: <ReadOutlined />, label: 'Quản lý blog', link: '/admin/blog' },
+          { 
+            key: 'blog', 
+            icon: <BookOutlined />, 
+            label: 'Quản lý blog',
+            children: [
+              { key: 'blog-posts', icon: <FormOutlined />, label: 'Bài viết', link: '/admin/blog' },
+              { key: 'blog-categories', icon: <TagsOutlined />, label: 'Danh mục', link: '/admin/blog-categories' },
+            ]
+          },
         ];
       default:
         return commonItems;
@@ -87,6 +104,25 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, role }) => {
   };
 
   const menuItems = getMenuItems();
+
+  // Determine which keys should be open by default based on current path
+  const getDefaultOpenKeys = (): string[] => {
+    if (currentPath.includes('/blog')) {
+      return ['blog'];
+    }
+    return [];
+  };
+  
+  // Determine selected key based on current path
+  const getSelectedKey = (): string => {
+    if (currentPath.includes('/blog-categories')) {
+      return 'blog-categories';
+    }
+    if (currentPath.includes('/blog')) {
+      return 'blog-posts';
+    }
+    return currentPath.split('/').pop() || 'dashboard';
+  };
 
   const renderMenu = (items: MenuItem[]) => {
     return items.map(item => {
@@ -99,7 +135,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, role }) => {
             key: child.key,
             icon: child.icon,
             label: child.label,
-            onClick: () => navigate(child.link)
+            onClick: () => navigate(child.link || '')
           }))
         };
       }
@@ -107,7 +143,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, role }) => {
         key: item.key,
         icon: item.icon,
         label: item.label,
-        onClick: () => navigate(item.link)
+        onClick: () => navigate(item.link || '')
       };
     });
   };
@@ -142,8 +178,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, role }) => {
       <Menu
         theme="light"
         mode="inline"
-        defaultSelectedKeys={['dashboard']}
-        selectedKeys={[location.pathname.split('/').pop() || 'dashboard']}
+        defaultSelectedKeys={[getSelectedKey()]}
+        selectedKeys={[getSelectedKey()]}
+        defaultOpenKeys={getDefaultOpenKeys()}
         items={renderMenu(menuItems)}
       />
     </Sider>
