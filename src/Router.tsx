@@ -26,7 +26,9 @@ import DashboardPage from "./pages/admin/DashboardPage";
 import UsersPage from "./pages/admin/UsersPage";
 import AdminLoginPage from "./pages/admin/AdminLoginPage";
 import AppointmentPage from "./pages/admin/AppointmentPage";
+import AppointmentDetailPage from "./pages/admin/AppointmentDetailPage";
 import PatientPage from "./pages/admin/PatientPage";
+import PatientDetailPage from "./pages/admin/PatientDetailPage";
 import ServiceManagePage from "./pages/admin/ServicePage";
 import SchedulePage from "./pages/admin/SchedulePage";
 import DocumentPage from "./pages/admin/DocumentPage";
@@ -112,7 +114,9 @@ const router = createBrowserRouter([
       { path: "dashboard", element: <DashboardPage /> },
       { path: "users", element: <UsersPage /> },
       { path: "appointments", element: <AppointmentPage /> },
+      { path: "appointments/:id", element: <AppointmentDetailPage /> },
       { path: "patients", element: <PatientPage /> },
+      { path: "patients/:id", element: <PatientDetailPage /> },
       { path: "services", element: <ServiceManagePage /> },
       { path: "schedule", element: <SchedulePage /> },
       { path: "documents", element: <DocumentPage /> },

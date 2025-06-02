@@ -1,5 +1,5 @@
 import React from 'react';
-import { Form, Input, Select, Button, Card, Row, Col } from 'antd';
+import { Form, Input, Select, Row, Col } from 'antd';
 import type { User } from './UserTable';
 
 const { Option } = Select;
@@ -13,21 +13,21 @@ export interface FormValues extends Omit<User, 'id'> {
 interface UserFormProps {
   user?: User;
   onFinish: (values: FormValues) => void;
-  loading?: boolean;
   title?: string;
 }
 
 const UserForm: React.FC<UserFormProps> = ({
   user,
   onFinish,
-  loading = false,
   title = user ? 'Chỉnh sửa người dùng' : 'Thêm người dùng mới',
 }) => {
   const isEditMode = !!user;
 
   return (
-    <Card title={title} bordered={false} className="w-full">
+    <div className="w-full">
+      {title && <h2 className="text-xl font-semibold mb-4">{title}</h2>}
       <Form
+        id="userForm"
         name="userForm"
         initialValues={user || { status: 'active', role: 'user' }}
         onFinish={onFinish}
@@ -124,13 +124,9 @@ const UserForm: React.FC<UserFormProps> = ({
           </Row>
         )}
 
-        <div className="flex justify-end mt-4">
-          <Button type="primary" htmlType="submit" loading={loading} className="rounded-lg">
-            {isEditMode ? 'Cập nhật' : 'Thêm mới'}
-          </Button>
-        </div>
+        {/* Nút submit đã được chuyển lên UsersPage để hiển thị trong footer của Modal */}
       </Form>
-    </Card>
+    </div>
   );
 };
 

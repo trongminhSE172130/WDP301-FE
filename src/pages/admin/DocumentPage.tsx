@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Typography, Layout, message, Button, Space, Row, Col } from 'antd';
-import { PlusOutlined, FilterOutlined } from '@ant-design/icons';
+import { Typography, Layout, message, Button, Space, Row, Col, Modal, Image, Descriptions, Tag } from 'antd';
+import { PlusOutlined, FilterOutlined, FileOutlined, FilePdfOutlined, FileImageOutlined, FileWordOutlined, FileExcelOutlined } from '@ant-design/icons';
 import DocumentFilter from '../../components/admin/document/DocumentFilter';
 import DocumentList from '../../components/admin/document/DocumentList';
 import DocumentForm from '../../components/admin/document/DocumentForm';
@@ -9,7 +9,7 @@ import type { Document, DocumentFilterParams } from '../../components/admin/docu
 import 'dayjs/locale/vi';
 
 const { Content } = Layout;
-const { Title } = Typography;
+const { Title, Paragraph } = Typography;
 
 const DocumentPage: React.FC = () => {
   const [documents, setDocuments] = useState<Document[]>(documentsData);
@@ -19,6 +19,8 @@ const DocumentPage: React.FC = () => {
   const [formLoading, setFormLoading] = useState<boolean>(false);
   const [selectedDocument, setSelectedDocument] = useState<Document | undefined>(undefined);
   const [showFilter, setShowFilter] = useState<boolean>(false);
+  const [viewModalVisible, setViewModalVisible] = useState<boolean>(false);
+  const [viewingDocument, setViewingDocument] = useState<Document | undefined>(undefined);
 
   // Xử lý lọc dữ liệu
   const handleFilter = (filters: DocumentFilterParams) => {
@@ -100,11 +102,29 @@ const DocumentPage: React.FC = () => {
   const handleView = (id: string) => {
     const doc = documents.find(item => item.id === id);
     if (doc) {
-      message.info(`Xem chi tiết tài liệu: ${doc.title}`);
-      // Mở tab mới để xem tài liệu
-      if (doc.fileUrl) {
-        window.open(doc.fileUrl, '_blank');
-      }
+      setViewingDocument(doc);
+      setViewModalVisible(true);
+    }
+  };
+
+  // Xử lý đóng modal xem chi tiết
+  const handleCloseViewModal = () => {
+    setViewModalVisible(false);
+    setViewingDocument(undefined);
+  };
+
+  // Xử lý tải xuống từ modal
+  const handleDownloadFromModal = () => {
+    if (viewingDocument && viewingDocument.fileUrl) {
+      message.success(`Đang tải xuống tài liệu: ${viewingDocument.title}`);
+      // Giả lập việc tải xuống
+      const link = viewingDocument.fileUrl;
+      const a = window.document.createElement('a');
+      a.href = link;
+      a.download = viewingDocument.title;
+      a.click();
+    } else {
+      message.error('Không tìm thấy file để tải xuống');
     }
   };
 
@@ -181,6 +201,46 @@ const DocumentPage: React.FC = () => {
     setShowFilter(!showFilter);
   };
 
+  // Lấy icon theo loại file
+  const getFileIcon = (fileUrl?: string) => {
+    if (!fileUrl) return <FileOutlined />;
+    
+    if (fileUrl.endsWith('.pdf')) return <FilePdfOutlined style={{ color: '#ff4d4f' }} />;
+    if (fileUrl.endsWith('.docx') || fileUrl.endsWith('.doc')) return <FileWordOutlined style={{ color: '#1890ff' }} />;
+    if (fileUrl.endsWith('.xlsx') || fileUrl.endsWith('.xls')) return <FileExcelOutlined style={{ color: '#52c41a' }} />;
+    if (fileUrl.endsWith('.jpg') || fileUrl.endsWith('.png') || fileUrl.endsWith('.jpeg')) return <FileImageOutlined style={{ color: '#722ed1' }} />;
+    
+    return <FileOutlined />;
+  };
+  
+  // Lấy tên loại tài liệu
+  const getDocumentTypeText = (type: string): string => {
+    switch (type) {
+      case 'report':
+        return 'Báo cáo';
+      case 'prescription':
+        return 'Đơn thuốc';
+      case 'test':
+        return 'Xét nghiệm';
+      default:
+        return 'Khác';
+    }
+  };
+  
+  // Lấy màu cho loại tài liệu
+  const getDocumentTypeColor = (type: string): string => {
+    switch (type) {
+      case 'report':
+        return 'blue';
+      case 'prescription':
+        return 'green';
+      case 'test':
+        return 'purple';
+      default:
+        return 'default';
+    }
+  };
+
   return (
     <Content className="p-5">
       <div className="mb-5">
@@ -235,6 +295,83 @@ const DocumentPage: React.FC = () => {
         onCancel={handleFormCancel}
         onSubmit={handleFormSubmit}
       />
+
+      {/* Modal xem chi tiết tài liệu */}
+      <Modal
+        title={<div className="flex items-center gap-2">{getFileIcon(viewingDocument?.fileUrl)} {viewingDocument?.title}</div>}
+        open={viewModalVisible}
+        onCancel={handleCloseViewModal}
+        width={800}
+        footer={[
+          <Button key="back" onClick={handleCloseViewModal}>
+            Đóng
+          </Button>,
+          <Button 
+            key="download" 
+            type="primary" 
+            onClick={handleDownloadFromModal}
+            disabled={!viewingDocument?.fileUrl}
+          >
+            Tải xuống
+          </Button>,
+        ]}
+      >
+        {viewingDocument && (
+          <div className="document-viewer">
+            <Descriptions bordered column={2} className="mb-4">
+              <Descriptions.Item label="Loại tài liệu" span={1}>
+                <Tag color={getDocumentTypeColor(viewingDocument.type)}>
+                  {getDocumentTypeText(viewingDocument.type)}
+                </Tag>
+              </Descriptions.Item>
+              <Descriptions.Item label="Ngày tạo" span={1}>
+                {viewingDocument.createdAt}
+              </Descriptions.Item>
+              <Descriptions.Item label="Bệnh nhân" span={1}>
+                {viewingDocument.patientName || 'Không có thông tin'}
+              </Descriptions.Item>
+              <Descriptions.Item label="Bác sĩ" span={1}>
+                {viewingDocument.doctorName || 'Không có thông tin'}
+              </Descriptions.Item>
+              {viewingDocument.content && (
+                <Descriptions.Item label="Nội dung" span={2}>
+                  <Paragraph>{viewingDocument.content}</Paragraph>
+                </Descriptions.Item>
+              )}
+            </Descriptions>
+
+            {viewingDocument.fileUrl && (
+              <div className="document-preview border rounded-md p-4 flex flex-col items-center justify-center">
+                {viewingDocument.fileUrl.endsWith('.pdf') ? (
+                  <div className="w-full h-[400px] flex flex-col items-center justify-center bg-gray-100 rounded">
+                    <FilePdfOutlined style={{ fontSize: 64, color: '#ff4d4f' }} />
+                    <p className="mt-3">Xem trước PDF không khả dụng. Vui lòng tải xuống để xem nội dung.</p>
+                    <Button type="primary" onClick={handleDownloadFromModal} className="mt-2">
+                      Tải xuống để xem
+                    </Button>
+                  </div>
+                ) : viewingDocument.fileUrl.endsWith('.jpg') || 
+                   viewingDocument.fileUrl.endsWith('.png') || 
+                   viewingDocument.fileUrl.endsWith('.jpeg') ? (
+                  <Image
+                    src={viewingDocument.fileUrl}
+                    alt={viewingDocument.title}
+                    className="max-h-[400px] object-contain"
+                  />
+                ) : (
+                  <div className="w-full h-[400px] flex flex-col items-center justify-center bg-gray-100 rounded">
+                    {getFileIcon(viewingDocument.fileUrl)}
+                    <p className="mt-3">Không thể hiển thị trước file này. Vui lòng tải xuống để xem nội dung.</p>
+                    <Button type="primary" onClick={handleDownloadFromModal} className="mt-2">
+                      Tải xuống để xem
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
     </Content>
   );
 };

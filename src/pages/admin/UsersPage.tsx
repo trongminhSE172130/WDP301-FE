@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Typography, message } from 'antd';
+import { Typography, message, Modal } from 'antd';
 import UserTable from '../../components/admin/user/UserTable';
 import type { User } from '../../components/admin/user/UserTable';
 import UserSearch from '../../components/admin/user/UserSearch';
@@ -151,6 +151,11 @@ const UsersPage: React.FC = () => {
     }, 800);
   };
 
+  // Xử lý hủy form
+  const handleCancel = () => {
+    setShowForm(false);
+  };
+
   return (
     <div className="w-full">
       <Title level={2}>Quản lý người dùng</Title>
@@ -173,27 +178,39 @@ const UsersPage: React.FC = () => {
         loading={loading}
       />
       
-      {/* User Form */}
-      {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg w-full max-w-xl">
-            <UserForm
-              user={currentUser}
-              onFinish={handleFormSubmit}
-              loading={loading}
-              title={currentUser ? 'Chỉnh sửa người dùng' : 'Thêm người dùng mới'}
-            />
-            <div className="p-4 flex justify-end">
-              <button 
-                onClick={() => setShowForm(false)} 
-                className="px-4 py-2 text-gray-500 hover:text-gray-700"
-              >
-                Hủy
-              </button>
-            </div>
-          </div>
+      {/* User Form Modal */}
+      <Modal
+        open={showForm}
+        title={currentUser ? 'Chỉnh sửa người dùng' : 'Thêm người dùng mới'}
+        onCancel={handleCancel}
+        footer={null}
+        width={600}
+        className="user-form-modal"
+        maskStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.45)', backdropFilter: 'blur(4px)' }}
+        bodyStyle={{ padding: '20px' }}
+      >
+        <UserForm
+          user={currentUser}
+          onFinish={handleFormSubmit}
+          loading={loading}
+          title=""
+        />
+        <div className="mt-4 flex justify-end">
+          <button 
+            onClick={handleCancel} 
+            className="px-4 py-2 mr-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+          >
+            Hủy
+          </button>
+          <button 
+            form="userForm" // Kết nối với form ID trong UserForm
+            type="submit"
+            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
+          >
+            {currentUser ? 'Cập nhật' : 'Thêm mới'}
+          </button>
         </div>
-      )}
+      </Modal>
     </div>
   );
 };

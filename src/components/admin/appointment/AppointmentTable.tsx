@@ -1,5 +1,6 @@
 import React from 'react';
 import { Table, Button, Tag, Space, Card } from 'antd';
+import { useNavigate } from 'react-router-dom';
 import type { ColumnsType } from 'antd/es/table';
 import { EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import type { Appointment } from './AppointmentTypes';
@@ -15,6 +16,12 @@ const AppointmentTable: React.FC<AppointmentTableProps> = ({
   loading,
   title = "Danh sách cuộc hẹn"
 }) => {
+  const navigate = useNavigate();
+
+  const handleViewDetail = (id: string) => {
+    navigate(`/admin/appointments/${id}`);
+  };
+
   // Định nghĩa các cột cho bảng
   const columns: ColumnsType<Appointment> = [
     {
@@ -103,9 +110,14 @@ const AppointmentTable: React.FC<AppointmentTableProps> = ({
     {
       title: 'Thao tác',
       key: 'action',
-      render: () => (
+      render: (_, record) => (
         <Space size="small">
-          <Button type="text" icon={<EyeOutlined />} className="text-teal-600" />
+          <Button 
+            type="text" 
+            icon={<EyeOutlined />} 
+            className="text-teal-600" 
+            onClick={() => handleViewDetail(record.id)}
+          />
           <Button type="text" icon={<EditOutlined />} className="text-blue-600" />
           <Button type="text" icon={<DeleteOutlined />} className="text-red-600" />
         </Space>

@@ -3,6 +3,7 @@ import { Table, Card, Button, Space, Tooltip, Modal } from 'antd';
 import { EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import type { Patient } from './PatientTypes';
 import type { ColumnsType } from 'antd/es/table';
+import { useNavigate } from 'react-router-dom';
 
 interface PatientTableProps {
   data: Patient[];
@@ -16,9 +17,10 @@ interface PatientTableItem extends Patient {
 
 const PatientTable: React.FC<PatientTableProps> = ({ data, loading = false, onEdit }) => {
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  const navigate = useNavigate();
   
   const handleView = (id: string) => {
-    console.log('Xem bệnh nhân:', id);
+    navigate(`/admin/patients/${id}`);
   };
 
   const handleEdit = (id: string) => {
