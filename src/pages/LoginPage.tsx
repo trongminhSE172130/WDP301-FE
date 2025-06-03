@@ -7,6 +7,9 @@ import Register from "../components/auth/Register";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import { registerUser, loginUser } from "../service/api/authApi";
+import { toast } from "react-toastify";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const LoginPage = () => {
   const location = useLocation();
@@ -59,9 +62,10 @@ const LoginPage = () => {
         ) {
           localStorage.setItem("token", res.data.token);
           // Log user trong localStorage
-          console.log('User in localStorage:', localStorage.getItem('user'));
-          alert("Đăng nhập thành công!");
+          console.log('User:', localStorage.getItem('user'));
+          toast.success("Đăng nhập thành công!");
           navigate("/");
+          window.location.reload();
         } else {
           alert("Đăng nhập thất bại. Không nhận được token.");
         }
@@ -96,8 +100,16 @@ const LoginPage = () => {
           password: registerFormData.password,
           role: "user"
         };
-        await registerUser(registerData);
-        alert("Đăng ký thành công! Hãy đăng nhập.");
+        const res = await registerUser(registerData);
+        console.log('Register response:', res);
+        // Nếu backend trả về user, có thể lưu vào localStorage nếu muốn
+        if (res.data && res.data.user) {
+          localStorage.setItem('user', JSON.stringify(res.data.user));
+          console.log('User after register:', localStorage.getItem('user'));
+        }
+        // Xóa user khỏi localStorage sau khi đăng ký thành công
+        localStorage.removeItem('user');
+        toast.success("Đăng ký thành công! Hãy đăng nhập.");
         setIsLogin(true);
       } catch (error: unknown) {
         // Đơn giản hóa lấy message lỗi từ backend
@@ -109,73 +121,86 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen flex">
-      {/* Phần bên trái - Hình ảnh và logo */}
-      <div className="hidden md:block w-1/2 bg-[#8CAAB9] relative overflow-hidden">
-        {/* Logo */}
-        <div className="absolute top-10 left-10 z-20">
-          <div className="flex items-center gap-3">
-            <div className="p-2 flex items-center justify-center">
-              <img src={logo} alt="logo" className="text-3xl" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-white text-5xl font-bold tracking-tight">
-                GenHealth
-              </span>
+    <>
+      <ToastContainer
+        position="top-right"
+        autoClose={7000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="colored"
+      />
+      <div className="min-h-screen flex">
+        {/* Phần bên trái - Hình ảnh và logo */}
+        <div className="hidden md:block w-1/2 bg-[#8CAAB9] relative overflow-hidden">
+          {/* Logo */}
+          <div className="absolute top-10 left-10 z-20">
+            <div className="flex items-center gap-3">
+              <div className="p-2 flex items-center justify-center">
+                <img src={logo} alt="logo" className="text-3xl" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-white text-5xl font-bold tracking-tight">
+                  GenHealth
+                </span>
+              </div>
             </div>
           </div>
-        </div>
-        {/* Vòng tròn lớn trang trí */}
-        <div className="absolute top-0 left-0 w-full h-full">
-          <svg width="100%" height="100%" viewBox="0 0 800 800">
-            <circle
-              cx="400"
-              cy="400"
-              r="300"
-              stroke="#B6C8D1"
-              strokeWidth="3"
-              fill="none"
-              opacity="0.3"
+          {/* Vòng tròn lớn trang trí */}
+          <div className="absolute top-0 left-0 w-full h-full">
+            <svg width="100%" height="100%" viewBox="0 0 800 800">
+              <circle
+                cx="400"
+                cy="400"
+                r="300"
+                stroke="#B6C8D1"
+                strokeWidth="3"
+                fill="none"
+                opacity="0.3"
+              />
+            </svg>
+          </div>
+          {/* Hình ảnh team bác sĩ */}
+          <div className="absolute bottom-0 left-0 right-0 w-full flex justify-center">
+            <img
+              src={doctorTeam}
+              alt="Medical Team"
+              className="w-full h-auto object-cover max-h-[95vh]"
+              style={{ filter: "drop-shadow(0 10px 15px rgba(0,0,0,0.2))" }}
             />
-          </svg>
+          </div>
         </div>
-        {/* Hình ảnh team bác sĩ */}
-        <div className="absolute bottom-0 left-0 right-0 w-full flex justify-center">
-          <img
-            src={doctorTeam}
-            alt="Medical Team"
-            className="w-full h-auto object-cover max-h-[95vh]"
-            style={{ filter: "drop-shadow(0 10px 15px rgba(0,0,0,0.2))" }}
-          />
+        {/* Phần bên phải - Form đăng nhập */}
+        <div className="w-full md:w-1/2 bg-white flex flex-col justify-center items-center p-6 md:p-10 relative overflow-y-auto">
+          {isLogin ? (
+            <Login
+              formData={loginFormData}
+              setFormData={setLoginFormData}
+              showPassword={showPassword}
+              setShowPassword={setShowPassword}
+              rememberMe={rememberMe}
+              setRememberMe={setRememberMe}
+              handleSubmit={handleSubmit}
+              onSwitchToRegister={() => setIsLogin(false)}
+            />
+          ) : (
+            <Register
+              formData={registerFormData}
+              setFormData={setRegisterFormData}
+              showPassword={showPassword}
+              setShowPassword={setShowPassword}
+              showConfirmPassword={showConfirmPassword}
+              setShowConfirmPassword={setShowConfirmPassword}
+              handleSubmit={handleSubmit}
+              onSwitchToLogin={() => setIsLogin(true)}
+            />
+          )}
         </div>
       </div>
-      {/* Phần bên phải - Form đăng nhập */}
-      <div className="w-full md:w-1/2 bg-white flex flex-col justify-center items-center p-6 md:p-10 relative overflow-y-auto">
-        {isLogin ? (
-          <Login
-            formData={loginFormData}
-            setFormData={setLoginFormData}
-            showPassword={showPassword}
-            setShowPassword={setShowPassword}
-            rememberMe={rememberMe}
-            setRememberMe={setRememberMe}
-            handleSubmit={handleSubmit}
-            onSwitchToRegister={() => setIsLogin(false)}
-          />
-        ) : (
-          <Register
-            formData={registerFormData}
-            setFormData={setRegisterFormData}
-            showPassword={showPassword}
-            setShowPassword={setShowPassword}
-            showConfirmPassword={showConfirmPassword}
-            setShowConfirmPassword={setShowConfirmPassword}
-            handleSubmit={handleSubmit}
-            onSwitchToLogin={() => setIsLogin(true)}
-          />
-        )}
-      </div>
-    </div>
+    </>
   );
 };
 
