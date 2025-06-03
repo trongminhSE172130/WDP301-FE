@@ -4,20 +4,12 @@ import { PlusOutlined } from '@ant-design/icons';
 import BlogCategoryTable from '../../components/admin/blogcategories/BlogCategoryTable';
 import BlogCategoryAdd from '../../components/admin/blogcategories/BlogCategoryAdd';
 import BlogCategoryEdit from '../../components/admin/blogcategories/BlogCategoryEdit';
-import { blogCategoriesData } from '../../components/admin/blogcategories/BlogCategoryData';
 import type { BlogCategoryData } from '../../components/admin/blogcategories/BlogCategoryTypes';
-
-// Interface cho API response
-interface ApiResponse<T> {
-  data: {
-    data: T;
-    metaData?: {
-      currentPage: number;
-      pageSize: number;
-      totalCount: number;
-    };
-  };
-}
+import { 
+  getBlogCategories,
+  deleteBlogCategory
+} from '../../service/api/blogAPI';
+import type { BlogCategory } from '../../service/api/blogAPI';
 
 // Interface cho pagination
 interface PaginationState {
@@ -26,72 +18,11 @@ interface PaginationState {
   total: number;
 }
 
-// Interface cho API blog categories
-interface BlogCategoryAPIType {
-  GetCategories: (page: number, pageSize: number) => Promise<ApiResponse<BlogCategoryData[]>>;
-  searchCategory: (query: string, page?: number, pageSize?: number) => Promise<ApiResponse<BlogCategoryData[]>>;
-  DeleteCategory: (categoryId: string | number) => Promise<{ success: boolean }>;
-  UpdateCategory: (categoryData: Partial<BlogCategoryData>) => Promise<{ success: boolean }>;
-  AddCategory: (categoryData: Partial<BlogCategoryData>) => Promise<{ success: boolean }>;
-}
-
-// Mock BlogCategoryAPI service
-const BlogCategoryAPI: BlogCategoryAPIType = {
-  GetCategories: async (page: number, pageSize: number) => {
-    // Mock implementation - sử dụng dữ liệu từ BlogCategoryData.ts
-    const start = (page - 1) * pageSize;
-    const end = page * pageSize;
-    const data = blogCategoriesData.slice(start, end);
-    
-    return Promise.resolve({
-      data: {
-        data: data,
-        metaData: {
-          currentPage: page,
-          pageSize: pageSize,
-          totalCount: blogCategoriesData.length
-        }
-      }
-    });
-  },
-  searchCategory: async (query: string, page?: number, pageSize?: number) => {
-    // Mock implementation với tìm kiếm
-    const searchResults = blogCategoriesData.filter(category => 
-      category.name.toLowerCase().includes(query.toLowerCase()) || 
-      category.description.toLowerCase().includes(query.toLowerCase())
-    );
-    
-    const actualPage = page || 1;
-    const actualPageSize = pageSize || 10;
-    const start = (actualPage - 1) * actualPageSize;
-    const end = actualPage * actualPageSize;
-    
-    return Promise.resolve({
-      data: {
-        data: searchResults.slice(start, end),
-        metaData: {
-          currentPage: actualPage,
-          pageSize: actualPageSize,
-          totalCount: searchResults.length
-        }
-      }
-    });
-  },
-  DeleteCategory: async () => {
-    return Promise.resolve({ success: true });
-  },
-  UpdateCategory: async () => {
-    return Promise.resolve({ success: true });
-  },
-  AddCategory: async () => {
-    return Promise.resolve({ success: true });
-  }
-};
-
 const BlogCategoriesPage: React.FC = () => {
   const [categories, setCategories] = useState<BlogCategoryData[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [filteredCategories, setFilteredCategories] = useState<BlogCategoryData[]>([]);
 
   // Add pagination states
   const [pagination, setPagination] = useState<PaginationState>({
@@ -109,32 +40,53 @@ const BlogCategoriesPage: React.FC = () => {
   // Fetch categories on component mount
   useEffect(() => {
     fetchCategories();
-  }, [pagination.current, pagination.pageSize]);
+  }, []);
+
+  // Lọc danh mục theo từ khóa tìm kiếm (thực hiện ở client)
+  useEffect(() => {
+    if (!searchQuery) {
+      setFilteredCategories(categories);
+    } else {
+      const filtered = categories.filter(category => 
+        category.name.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredCategories(filtered);
+    }
+    
+    // Cập nhật lại thông tin phân trang
+    setPagination(prev => ({
+      ...prev,
+      total: filteredCategories.length
+    }));
+  }, [searchQuery, categories, filteredCategories.length]);
+
+  // Chuyển đổi dữ liệu API sang định dạng component
+  const mapApiDataToComponentData = (apiData: BlogCategory[]): BlogCategoryData[] => {
+    return apiData.map(item => ({
+      id: item._id,
+      name: item.name,
+      createdAt: item.created_at,
+      updatedAt: item.updated_at
+    }));
+  };
 
   // Function to fetch categories
   const fetchCategories = async () => {
     setLoading(true);
     try {
-      let response;
-      if (searchQuery) {
-        response = await BlogCategoryAPI.searchCategory(searchQuery, pagination.current, pagination.pageSize);
-      } else {
-        response = await BlogCategoryAPI.GetCategories(pagination.current, pagination.pageSize);
-      }
+      const response = await getBlogCategories();
 
       if (response && response.data) {
-        setCategories(response.data.data || []);
-
-        // Update total count for pagination using the metaData structure
-        if (response.data.metaData) {
-          setPagination(prev => ({
-            ...prev,
-            total: response.data.metaData?.totalCount || 0,
-            current: response.data.metaData?.currentPage || 1
-          }));
-        }
+        const mappedData = mapApiDataToComponentData(response.data);
+        setCategories(mappedData);
+        setFilteredCategories(mappedData);
+        setPagination(prev => ({
+          ...prev,
+          total: response.count || 0
+        }));
       } else {
         setCategories([]);
+        setFilteredCategories([]);
         console.error("Unexpected API response structure:", response);
       }
     } catch (error) {
@@ -153,6 +105,7 @@ const BlogCategoriesPage: React.FC = () => {
 
   // Function to show view modal
   const showViewModal = (category: BlogCategoryData) => {
+    // Đơn giản hóa - chỉ sử dụng dữ liệu đã có
     setCurrentCategory(category);
     setIsViewModalVisible(true);
   };
@@ -160,7 +113,7 @@ const BlogCategoriesPage: React.FC = () => {
   // Function to handle delete category
   const handleDeleteCategory = async (categoryId: string | number) => {
     try {
-      await BlogCategoryAPI.DeleteCategory(categoryId);
+      await deleteBlogCategory(categoryId.toString());
       message.success('Xóa danh mục thành công');
       fetchCategories(); // Refresh categories after deletion
     } catch (error) {
@@ -170,14 +123,12 @@ const BlogCategoriesPage: React.FC = () => {
   };
 
   // Function to handle search
-  const handleSearch = async (value: string) => {
+  const handleSearch = (value: string) => {
     setSearchQuery(value);
     setPagination(prev => ({
       ...prev,
       current: 1
     }));
-    
-    fetchCategories();
   };
 
   // Handle pagination change
@@ -187,6 +138,14 @@ const BlogCategoriesPage: React.FC = () => {
       current: page,
       pageSize: pageSize
     }));
+  };
+
+  // Phân trang dữ liệu ở client side
+  const getPaginatedData = () => {
+    const { current, pageSize } = pagination;
+    const startIndex = (current - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    return filteredCategories.slice(startIndex, endIndex);
   };
 
   return (
@@ -206,7 +165,7 @@ const BlogCategoriesPage: React.FC = () => {
       </div>
 
       <BlogCategoryTable
-        categories={categories}
+        categories={getPaginatedData()}
         loading={loading}
         onEdit={showEditModal}
         onDelete={handleDeleteCategory}
@@ -216,7 +175,7 @@ const BlogCategoriesPage: React.FC = () => {
         pagination={{
           current: pagination.current,
           pageSize: pagination.pageSize,
-          total: pagination.total,
+          total: filteredCategories.length,
           onChange: handlePaginationChange
         }}
       />
@@ -224,13 +183,19 @@ const BlogCategoriesPage: React.FC = () => {
       <BlogCategoryAdd
         isOpen={isAddModalVisible}
         onClose={() => setIsAddModalVisible(false)}
-        onSuccess={fetchCategories}
+        onSuccess={() => {
+          fetchCategories();
+          setIsAddModalVisible(false);
+        }}
       />
 
       <BlogCategoryEdit
         isOpen={isEditModalVisible}
         onClose={() => setIsEditModalVisible(false)}
-        onSuccess={fetchCategories}
+        onSuccess={() => {
+          fetchCategories();
+          setIsEditModalVisible(false);
+        }}
         category={currentCategory}
       />
 
@@ -249,22 +214,6 @@ const BlogCategoriesPage: React.FC = () => {
         {currentCategory && (
           <div>
             <h2 className="text-xl font-bold mb-2">{currentCategory.name}</h2>
-            <div className="mb-4">
-              <span className={`px-2 py-1 rounded text-xs ${
-                currentCategory.status === 'active' 
-                  ? 'bg-green-100 text-green-800' 
-                  : 'bg-gray-100 text-gray-800'
-              }`}>
-                {currentCategory.status === 'active' ? 'Hoạt động' : 'Không hoạt động'}
-              </span>
-              <span className="ml-3 text-sm text-gray-600">
-                Bài viết: <strong>{currentCategory.blogsCount || 0}</strong>
-              </span>
-            </div>
-            <div className="mt-4">
-              <h3 className="text-sm font-semibold text-gray-600 mb-2">Mô tả:</h3>
-              <p className="text-gray-800 whitespace-pre-line">{currentCategory.description}</p>
-            </div>
             <div className="mt-4 text-xs text-gray-500">
               <p>Ngày tạo: {new Date(currentCategory.createdAt || '').toLocaleString('vi-VN')}</p>
               <p>Cập nhật: {new Date(currentCategory.updatedAt || '').toLocaleString('vi-VN')}</p>

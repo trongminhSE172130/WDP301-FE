@@ -1,21 +1,11 @@
 import React from 'react';
-import { Table, Button, Space, Popconfirm, Image, Input } from 'antd';
+import { Table, Button, Space, Popconfirm, Image, Input, Select, Tag, Switch } from 'antd';
 import { EditOutlined, DeleteOutlined, EyeOutlined, SearchOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import type { BlogData } from './BlogTypes';
 
 const { Search } = Input;
-
-// Định nghĩa các kiểu dữ liệu
-interface BlogData {
-  id: string | number;
-  title: string;
-  content: string;
-  image: string;
-  blogCategoryId: number | string;
-  categoryName: string;
-  userId: number | string;
-  fullName: string;
-}
+const { Option } = Select;
 
 interface PaginationProps {
   current: number;
@@ -28,9 +18,13 @@ interface BlogTableProps {
   blogs: BlogData[];
   loading: boolean;
   onEdit: (blog: BlogData) => void;
-  onDelete: (id: string | number) => void;
+  onDelete: (id: string) => void;
   onView: (blog: BlogData) => void;
   onSearch: (value: string) => void;
+  onCategoryFilter?: (value: string) => void;
+  onStatusFilter?: (value: string) => void;
+  onSortChange?: (value: string) => void;
+  onStatusChange?: (id: string, checked: boolean) => void;
   searchQuery: string;
   pagination: PaginationProps;
 }
@@ -42,14 +36,18 @@ const BlogTable: React.FC<BlogTableProps> = ({
   onDelete,
   onView,
   onSearch,
+  onCategoryFilter,
+  onStatusFilter,
+  onSortChange,
+  onStatusChange,
   searchQuery,
   pagination
 }) => {
   const columns: ColumnsType<BlogData> = [
     {
       title: 'Ảnh',
-      dataIndex: 'image',
-      key: 'image',
+      dataIndex: 'thumbnail_url',
+      key: 'thumbnail_url',
       render: (image: string) => (
         <Image
           src={image}
@@ -75,8 +73,39 @@ const BlogTable: React.FC<BlogTableProps> = ({
     },
     {
       title: 'Tác giả',
-      dataIndex: 'fullName',
-      key: 'fullName',
+      dataIndex: 'author',
+      key: 'author',
+    },
+    {
+      title: 'Trạng thái',
+      dataIndex: 'status',
+      key: 'status',
+      render: (status: string, record: BlogData) => (
+        onStatusChange ? (
+          <Switch
+            checkedChildren="Đã xuất bản"
+            unCheckedChildren="Bản nháp"
+            checked={status === 'published'}
+            onChange={(checked) => onStatusChange(record.id, checked)}
+          />
+        ) : (
+          <Tag color={status === 'published' ? 'green' : 'orange'}>
+            {status === 'published' ? 'Đã xuất bản' : 'Bản nháp'}
+          </Tag>
+        )
+      )
+    },
+    {
+      title: 'Lượt xem',
+      dataIndex: 'view_count',
+      key: 'view_count',
+      sorter: (a: BlogData, b: BlogData) => a.view_count - b.view_count,
+    },
+    {
+      title: 'Ngày tạo',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      render: (date: string) => new Date(date).toLocaleDateString('vi-VN'),
     },
     {
       title: 'Hành động',
@@ -94,10 +123,10 @@ const BlogTable: React.FC<BlogTableProps> = ({
             onClick={() => onEdit(record)}
           />
           <Popconfirm
-            title="Are you sure you want to delete this blog?"
+            title="Bạn có chắc chắn muốn xóa bài viết này?"
             onConfirm={() => onDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
+            okText="Có"
+            cancelText="Không"
           >
             <Button
               danger
@@ -113,7 +142,7 @@ const BlogTable: React.FC<BlogTableProps> = ({
 
   return (
     <div className="p-6">
-      <div className="mb-4">
+      <div className="mb-4 flex flex-wrap gap-4">
         <Search
           placeholder="Tìm kiếm blog..."
           allowClear
@@ -124,7 +153,47 @@ const BlogTable: React.FC<BlogTableProps> = ({
           loading={loading}
           className="max-w-md"
         />
+        
+        {onCategoryFilter && (
+          <Select
+            placeholder="Lọc theo danh mục"
+            allowClear
+            style={{ width: 200 }}
+            onChange={onCategoryFilter}
+          >
+            <Option value="">Tất cả danh mục</Option>
+            {/* Danh sách danh mục sẽ được thêm sau */}
+          </Select>
+        )}
+        
+        {onStatusFilter && (
+          <Select
+            placeholder="Trạng thái"
+            allowClear
+            style={{ width: 160 }}
+            onChange={onStatusFilter}
+          >
+            <Option value="">Tất cả</Option>
+            <Option value="published">Đã xuất bản</Option>
+            <Option value="draft">Bản nháp</Option>
+          </Select>
+        )}
+        
+        {onSortChange && (
+          <Select
+            placeholder="Sắp xếp"
+            style={{ width: 180 }}
+            onChange={onSortChange}
+            defaultValue="created_at-desc"
+          >
+            <Option value="created_at-desc">Mới nhất</Option>
+            <Option value="created_at-asc">Cũ nhất</Option>
+            <Option value="view_count-desc">Lượt xem (cao-thấp)</Option>
+            <Option value="view_count-asc">Lượt xem (thấp-cao)</Option>
+          </Select>
+        )}
       </div>
+      
       <Table
         columns={columns}
         dataSource={blogs}

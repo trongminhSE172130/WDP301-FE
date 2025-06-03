@@ -1,23 +1,13 @@
-import { useState, useEffect } from 'react';
-import { Button, Modal, Image, Tag, message } from 'antd';
+import { useState, useEffect, useRef } from 'react';
+import { Button, Modal, Image, Tag, message, Spin } from 'antd';
 import { PlusOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 import BlogTable from '../../components/admin/blog/BlogTable';
 import BlogAdd from '../../components/admin/blog/BlogAdd';
 import BlogEdit from '../../components/admin/blog/BlogEdit';
-import { blogsData } from '../../components/admin/blog/BlogData';
 import type { BlogData } from '../../components/admin/blog/BlogTypes';
-
-// Interface cho API response
-interface ApiResponse<T> {
-  data: {
-    data: T;
-    metaData?: {
-      currentPage: number;
-      pageSize: number;
-      totalCount: number;
-    };
-  };
-}
+import { getBlogs, deleteBlog, updateBlogStatus, getBlogDetail } from '../../service/api/blogAPI';
+import type { Blog } from '../../service/api/blogAPI';
 
 // Interface cho pagination
 interface PaginationState {
@@ -26,80 +16,15 @@ interface PaginationState {
   total: number;
 }
 
-// Interface cho API blog
-interface BlogAPIType {
-  GetBlogs: (page: number, pageSize: number) => Promise<ApiResponse<BlogData[]>>;
-  searchBlog: (query: string, page?: number, pageSize?: number) => Promise<ApiResponse<BlogData[]>>;
-  DeleteBlog: (blogId: string | number) => Promise<{ success: boolean }>;
-  UpdateBlog: (blogData: Partial<BlogData>) => Promise<{ success: boolean }>;
-  AddBlog: (blogData: Partial<BlogData>) => Promise<{ success: boolean }>;
-  uploadToFirebase: (file: File) => Promise<ApiResponse<string>>;
-}
-
-// Mock BlogAPI service
-const BlogAPI: BlogAPIType = {
-  GetBlogs: async (page: number, pageSize: number) => {
-    // Mock implementation - sử dụng dữ liệu từ BlogData.ts
-    const start = (page - 1) * pageSize;
-    const end = page * pageSize;
-    const data = blogsData.slice(start, end);
-    
-    return Promise.resolve({
-      data: {
-        data: data,
-        metaData: {
-          currentPage: page,
-          pageSize: pageSize,
-          totalCount: blogsData.length
-        }
-      }
-    });
-  },
-  searchBlog: async (query: string, page?: number, pageSize?: number) => {
-    // Mock implementation với tìm kiếm
-    const searchResults = blogsData.filter(blog => 
-      blog.title.toLowerCase().includes(query.toLowerCase()) || 
-      blog.content.toLowerCase().includes(query.toLowerCase())
-    );
-    
-    const actualPage = page || 1;
-    const actualPageSize = pageSize || 10;
-    const start = (actualPage - 1) * actualPageSize;
-    const end = actualPage * actualPageSize;
-    
-    return Promise.resolve({
-      data: {
-        data: searchResults.slice(start, end),
-        metaData: {
-          currentPage: actualPage,
-          pageSize: actualPageSize,
-          totalCount: searchResults.length
-        }
-      }
-    });
-  },
-  DeleteBlog: async () => {
-    return Promise.resolve({ success: true });
-  },
-  UpdateBlog: async () => {
-    return Promise.resolve({ success: true });
-  },
-  AddBlog: async () => {
-    return Promise.resolve({ success: true });
-  },
-  uploadToFirebase: async () => {
-    return Promise.resolve({
-      data: {
-        data: 'https://example.com/image.jpg'
-      }
-    });
-  }
-};
-
 const BlogPage = () => {
   const [blogs, setBlogs] = useState<BlogData[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [categoryFilter, setCategoryFilter] = useState<string>('');
+  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [sortOrder, setSortOrder] = useState<string>('');
+  const isMounted = useRef(false);
+  const navigate = useNavigate();
 
   // Add pagination states
   const [pagination, setPagination] = useState<PaginationState>({
@@ -113,32 +38,78 @@ const BlogPage = () => {
   const [isEditModalVisible, setIsEditModalVisible] = useState<boolean>(false);
   const [isViewModalVisible, setIsViewModalVisible] = useState<boolean>(false);
   const [currentBlog, setCurrentBlog] = useState<BlogData | null>(null);
+  const [viewLoading, setViewLoading] = useState<boolean>(false);
+  const [viewBlogData, setViewBlogData] = useState<BlogData | null>(null);
 
-  // Fetch blogs on component mount
+  // Kiểm tra token admin khi component mount
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      message.error('Bạn cần đăng nhập để quản lý blog');
+      navigate('/admin/login');
+      return;
+    }
+  }, [navigate]);
+
+  // Fetch blogs on component mount and when filters/pagination change
+  useEffect(() => {
+    if (!isMounted.current) {
+      fetchBlogs();
+      isMounted.current = true;
+    }
+  }, []);
+
   useEffect(() => {
     fetchBlogs();
-  }, [pagination.current, pagination.pageSize]);
+  }, [pagination.current, pagination.pageSize, categoryFilter, statusFilter, sortOrder]);
+
+  // Chuyển đổi dữ liệu API sang định dạng component
+  const mapApiDataToComponentData = (apiData: Blog[]): BlogData[] => {
+    return apiData.map(item => ({
+      id: item._id,
+      title: item.title,
+      excerpt: item.excerpt,
+      content: item.content,
+      author: item.author,
+      thumbnail_url: item.thumbnail_url,
+      image: item.thumbnail_url,
+      blogCategoryId: item.category_id._id,
+      categoryName: item.category_id.name,
+      userId: item.admin_user_id._id,
+      fullName: item.admin_user_id.full_name,
+      email: item.admin_user_id.email,
+      status: item.status,
+      view_count: item.view_count,
+      like_count: item.like_count,
+      createdAt: item.created_at,
+      updatedAt: item.updated_at
+    }));
+  };
 
   // Function to fetch blogs
   const fetchBlogs = async () => {
     setLoading(true);
     try {
-      let response;
-      if (searchQuery) {
-        response = await BlogAPI.searchBlog(searchQuery, pagination.current, pagination.pageSize);
-      } else {
-        response = await BlogAPI.GetBlogs(pagination.current, pagination.pageSize);
-      }
+      console.log('Fetching blogs...');
+      const response = await getBlogs(
+        pagination.current,
+        pagination.pageSize,
+        categoryFilter,
+        searchQuery,
+        sortOrder,
+        statusFilter
+      );
 
       if (response && response.data) {
-        setBlogs(response.data.data || []);
+        const mappedData = mapApiDataToComponentData(response.data);
+        setBlogs(mappedData);
 
-        // Update total count for pagination using the metaData structure
-        if (response.data.metaData) {
+        // Update pagination info
+        if (response.pagination) {
           setPagination(prev => ({
             ...prev,
-            total: response.data.metaData?.totalCount || 0,
-            current: response.data.metaData?.currentPage || 1
+            total: response.pagination.total || 0,
+            current: response.pagination.page || 1
           }));
         }
       } else {
@@ -146,7 +117,7 @@ const BlogPage = () => {
         console.error("Unexpected API response structure:", response);
       }
     } catch (error) {
-      message.error('Failed to fetch blogs');
+      message.error('Không thể tải danh sách bài viết');
       console.error(error);
     } finally {
       setLoading(false);
@@ -160,68 +131,90 @@ const BlogPage = () => {
   };
 
   // Function to show view modal
-  const showViewModal = (blog: BlogData) => {
-    setCurrentBlog(blog);
+  const showViewModal = async (blog: BlogData) => {
+    setCurrentBlog(blog); // Thiết lập blog từ danh sách (để hiển thị ngay)
+    setViewLoading(true);
     setIsViewModalVisible(true);
+    
+    try {
+      // Gọi API để lấy thông tin chi tiết mới nhất
+      const response = await getBlogDetail(blog.id);
+      if (response && response.success && response.data) {
+        // Chuyển đổi dữ liệu API thành định dạng của component
+        const detailData: BlogData = {
+          id: response.data._id,
+          title: response.data.title,
+          excerpt: response.data.excerpt,
+          content: response.data.content,
+          author: response.data.author,
+          thumbnail_url: response.data.thumbnail_url,
+          image: response.data.thumbnail_url,
+          blogCategoryId: response.data.category_id._id,
+          categoryName: response.data.category_id.name,
+          userId: response.data.admin_user_id._id,
+          fullName: response.data.admin_user_id.full_name,
+          email: response.data.admin_user_id.email,
+          status: response.data.status,
+          view_count: response.data.view_count,
+          like_count: response.data.like_count,
+          createdAt: response.data.created_at,
+          updatedAt: response.data.updated_at
+        };
+        setViewBlogData(detailData);
+      } else {
+        message.error('Không thể tải thông tin chi tiết bài viết');
+      }
+    } catch (error) {
+      console.error('Lỗi khi tải chi tiết bài viết:', error);
+      message.error('Không thể tải chi tiết bài viết');
+    } finally {
+      setViewLoading(false);
+    }
   };
 
   // Function to handle delete blog
-  const handleDeleteBlog = async (blogId: string | number) => {
+  const handleDeleteBlog = async (id: string) => {
     try {
-      await BlogAPI.DeleteBlog(blogId);
-      message.success('Blog deleted successfully');
+      await deleteBlog(id);
+      message.success('Xóa bài viết thành công');
       fetchBlogs(); // Refresh blogs after deletion
     } catch (error) {
-      message.error('Failed to delete blog');
+      message.error('Xóa bài viết thất bại');
       console.error(error);
     }
   };
 
   // Function to handle search
-  const handleSearch = async (value: string) => {
+  const handleSearch = (value: string) => {
     setSearchQuery(value);
-    setLoading(true);
-    // Reset to first page when searching
     setPagination(prev => ({
       ...prev,
       current: 1
     }));
+    // Will trigger useEffect to fetch data
+  };
 
-    try {
-      if (value.trim() === '') {
-        // If search query is empty, fetch all blogs
-        fetchBlogs();
-        return;
-      }
+  // Handle category filter change
+  const handleCategoryFilter = (value: string) => {
+    setCategoryFilter(value);
+    setPagination(prev => ({
+      ...prev,
+      current: 1
+    }));
+  };
 
-      const response = await BlogAPI.searchBlog(value);
-      if (response && response.data) {
-        setBlogs(response.data.data || []);
+  // Handle status filter change
+  const handleStatusFilter = (value: string) => {
+    setStatusFilter(value);
+    setPagination(prev => ({
+      ...prev,
+      current: 1
+    }));
+  };
 
-        // Update pagination with metadata from search results
-        if (response.data.metaData) {
-          setPagination(prev => ({
-            ...prev,
-            total: response.data.metaData?.totalCount || 0,
-            current: response.data.metaData?.currentPage || 1
-          }));
-        } else {
-          // If no metadata, just use the array length
-          setPagination(prev => ({
-            ...prev,
-            total: Array.isArray(response.data.data) ? response.data.data.length : 0
-          }));
-        }
-      } else {
-        setBlogs([]);
-        setPagination(prev => ({ ...prev, total: 0 }));
-      }
-    } catch (error) {
-      message.error('Failed to search blogs');
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
+  // Handle sort change
+  const handleSortChange = (value: string) => {
+    setSortOrder(value);
   };
 
   // Handle pagination change
@@ -231,6 +224,19 @@ const BlogPage = () => {
       current: page,
       pageSize: pageSize
     }));
+  };
+
+  // Function to handle status change
+  const handleStatusChange = async (id: string, checked: boolean) => {
+    try {
+      const newStatus = checked ? 'published' : 'draft';
+      await updateBlogStatus(id, newStatus);
+      message.success(`Đã ${checked ? 'xuất bản' : 'chuyển thành bản nháp'} bài viết`);
+      fetchBlogs(); // Refresh blogs after status change
+    } catch (error) {
+      message.error('Cập nhật trạng thái bài viết thất bại');
+      console.error(error);
+    }
   };
 
   return (
@@ -256,6 +262,10 @@ const BlogPage = () => {
         onDelete={handleDeleteBlog}
         onView={showViewModal}
         onSearch={handleSearch}
+        onCategoryFilter={handleCategoryFilter}
+        onStatusFilter={handleStatusFilter}
+        onSortChange={handleSortChange}
+        onStatusChange={handleStatusChange}
         searchQuery={searchQuery}
         pagination={{
           current: pagination.current,
@@ -282,30 +292,56 @@ const BlogPage = () => {
       <Modal
         title="Chi tiết bài viết"
         open={isViewModalVisible}
-        onCancel={() => setIsViewModalVisible(false)}
+        onCancel={() => {
+          setIsViewModalVisible(false);
+          setViewBlogData(null);
+        }}
         footer={[
-          <Button key="close" onClick={() => setIsViewModalVisible(false)}>
+          <Button key="close" onClick={() => {
+            setIsViewModalVisible(false);
+            setViewBlogData(null);
+          }}>
             Đóng
           </Button>
         ]}
         width={800}
       >
-        {currentBlog && (
-          <div>
-            <Image
-              src={currentBlog.image}
-              alt={currentBlog.title}
-              style={{ width: '100%', height: 300, objectFit: 'contain', marginBottom: 16 }}
-            />
-            <h2 style={{ fontSize: 24, fontWeight: 'bold' }}>{currentBlog.title}</h2>
-            <div style={{ marginBottom: 16 }}>
-              <Tag color="blue">{currentBlog.categoryName}</Tag>
-              <span style={{ marginLeft: 8, color: '#666' }}>
-                Tác giả: {currentBlog.fullName}
-              </span>
-            </div>
-            <div dangerouslySetInnerHTML={{ __html: currentBlog.content }}></div>
+        {viewLoading ? (
+          <div style={{ textAlign: 'center', padding: '50px 0' }}>
+            <Spin size="large" />
+            <p style={{ marginTop: 16 }}>Đang tải thông tin chi tiết...</p>
           </div>
+        ) : (
+          (viewBlogData || currentBlog) && (
+            <div>
+              <Image
+                src={(viewBlogData || currentBlog)?.thumbnail_url || ''}
+                alt={(viewBlogData || currentBlog)?.title || ''}
+                style={{ width: '100%', height: 300, objectFit: 'contain', marginBottom: 16 }}
+              />
+              <h2 style={{ fontSize: 24, fontWeight: 'bold' }}>{(viewBlogData || currentBlog)?.title}</h2>
+              <div style={{ marginBottom: 16 }}>
+                <Tag color="blue">{(viewBlogData || currentBlog)?.categoryName}</Tag>
+                <span style={{ marginLeft: 8, color: '#666' }}>
+                  Tác giả: {(viewBlogData || currentBlog)?.author}
+                </span>
+                <span style={{ marginLeft: 8, color: '#666' }}>
+                  Người đăng: {(viewBlogData || currentBlog)?.fullName}
+                </span>
+                <Tag color={(viewBlogData || currentBlog)?.status === 'published' ? 'green' : 'orange'} style={{ marginLeft: 8 }}>
+                  {(viewBlogData || currentBlog)?.status === 'published' ? 'Đã xuất bản' : 'Bản nháp'}
+                </Tag>
+              </div>
+              <p style={{ marginBottom: 16, fontStyle: 'italic' }}>{(viewBlogData || currentBlog)?.excerpt}</p>
+              <div dangerouslySetInnerHTML={{ __html: (viewBlogData || currentBlog)?.content || '' }}></div>
+              <div style={{ marginTop: 16, fontSize: 12, color: '#999' }}>
+                <p>Lượt xem: {(viewBlogData || currentBlog)?.view_count}</p>
+                <p>Lượt thích: {(viewBlogData || currentBlog)?.like_count}</p>
+                <p>Ngày tạo: {new Date((viewBlogData || currentBlog)?.createdAt || '').toLocaleString('vi-VN')}</p>
+                <p>Cập nhật: {new Date((viewBlogData || currentBlog)?.updatedAt || '').toLocaleString('vi-VN')}</p>
+              </div>
+            </div>
+          )
         )}
       </Modal>
     </div>

@@ -1,8 +1,8 @@
 import React from 'react';
-import { Table, Button, Tag, Input, Tooltip, Badge, Dropdown } from 'antd';
+import { Table, Button, Input, Space } from 'antd';
 import { 
   EditOutlined, DeleteOutlined, SearchOutlined, 
-  EyeOutlined, MoreOutlined
+  EyeOutlined
 } from '@ant-design/icons';
 import type { BlogCategoryData } from './BlogCategoryTypes';
 
@@ -34,51 +34,11 @@ const BlogCategoryTable: React.FC<BlogCategoryTableProps> = ({
 }) => {
   const columns = [
     {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
-      width: 70,
-      render: (text: string | number) => <span>{text}</span>,
-    },
-    {
       title: 'Tên danh mục',
       dataIndex: 'name',
       key: 'name',
       render: (text: string, record: BlogCategoryData) => (
         <a onClick={() => onView(record)}>{text}</a>
-      ),
-    },
-    {
-      title: 'Mô tả',
-      dataIndex: 'description',
-      key: 'description',
-      ellipsis: {
-        showTitle: false,
-      },
-      render: (description: string) => (
-        <Tooltip placement="topLeft" title={description}>
-          {description}
-        </Tooltip>
-      ),
-    },
-    {
-      title: 'Số bài viết',
-      dataIndex: 'blogsCount',
-      key: 'blogsCount',
-      width: 120,
-      render: (count: number) => (
-        <Badge count={count} showZero color={count > 0 ? 'blue' : 'default'} />
-      ),
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
-      width: 120,
-      render: (status: string) => (
-        <Tag color={status === 'active' ? 'success' : 'default'}>
-          {status === 'active' ? 'Hoạt động' : 'Không hoạt động'}
-        </Tag>
       ),
     },
     {
@@ -91,38 +51,30 @@ const BlogCategoryTable: React.FC<BlogCategoryTableProps> = ({
       ),
     },
     {
-      title: 'Thao tác',
+      title: 'Hành động',
       key: 'action',
-      width: 100,
+      width: 150,
       render: (_: unknown, record: BlogCategoryData) => (
-        <Dropdown
-          menu={{
-            items: [
-              {
-                key: '1',
-                icon: <EyeOutlined />,
-                label: 'Xem chi tiết',
-                onClick: () => onView(record),
-              },
-              {
-                key: '2',
-                icon: <EditOutlined />,
-                label: 'Chỉnh sửa',
-                onClick: () => onEdit(record),
-              },
-              {
-                key: '3',
-                icon: <DeleteOutlined />,
-                label: 'Xóa',
-                danger: true,
-                onClick: () => onDelete(record.id),
-              },
-            ],
-          }}
-          trigger={['click']}
-        >
-          <Button icon={<MoreOutlined />} type="text" />
-        </Dropdown>
+        <Space size="small">
+          <Button 
+            icon={<EyeOutlined />} 
+            onClick={() => onView(record)}
+            type="text"
+            style={{ backgroundColor: '#f5f5f5', borderRadius: '4px' }}
+          />
+          <Button 
+            icon={<EditOutlined />} 
+            onClick={() => onEdit(record)}
+            type="primary"
+            style={{ borderRadius: '4px' }}
+          />
+          <Button 
+            icon={<DeleteOutlined />} 
+            onClick={() => onDelete(record.id)}
+            danger
+            style={{ borderRadius: '4px' }}
+          />
+        </Space>
       ),
     },
   ];

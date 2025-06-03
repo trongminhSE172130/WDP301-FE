@@ -1,5 +1,6 @@
 import React from 'react';
-import { Modal, Form, Input, Switch, Button, message } from 'antd';
+import { Modal, Form, Input, Button, message } from 'antd';
+import { addBlogCategory } from '../../../service/api/blogAPI';
 
 interface BlogCategoryAddProps {
   isOpen: boolean;
@@ -22,17 +23,18 @@ const BlogCategoryAdd: React.FC<BlogCategoryAddProps> = ({
       
       setLoading(true);
       
-      // Giả lập gọi API thêm mới
-      setTimeout(() => {
-        // Đây là nơi bạn sẽ gọi API thực tế
-        console.log('Thêm mới danh mục:', values);
-        
+      try {
+        // Gọi API thêm mới danh mục
+        await addBlogCategory({ name: values.name });
         message.success('Thêm danh mục thành công!');
         form.resetFields();
         onSuccess();
-        onClose();
+      } catch (error) {
+        console.error('Lỗi khi thêm danh mục:', error);
+        message.error('Không thể thêm danh mục. Vui lòng thử lại!');
+      } finally {
         setLoading(false);
-      }, 1000);
+      }
       
     } catch (error) {
       console.error('Validation failed:', error);
@@ -68,9 +70,6 @@ const BlogCategoryAdd: React.FC<BlogCategoryAddProps> = ({
       <Form
         form={form}
         layout="vertical"
-        initialValues={{
-          status: true,
-        }}
       >
         <Form.Item
           name="name"
@@ -81,33 +80,6 @@ const BlogCategoryAdd: React.FC<BlogCategoryAddProps> = ({
           ]}
         >
           <Input placeholder="Nhập tên danh mục" />
-        </Form.Item>
-
-        <Form.Item
-          name="description"
-          label="Mô tả"
-          rules={[
-            { required: true, message: 'Vui lòng nhập mô tả!' },
-            { max: 500, message: 'Mô tả không được vượt quá 500 ký tự!' },
-          ]}
-        >
-          <Input.TextArea
-            placeholder="Nhập mô tả về danh mục"
-            rows={4}
-            showCount
-            maxLength={500}
-          />
-        </Form.Item>
-
-        <Form.Item
-          name="status"
-          label="Trạng thái"
-          valuePropName="checked"
-        >
-          <Switch
-            checkedChildren="Hoạt động"
-            unCheckedChildren="Không hoạt động"
-          />
         </Form.Item>
       </Form>
     </Modal>

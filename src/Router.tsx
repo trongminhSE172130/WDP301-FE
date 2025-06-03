@@ -37,35 +37,54 @@ import BlogPage from "./pages/admin/BlogPage";
 import BlogCategoriesPage from "./pages/admin/BlogCategoriesPage";
 
 // Auth protection
-// const ProtectedRoute = ({ allowedRoles = ["admin", "consultant"] }) => {
-//   const isAuthenticated = localStorage.getItem("accessToken") !== null;
-//   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
-  
-//   useEffect(() => {
-//     if (isAuthenticated) {
-//       setIsAuthorized(isAuthorizedRole(allowedRoles));
-//     } else {
-//       setIsAuthorized(false);
-//     }
-//   }, [isAuthenticated, allowedRoles]);
+const ProtectedRoute = ({ allowedRoles = ["admin", "consultant"] }) => {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-//   // Chờ kiểm tra quyền truy cập
-//   if (isAuthorized === null) {
-//     return <div>Đang kiểm tra quyền truy cập...</div>;
-//   }
-  
-//   // Chưa đăng nhập hoặc không có quyền
-//   if (!isAuthenticated) {
-//     return <Navigate to="/admin/login" replace />;
-//   }
+  useEffect(() => {
+    // Kiểm tra đăng nhập bằng token
+    const token = localStorage.getItem("token");
+    
+    if (!token) {
+      setIsAuthenticated(false);
+      setIsLoading(false);
+      return;
+    }
 
-//   // Đã đăng nhập nhưng không có quyền
-//   if (!isAuthorized) {
-//     return <Navigate to="/unauthorized" replace />;
-//   }
+    // Lấy thông tin user từ localStorage
+    try {
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        const userData = JSON.parse(userStr);
+        setUserRole(userData.role?.toLowerCase() || null);
+      }
+      setIsAuthenticated(true);
+    } catch (error) {
+      console.error("Lỗi khi phân tích dữ liệu người dùng:", error);
+      setIsAuthenticated(false);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Đang tải
+  if (isLoading) {
+    return <div>Đang kiểm tra quyền truy cập...</div>;
+  }
   
-//   return <Outlet />;
-// };
+  // Chưa đăng nhập
+  if (!isAuthenticated) {
+    return <Navigate to="/admin/login" replace />;
+  }
+
+  // Đã đăng nhập nhưng không có quyền
+  if (userRole && !allowedRoles.includes(userRole)) {
+    return <Navigate to="/unauthorized" replace />;
+  }
+  
+  return <Outlet />;
+};
 
 // Define routes with their corresponding layouts
 const router = createBrowserRouter([
@@ -122,7 +141,7 @@ const router = createBrowserRouter([
   // Consultant routes - Cho phép consultant truy cập các trang admin
   {
     path: "/consultant",
-    // element: <ProtectedRoute allowedRoles={["consultant"]} />,
+    element: <ProtectedRoute allowedRoles={["consultant"]} />,
     children: [
       {
         element: <AdminLayout role="Consultant" />,
@@ -141,41 +160,11 @@ const router = createBrowserRouter([
     ],
   },
 
-  // Staff routes - Chỉ cho phép staff
-  {
-    path: "/staff",
-    // element: <ProtectedRoute allowedRoles={["staff"]} />,
-    children: [
-      {
-        element: <AdminLayout role="Staff" />,
-        children: [
-          { index: true, element: <UnderDevelopmentPage /> },
-          { path: "*", element: <UnderDevelopmentPage /> },
-        ],
-      },
-    ],
-  },
-
-  // Manager routes - Chỉ cho phép manager và admin
-  {
-    path: "/manager",
-    // element: <ProtectedRoute allowedRoles={["manager", "admin"]} />,
-    children: [
-      {
-        element: <AdminLayout role="Manager" />,
-        children: [
-          { index: true, element: <UnderDevelopmentPage /> },
-          { path: "blog", element: <BlogPage /> },
-          { path: "*", element: <UnderDevelopmentPage /> },
-        ],
-      },
-    ],
-  },
 
   // Admin routes - Chỉ cho phép admin và consultant
   {
     path: "/admin",
-    // element: <ProtectedRoute allowedRoles={["admin", "consultant"]} />,
+    element: <ProtectedRoute allowedRoles={["admin", "consultant"]} />,
     children: [
       {
         element: <AdminLayout role="Admin" />,

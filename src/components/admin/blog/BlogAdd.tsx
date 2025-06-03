@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Form, Input, message, Upload } from 'antd';
-import { InboxOutlined } from '@ant-design/icons';
-import type { UploadFile, UploadProps } from 'antd/es/upload/interface';
+import { Modal, Form, Input, message, Select } from 'antd';
+import { LinkOutlined } from '@ant-design/icons';
 import 'quill/dist/quill.snow.css';
+import { getBlogCategories, addBlog } from '../../../service/api/blogAPI';
+import type { BlogCategory } from '../../../service/api/blogAPI';
 
-const { Dragger } = Upload;
+const { Option } = Select;
+const { TextArea } = Input;
 
 // Định nghĩa các kiểu dữ liệu
 interface BlogAddProps {
@@ -23,22 +25,6 @@ interface QuillType {
   };
   on: (event: string, callback: () => void) => void;
 }
-
-// Giả lập BlogAPI service - Sẽ được thay thế bằng API thực tế sau
-const BlogAPI = {
-  uploadToFirebase: async () => {
-    // Mock implementation
-    return Promise.resolve({
-      data: {
-        data: 'https://example.com/image.jpg'
-      }
-    });
-  },
-  AddBlog: async () => {
-    // Mock implementation
-    return Promise.resolve({ success: true });
-  }
-};
 
 // Component QuillEditor với TypeScript
 const QuillEditor: React.FC<{ onChange: (content: string) => void }> = ({ onChange }) => {
@@ -120,15 +106,40 @@ const BlogAdd: React.FC<BlogAddProps> = ({
   const [form] = Form.useForm();
   const [blogContent, setBlogContent] = useState<string>('');
   const [uploading, setUploading] = useState<boolean>(false);
-  const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [imagePreview, setImagePreview] = useState<string>('');
+  const [categories, setCategories] = useState<BlogCategory[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState<boolean>(false);
+
+  // Fetch categories on mount
+  useEffect(() => {
+    if (isOpen) {
+      fetchCategories();
+    }
+  }, [isOpen]);
+
+  // Fetch danh mục blog từ API
+  const fetchCategories = async () => {
+    setLoadingCategories(true);
+    try {
+      const response = await getBlogCategories();
+      if (response.success && response.data) {
+        setCategories(response.data);
+      } else {
+        message.error('Không thể tải danh mục blog');
+      }
+    } catch (error) {
+      console.error('Lỗi khi tải danh mục blog:', error);
+      message.error('Không thể tải danh mục blog');
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
 
   // Reset form when modal closes
   useEffect(() => {
     if (!isOpen) {
       form.resetFields();
       setBlogContent('');
-      setFileList([]);
       setImagePreview('');
     }
   }, [isOpen, form]);
@@ -137,84 +148,72 @@ const BlogAdd: React.FC<BlogAddProps> = ({
     setBlogContent(content);
   };
 
-  const handleUploadChange: UploadProps['onChange'] = ({ fileList: newFileList }) => {
-    const newList = newFileList.slice(-1); // Chỉ giữ file mới nhất
-    setFileList(newList);
-
-    // Tạo preview nếu có file
-    if (newList.length > 0 && newList[0].originFileObj) {
-      const url = URL.createObjectURL(newList[0].originFileObj);
+  const handleImageUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const url = e.target.value.trim();
+    
+    // Cập nhật giá trị vào form
+    form.setFieldValue('thumbnail_url', url);
+    
+    // Chỉ đặt preview nếu URL có vẻ hợp lệ
+    if (url.startsWith('http://') || url.startsWith('https://')) {
       setImagePreview(url);
+    } else if (url) {
+      // Nếu người dùng không nhập http/https, thử thêm vào
+      const httpsUrl = `https://${url}`;
+      setImagePreview(httpsUrl);
     } else {
       setImagePreview('');
     }
   };
 
-  const uploadProps: UploadProps = {
-    name: 'file',
-    multiple: false,
-    fileList: fileList,
-    accept: 'image/jpeg,image/png,image/gif',
-    beforeUpload: (file) => {
-      const isImage = file.type.startsWith('image/');
-      if (!isImage) {
-        message.error('Bạn chỉ có thể tải lên file hình ảnh!');
-      }
-      const isLt2M = file.size / 1024 / 1024 < 2;
-      if (!isLt2M) {
-        message.error('Kích thước ảnh phải nhỏ hơn 2MB!');
-      }
-      return false; // Ngăn upload tự động
-    },
-    onChange: handleUploadChange,
-    onRemove: () => {
-      setImagePreview('');
-      return true;
-    },
-  };
-
   const handleAdd = async () => {
     try {
-      await form.validateFields();
+      const values = await form.validateFields();
 
       // Check if quill editor has content
       if (!blogContent || blogContent === '<p><br></p>') {
-        message.error('Blog content is required');
+        message.error('Nội dung bài viết là bắt buộc');
         return;
       }
 
       setUploading(true);
 
-      // Handle image upload if there's a file
-      if (fileList.length > 0 && fileList[0].originFileObj) {
-        try {
-          const response = await BlogAPI.uploadToFirebase();
-          if (response && response.data) {
-            // Trong thực tế, response.data.data sẽ là URL của ảnh đã upload
-            message.success('Image uploaded successfully');
-          } else {
-            message.error('Failed to upload image');
-            setUploading(false);
-            return;
-          }
-        } catch (error) {
-          console.error("Error uploading image:", error);
-          message.error('Failed to upload image');
-          setUploading(false);
-          return;
-        }
+      let thumbnailUrl = values.thumbnail_url;
+      
+      // Chuẩn hóa URL (thêm https:// nếu chưa có)
+      if (thumbnailUrl && !thumbnailUrl.startsWith('http://') && !thumbnailUrl.startsWith('https://')) {
+        thumbnailUrl = `https://${thumbnailUrl}`;
       }
 
       try {
-        // Directly call the API here
-        await BlogAPI.AddBlog();
-        message.success('Blog added successfully');
-        setUploading(false); // Reset loading state before closing the modal
-        handleCancel(); // Reset and close the form
-        onSuccess(); // Notify parent to refresh the list
+        // Gọi API thêm blog
+        console.log('Đang gửi dữ liệu blog:', {
+          title: values.title,
+          excerpt: values.excerpt || '',
+          content: blogContent,
+          author: values.author,
+          category_id: values.category_id,
+          thumbnail_url: thumbnailUrl,
+          status: values.status || 'draft'
+        });
+        
+        await addBlog({
+          title: values.title,
+          excerpt: values.excerpt || '',
+          content: blogContent,
+          author: values.author,
+          category_id: values.category_id,
+          thumbnail_url: thumbnailUrl,
+          status: values.status || 'draft'
+        });
+        
+        message.success('Thêm bài viết thành công');
+        setUploading(false);
+        handleCancel();
+        onSuccess();
       } catch (apiError) {
         console.error("API error:", apiError);
-        message.error('Failed to add blog');
+        message.error('Thêm bài viết thất bại');
         setUploading(false);
       }
     } catch (info) {
@@ -226,7 +225,6 @@ const BlogAdd: React.FC<BlogAddProps> = ({
   const handleCancel = () => {
     form.resetFields();
     setBlogContent('');
-    setFileList([]);
     setImagePreview('');
     setUploading(false);
     onClose();
@@ -247,7 +245,7 @@ const BlogAdd: React.FC<BlogAddProps> = ({
       <Form
         form={form}
         layout="vertical"
-        initialValues={{ status: 'Draft' }}
+        initialValues={{ status: 'draft' }}
       >
         <Form.Item
           name="title"
@@ -258,40 +256,66 @@ const BlogAdd: React.FC<BlogAddProps> = ({
         </Form.Item>
 
         <Form.Item
-          name="categoryName"
+          name="excerpt"
+          label="Tóm tắt"
+          rules={[{ required: true, message: 'Vui lòng nhập tóm tắt bài viết' }]}
+        >
+          <TextArea 
+            placeholder="Nhập tóm tắt ngắn gọn về bài viết" 
+            rows={3}
+            maxLength={200}
+            showCount 
+          />
+        </Form.Item>
+
+        <Form.Item
+          name="category_id"
           label="Danh mục"
-          rules={[{ required: true, message: 'Vui lòng nhập tên danh mục' }]}
+          rules={[{ required: true, message: 'Vui lòng chọn danh mục' }]}
         >
-          <Input placeholder="Nhập tên danh mục" />
+          <Select
+            placeholder="Chọn danh mục"
+            loading={loadingCategories}
+            allowClear
+          >
+            {categories.map(category => (
+              <Option key={category._id} value={category._id}>
+                {category.name}
+              </Option>
+            ))}
+          </Select>
         </Form.Item>
 
         <Form.Item
-          label="Nội dung"
-          rules={[{ required: true, message: 'Vui lòng nhập nội dung bài viết' }]}
+          name="author"
+          label="Tác giả"
+          rules={[{ required: true, message: 'Vui lòng nhập tên tác giả' }]}
         >
-          {typeof window !== 'undefined' && (
-            <QuillEditor onChange={handleContentChange} />
-          )}
-          {typeof window === 'undefined' && (
-            <div>Đang tải trình soạn thảo...</div>
-          )}
+          <Input placeholder="Nhập tên tác giả" />
         </Form.Item>
 
         <Form.Item
-          name="featured_image"
+          name="status"
+          label="Trạng thái"
+          rules={[{ required: true, message: 'Vui lòng chọn trạng thái' }]}
+        >
+          <Select placeholder="Chọn trạng thái">
+            <Option value="draft">Bản nháp</Option>
+            <Option value="published">Xuất bản</Option>
+          </Select>
+        </Form.Item>
+
+        <Form.Item
+          name="thumbnail_url"
           label="Ảnh đại diện"
-          extra="Hỗ trợ các định dạng: JPG, PNG, GIF (kích thước tối đa: 2MB)"
+          extra="Nhập URL ảnh (ví dụ: https://example.com/image.jpg)"
+          rules={[{ required: true, message: 'Vui lòng cung cấp URL ảnh đại diện' }]}
         >
-          <Dragger {...uploadProps} style={{ marginBottom: '16px' }}>
-            <p className="ant-upload-drag-icon">
-              <InboxOutlined />
-            </p>
-            <p className="ant-upload-text">Nhấp hoặc kéo thả file vào khu vực này để tải lên</p>
-            <p className="ant-upload-hint">
-              Chọn một ảnh đại diện cho bài viết của bạn
-            </p>
-          </Dragger>
-          
+          <Input
+            placeholder="Nhập URL ảnh (ví dụ: https://example.com/image.jpg)"
+            onChange={handleImageUrlChange}
+            prefix={<LinkOutlined />}
+          />
           {imagePreview && (
             <div style={{ marginTop: '16px', textAlign: 'center' }}>
               <img 
@@ -304,8 +328,20 @@ const BlogAdd: React.FC<BlogAddProps> = ({
                   borderRadius: '4px',
                   boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
                 }} 
-          />
+              />
             </div>
+          )}
+        </Form.Item>
+
+        <Form.Item
+          label="Nội dung"
+          rules={[{ required: true, message: 'Vui lòng nhập nội dung bài viết' }]}
+        >
+          {typeof window !== 'undefined' && (
+            <QuillEditor onChange={handleContentChange} />
+          )}
+          {typeof window === 'undefined' && (
+            <div>Đang tải trình soạn thảo...</div>
           )}
         </Form.Item>
       </Form>

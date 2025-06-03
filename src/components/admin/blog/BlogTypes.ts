@@ -1,10 +1,19 @@
 export interface BlogData {
-  id: string | number;
+  id: string;
   title: string;
+  excerpt: string;
   content: string;
-  image: string;
-  blogCategoryId: string | number;
+  author: string;
+  thumbnail_url: string;
+  image?: string;
+  blogCategoryId: string;
   categoryName: string;
-  userId: string | number;
+  userId: string;
   fullName: string;
+  email: string;
+  status: string;
+  view_count: number;
+  like_count: number;
+  createdAt: string;
+  updatedAt: string;
 } 

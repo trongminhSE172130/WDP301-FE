@@ -26,3 +26,8 @@ export const loginUser = async (data: LoginPayload) => {
   }
   return res;
 };
+
+export const logoutUser = () => {
+  localStorage.removeItem("user");
+  localStorage.removeItem("token");
+};

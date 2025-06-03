@@ -1,31 +1,67 @@
 import React, { useState } from "react";
-import { Form, Input, Button, Typography, Divider } from "antd";
+import { Form, Input, Button, Typography, Divider, message } from "antd";
 import { UserOutlined, LockOutlined, SafetyOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import logo from "../../assets/img/streamline_health-care-2-solid.png";
+import { loginUser } from "../../service/api/authApi";
 
 const { Title, Text } = Typography;
 
 interface LoginFormValues {
-  username: string;
+  email: string;
   password: string;
-  remember?: boolean;
+}
+
+interface ApiError {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+  message: string;
 }
 
 const AdminLoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const onFinish = (values: LoginFormValues) => {
+  const onFinish = async (values: LoginFormValues) => {
     setLoading(true);
-    console.log("Đăng nhập với thông tin:", values);
-    
-    // Giả lập quá trình đăng nhập
-    setTimeout(() => {
+    try {
+      const response = await loginUser({
+        email: values.email,
+        password: values.password
+      });
+      
+      // Lưu token vào localStorage
+      if (response.data && response.data.token) {
+        localStorage.setItem("token", response.data.token);
+        
+        message.success("Đăng nhập thành công!");
+        
+        // Xác định trang điều hướng dựa vào role
+        const userRole = response.data.user?.role?.toLowerCase() || 'admin';
+        let redirectPath = '/admin/dashboard';
+        
+        if (userRole === 'consultant') {
+          redirectPath = '/consultant/dashboard';
+        } else if (userRole === 'manager') {
+          redirectPath = '/manager/dashboard';
+        } else if (userRole === 'staff') {
+          redirectPath = '/staff/dashboard';
+        }
+        
+        navigate(redirectPath);
+      } else {
+        throw new Error("Không nhận được token từ server");
+      }
+    } catch (error: unknown) {
+      console.error("Lỗi đăng nhập:", error);
+      const apiError = error as ApiError;
+      message.error(apiError.response?.data?.message || "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin!");
+    } finally {
       setLoading(false);
-      // Sau khi đăng nhập thành công, điều hướng đến trang dashboard
-      navigate("/admin/dashboard");
-    }, 1500);
+    }
   };
 
   return (
@@ -52,12 +88,15 @@ const AdminLoginPage: React.FC = () => {
           className="w-full"
         >
           <Form.Item
-            name="username"
-            rules={[{ required: true, message: "Vui lòng nhập tên đăng nhập!" }]}
+            name="email"
+            rules={[
+              { required: true, message: "Vui lòng nhập email!" },
+              { type: "email", message: "Email không hợp lệ!" }
+            ]}
           >
             <Input 
               prefix={<UserOutlined className="text-gray-400" />} 
-              placeholder="Tên đăng nhập" 
+              placeholder="Email" 
               className="rounded-lg"
             />
           </Form.Item>

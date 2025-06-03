@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
-import { Modal, Form, Input, Switch, Button, message } from 'antd';
+import { Modal, Form, Input, Button, message } from 'antd';
 import type { BlogCategoryData } from './BlogCategoryTypes';
+import { updateBlogCategory } from '../../../service/api/blogAPI';
 
 interface BlogCategoryEditProps {
   isOpen: boolean;
@@ -22,8 +23,6 @@ const BlogCategoryEdit: React.FC<BlogCategoryEditProps> = ({
     if (category && isOpen) {
       form.setFieldsValue({
         name: category.name,
-        description: category.description,
-        status: category.status === 'active',
       });
     }
   }, [category, form, isOpen]);
@@ -33,22 +32,27 @@ const BlogCategoryEdit: React.FC<BlogCategoryEditProps> = ({
       await form.validateFields();
       const values = form.getFieldsValue();
       
+      if (!category?.id) {
+        message.error('Không tìm thấy ID danh mục!');
+        return;
+      }
+      
       setLoading(true);
       
-      // Giả lập gọi API cập nhật
-      setTimeout(() => {
-        // Đây là nơi bạn sẽ gọi API thực tế
-        console.log('Cập nhật danh mục:', {
-          id: category?.id,
-          ...values,
-          status: values.status ? 'active' : 'inactive',
+      try {
+        // Gọi API cập nhật danh mục
+        await updateBlogCategory(category.id.toString(), {
+          name: values.name
         });
         
         message.success('Cập nhật danh mục thành công!');
         onSuccess();
-        onClose();
+      } catch (error) {
+        console.error('Lỗi khi cập nhật danh mục:', error);
+        message.error('Không thể cập nhật danh mục. Vui lòng thử lại!');
+      } finally {
         setLoading(false);
-      }, 1000);
+      }
       
     } catch (error) {
       console.error('Validation failed:', error);
@@ -93,33 +97,6 @@ const BlogCategoryEdit: React.FC<BlogCategoryEditProps> = ({
           ]}
         >
           <Input placeholder="Nhập tên danh mục" />
-        </Form.Item>
-
-        <Form.Item
-          name="description"
-          label="Mô tả"
-          rules={[
-            { required: true, message: 'Vui lòng nhập mô tả!' },
-            { max: 500, message: 'Mô tả không được vượt quá 500 ký tự!' },
-          ]}
-        >
-          <Input.TextArea
-            placeholder="Nhập mô tả về danh mục"
-            rows={4}
-            showCount
-            maxLength={500}
-          />
-        </Form.Item>
-
-        <Form.Item
-          name="status"
-          label="Trạng thái"
-          valuePropName="checked"
-        >
-          <Switch
-            checkedChildren="Hoạt động"
-            unCheckedChildren="Không hoạt động"
-          />
         </Form.Item>
       </Form>
     </Modal>
