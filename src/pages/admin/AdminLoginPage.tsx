@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Form, Input, Button, Typography, Divider, message } from "antd";
 import { UserOutlined, LockOutlined, SafetyOutlined } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
-import logo from "../../assets/img/streamline_health-care-2-solid.png";
+import { GiHealthNormal } from "react-icons/gi";
 import { loginUser } from "../../service/api/authApi";
 
 const { Title, Text } = Typography;
@@ -69,9 +69,10 @@ const AdminLoginPage: React.FC = () => {
       <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
         <div className="text-center mb-8">
           <div className="flex justify-center items-center mb-4">
-            <img src={logo} alt="Logo" className="w-10 h-10 mr-2" />
+            <GiHealthNormal className="text-3xl text-teal-600 mr-2" />
             <Title level={2} className="m-0 text-blue-500">GenHealth</Title>
           </div>
+          <div className="text-xs text-teal-600 -mt-2 mb-4">Health Care Center</div>
           <div className="flex items-center justify-center mb-2">
             <SafetyOutlined className="text-lg text-blue-500 mr-2" />
             <Title level={4} className="m-0">Đăng nhập Quản trị</Title>
