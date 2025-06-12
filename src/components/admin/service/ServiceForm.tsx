@@ -68,12 +68,32 @@ const ServiceForm: React.FC<ServiceFormProps> = ({
 
   useEffect(() => {
     if (visible && initialValues) {
-      // Tìm service_type_id từ service_type name
-      const selectedServiceType = serviceTypes.find(type => type.name === initialValues.service_type);
+      // Xác định service_type_id để set cho dropdown
+      let selectedServiceTypeId = '';
+      
+      // Trường hợp 1: service_type_id là object (data mới)
+      if (initialValues.service_type_id && typeof initialValues.service_type_id === 'object') {
+        const serviceTypeObj = initialValues.service_type_id as {
+          _id: string;
+          name: string;
+          description: string;
+          display_name: string;
+        };
+        selectedServiceTypeId = serviceTypeObj._id;
+      }
+      // Trường hợp 2: service_type_id là string
+      else if (typeof initialValues.service_type_id === 'string') {
+        selectedServiceTypeId = initialValues.service_type_id;
+      }
+      // Trường hợp 3: chỉ có service_type (data cũ) - tìm _id từ name
+      else if (initialValues.service_type) {
+        const selectedServiceType = serviceTypes.find(type => type.name === initialValues.service_type);
+        selectedServiceTypeId = selectedServiceType?._id || '';
+      }
       
       form.setFieldsValue({
         ...initialValues,
-        service_type_id: selectedServiceType?._id || '',
+        service_type_id: selectedServiceTypeId,
         parameters: initialValues.test_details.parameters.join('\n'),
         preparation: initialValues.test_details.preparation,
         result_time: initialValues.test_details.result_time,

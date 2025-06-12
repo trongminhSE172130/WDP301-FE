@@ -15,7 +15,12 @@ export interface Service {
   image_url?: string;
   rating?: number;
   service_type: string;
-  service_type_id?: string;
+  service_type_id?: string | {
+    _id: string;
+    name: string;
+    description: string;
+    display_name: string;
+  };
   __v?: number;
   created_at: string;
   updated_at: string;

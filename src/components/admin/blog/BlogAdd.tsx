@@ -158,7 +158,7 @@ const BlogAdd: React.FC<BlogAddProps> = ({
         // Lưu URL vào state - sử dụng url từ response
         setThumbnailUrl(response.data.url);
         message.success('Tải ảnh thành công');
-      } else {
+    } else {
         message.error('Tải ảnh thất bại - không có URL');
       }
     } catch {
@@ -191,7 +191,7 @@ const BlogAdd: React.FC<BlogAddProps> = ({
       
       // Validate các field bắt buộc
       const values = await form.validateFields();
-      
+
       if (!blogContent.trim()) {
         message.error('Vui lòng nhập nội dung blog');
         return;
@@ -203,11 +203,11 @@ const BlogAdd: React.FC<BlogAddProps> = ({
       }
 
       const blogData = {
-        title: values.title,
+          title: values.title,
         excerpt: values.excerpt,
-        content: blogContent,
-        author: values.author,
-        category_id: values.category_id,
+          content: blogContent,
+          author: values.author,
+          category_id: values.category_id,
         thumbnail_url: thumbnailUrl, // Sử dụng URL từ state
         status: 'published' // Thêm status field bắt buộc
       };
@@ -306,9 +306,9 @@ const BlogAdd: React.FC<BlogAddProps> = ({
           ]}
         >
           <TextArea 
-            rows={3} 
+            rows={3}
             placeholder="Nhập mô tả ngắn về blog"
-            showCount
+            showCount 
             maxLength={500}
           />
         </Form.Item>
@@ -331,7 +331,7 @@ const BlogAdd: React.FC<BlogAddProps> = ({
           label="Danh mục"
           rules={[{ required: true, message: 'Vui lòng chọn danh mục!' }]}
         >
-          <Select 
+          <Select
             placeholder="Chọn danh mục blog"
             loading={loadingCategories}
           >
@@ -348,7 +348,7 @@ const BlogAdd: React.FC<BlogAddProps> = ({
           label="Nội dung"
           required
         >
-          <QuillEditor onChange={handleContentChange} />
+            <QuillEditor onChange={handleContentChange} />
         </Form.Item>
       </Form>
     </Modal>

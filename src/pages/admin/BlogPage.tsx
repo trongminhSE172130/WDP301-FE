@@ -88,23 +88,23 @@ const BlogPage = () => {
       }
       
       const mappedData = {
-        id: item._id,
-        title: item.title,
-        excerpt: item.excerpt,
-        content: item.content,
-        author: item.author,
+      id: item._id,
+      title: item.title,
+      excerpt: item.excerpt,
+      content: item.content,
+      author: item.author,
         thumbnail_url: fixedThumbnailUrl,
         image: fixedThumbnailUrl,
-        blogCategoryId: item.category_id._id,
-        categoryName: item.category_id.name,
-        userId: item.admin_user_id._id,
-        fullName: item.admin_user_id.full_name,
-        email: item.admin_user_id.email,
-        status: item.status,
-        view_count: item.view_count,
-        like_count: item.like_count,
-        createdAt: item.created_at,
-        updatedAt: item.updated_at
+      blogCategoryId: item.category_id._id,
+      categoryName: item.category_id.name,
+      userId: item.admin_user_id._id,
+      fullName: item.admin_user_id.full_name,
+      email: item.admin_user_id.email,
+      status: item.status,
+      view_count: item.view_count,
+      like_count: item.like_count,
+      createdAt: item.created_at,
+      updatedAt: item.updated_at
       };
       
       return mappedData;
@@ -384,15 +384,15 @@ const BlogPage = () => {
               }
 
               return (
-                <Image
+            <Image
                   src={imageUrl}
                   alt={currentData?.title || ''}
-                  style={{ width: '100%', height: 300, objectFit: 'contain', marginBottom: 16 }}
+              style={{ width: '100%', height: 300, objectFit: 'contain', marginBottom: 16 }}
                   onError={() => {
                     // Image load error
                   }}
                   fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
-                />
+            />
               );
             })()}
               <h2 style={{ fontSize: 24, fontWeight: 'bold' }}>{(viewBlogData || currentBlog)?.title}</h2>

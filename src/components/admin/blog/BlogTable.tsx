@@ -100,7 +100,7 @@ const BlogTable: React.FC<BlogTableProps> = ({
               borderRadius: '4px',
               border: '1px solid #d9d9d9'
             }}
-          />
+        />
         );
       },
       width: 80,

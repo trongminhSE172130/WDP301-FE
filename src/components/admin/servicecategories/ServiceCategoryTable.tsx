@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, Button, Input, Space } from 'antd';
+import { Table, Button, Input, Space, Tag } from 'antd';
 import { 
   EditOutlined, DeleteOutlined, SearchOutlined, 
   EyeOutlined
@@ -56,13 +56,9 @@ const ServiceCategoryTable: React.FC<ServiceCategoryTableProps> = ({
       key: 'is_active',
       width: 120,
       render: (is_active: boolean) => (
-        <span className={`px-2 py-1 rounded text-xs ${
-          is_active 
-            ? 'bg-green-100 text-green-800' 
-            : 'bg-red-100 text-red-800'
-        }`}>
+        <Tag color={is_active ? 'green' : 'red'}>
           {is_active ? 'Hoạt động' : 'Không hoạt động'}
-        </span>
+        </Tag>
       ),
     },
     {

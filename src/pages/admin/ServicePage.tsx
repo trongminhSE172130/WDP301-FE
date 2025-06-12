@@ -43,7 +43,7 @@ const ServicePage: React.FC = () => {
       try {
         const userData = JSON.parse(userStr);
         setUserRole(userData.role || '');
-      } catch (error) {
+      } catch {
         // Lỗi khi phân tích dữ liệu người dùng
       }
     }
@@ -105,7 +105,21 @@ const ServicePage: React.FC = () => {
 
     // Apply service type filter
     if (value) {
-      filtered = filtered.filter(service => service.service_type === value);
+      filtered = filtered.filter(service => {
+        // Kiểm tra service_type_id trước (data mới)
+        if (service.service_type_id && typeof service.service_type_id === 'object') {
+          const serviceTypeObj = service.service_type_id as {
+            _id: string;
+            name: string;
+            description: string;
+            display_name: string;
+          };
+          return serviceTypeObj.name === value || serviceTypeObj._id === value;
+        }
+        
+        // Sau đó kiểm tra service_type (data cũ)
+        return service.service_type === value;
+      });
     }
 
     setFilteredServices(filtered);
@@ -195,36 +209,29 @@ const ServicePage: React.FC = () => {
     }
   };
 
-  const handleStatusChange = async (serviceId: string, checked: boolean) => {
-    try {
-      const service = services.find(s => s._id === serviceId);
-      if (service) {
-        const { _id: _, created_at: __, updated_at: ___, __v: ____, ...serviceData } = service;
-        const updatedData = {
-          ...serviceData,
-          is_active: checked
-        };
-
-        await updateService(serviceId, updatedData);
-        message.success(`${checked ? 'Kích hoạt' : 'Tạm dừng'} dịch vụ thành công`);
-        loadServices();
-      }
-    } catch (error) {
-      console.error('Lỗi khi cập nhật trạng thái:', error);
-      message.error('Có lỗi xảy ra khi cập nhật trạng thái');
-    }
-  };
-
   const handleFormSubmit = async (values: Omit<Service, '_id' | 'created_at' | 'updated_at' | '__v'>) => {
     setConfirmLoading(true);
     try {
+      // Đảm bảo service_type_id là string
+      let finalServiceTypeId = '';
+      if (typeof values.service_type_id === 'object' && values.service_type_id?._id) {
+        finalServiceTypeId = values.service_type_id._id;
+      } else if (typeof values.service_type_id === 'string') {
+        finalServiceTypeId = values.service_type_id;
+      }
+
+      const formattedValues = {
+        ...values,
+        service_type_id: finalServiceTypeId
+      };
+
       if (selectedService) {
         // Cập nhật dịch vụ
-        await updateService(selectedService._id, values);
+        await updateService(selectedService._id, formattedValues);
         message.success('Cập nhật dịch vụ thành công');
       } else {
         // Tạo dịch vụ mới
-        await createService(values);
+        await createService(formattedValues);
         message.success('Thêm dịch vụ mới thành công');
       }
       setModalVisible(false);
@@ -281,7 +288,6 @@ const ServicePage: React.FC = () => {
         onServiceTypeFilter={handleServiceTypeFilter}
         onStatusFilter={handleStatusFilter}
         onSortChange={handleSortChange}
-        onStatusChange={handleStatusChange}
         searchQuery={searchQuery}
         userRole={userRole}
         pagination={{
