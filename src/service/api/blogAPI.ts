@@ -175,6 +175,61 @@ export const deleteBlogCategory = async (id: string): Promise<ApiResponse<null>>
 };
 
 /**
+ * Upload thumbnail cho blog
+ * POST /upload/single
+ */
+export const uploadBlogThumbnail = async (file: File): Promise<ApiResponse<{
+  url: string;
+  fileName: string;
+  filePath: string;
+  originalName: string;
+  size: string;
+  contentType: string;
+  uploadedAt: string;
+  uploadedBy: string;
+}>> => {
+  // Thử các field names khác nhau
+  const fieldNames = ['image', 'file', 'thumbnail', 'upload'];
+  
+  for (const fieldName of fieldNames) {
+    const formData = new FormData();
+    formData.append(fieldName, file);
+
+    try {
+      const response = await apiClient.post('/upload/single', formData, {
+        headers: {
+          'Content-Type': undefined, // Để browser tự set với boundary
+        },
+      });
+      return response.data;
+    } catch (error: unknown) {
+      const apiError = error as { 
+        response?: { 
+          status?: number; 
+          statusText?: string; 
+          data?: unknown;
+          headers?: unknown;
+        };
+        request?: unknown;
+        message?: string;
+      };
+      
+      // Nếu không phải lỗi 400 (field name issue), break và throw error
+      if (apiError.response?.status && apiError.response.status !== 400) {
+        throw error;
+      }
+      
+      // Nếu là field cuối cùng, throw error
+      if (fieldName === fieldNames[fieldNames.length - 1]) {
+        throw error;
+      }
+    }
+  }
+  
+  throw new Error('Không thể upload với bất kỳ field name nào');
+};
+
+/**
  * Cập nhật trạng thái blog
  * PUT /blogs/{id}/status
  */

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, Button, Space, Popconfirm, Image, Input, Select, Tag, Switch } from 'antd';
+import { Table, Button, Space, Popconfirm, Input, Select, Tag, Switch } from 'antd';
 import { EditOutlined, DeleteOutlined, EyeOutlined, SearchOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { BlogData } from './BlogTypes';
@@ -48,15 +48,61 @@ const BlogTable: React.FC<BlogTableProps> = ({
       title: 'Ảnh',
       dataIndex: 'thumbnail_url',
       key: 'thumbnail_url',
-      render: (image: string) => (
-        <Image
-          src={image}
-          width={60}
-          height={40}
-          style={{ objectFit: 'cover' }}
-          preview={false}
-        />
-      ),
+      render: (image: string, record: BlogData) => {
+        // Sử dụng thumbnail_url từ record nếu image rỗng
+        let imageUrl = image || record.thumbnail_url || record.image || '';
+        
+        if (!imageUrl) {
+          return (
+            <div 
+              style={{ 
+                width: '80px', 
+                height: '60px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                background: '#f5f5f5',
+                border: '1px solid #d9d9d9',
+                borderRadius: '4px',
+                color: '#999'
+              }}
+            >
+              No Image
+            </div>
+          );
+        }
+
+        // Sửa URL nếu cần thiết
+        if (imageUrl.startsWith('https://blogs/')) {
+          const fixedUrl = imageUrl.replace(
+            'https://blogs/', 
+            'https://storage.googleapis.com/wdp-391-a2e92.firebasestorage.app/blogs/'
+          );
+          imageUrl = fixedUrl;
+        }
+
+        return (
+          <img 
+            src={imageUrl} 
+            alt={record.title}
+            onLoad={() => {
+              // Image loaded successfully
+            }}
+            onError={(e) => {
+              // Handle image load error
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+            }}
+            style={{ 
+              width: '80px', 
+              height: '60px', 
+              objectFit: 'cover', 
+              borderRadius: '4px',
+              border: '1px solid #d9d9d9'
+            }}
+          />
+        );
+      },
       width: 80,
     },
     {

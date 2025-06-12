@@ -1,160 +1,310 @@
-import React, { useState } from 'react';
-import { Table, Card, Tag, Button, Space, Tooltip, Modal } from 'antd';
-import { EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
-import type { Service } from './ServiceTypes';
+import React, { useState, useEffect } from 'react';
+import { Table, Button, Space, Popconfirm, Image, Input, Select, Tag, Switch, message } from 'antd';
+import { EditOutlined, DeleteOutlined, EyeOutlined, SearchOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import type { Service } from './ServiceTypes';
+import ServiceDetail from './ServiceDetail';
+import { getServiceTypes } from '../../../service/api/serviceAPI';
+import type { ServiceType } from '../../../service/api/serviceAPI';
+
+const { Search } = Input;
+const { Option } = Select;
+
+interface PaginationProps {
+  current: number;
+  pageSize: number;
+  total: number;
+  onChange: (page: number, pageSize: number) => void;
+}
 
 interface ServiceTableProps {
-  data: Service[];
-  loading?: boolean;
-  onEdit?: (id: string) => void;
+  services: Service[];
+  loading: boolean;
+  onEdit: (service: Service) => void;
+  onDelete: (id: string) => void;
+  onSearch: (value: string) => void;
+  onServiceTypeFilter?: (value: string) => void;
+  onStatusFilter?: (value: string) => void;
+  onSortChange?: (value: string) => void;
+  onStatusChange?: (id: string, checked: boolean) => void;
+  searchQuery: string;
+  pagination: PaginationProps;
+  userRole?: string; // Thêm prop để kiểm tra role
 }
 
-interface ServiceTableItem extends Service {
-  key: string;
-}
+const ServiceTable: React.FC<ServiceTableProps> = ({
+  services,
+  loading,
+  onEdit,
+  onDelete,
+  onSearch,
+  onServiceTypeFilter,
+  onStatusFilter,
+  onSortChange,
+  onStatusChange,
+  searchQuery,
+  pagination,
+  userRole
+}) => {
+  const [detailVisible, setDetailVisible] = useState(false);
+  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
+  const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
+  const [loadingServiceTypes, setLoadingServiceTypes] = useState<boolean>(false);
 
-const ServiceTable: React.FC<ServiceTableProps> = ({ data, loading = false, onEdit }) => {
-  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  // Load service types when component mounts
+  useEffect(() => {
+    const fetchServiceTypes = async () => {
+      setLoadingServiceTypes(true);
+      try {
+        const response = await getServiceTypes();
+        if (response && response.data) {
+          setServiceTypes(response.data);
+        }
+      } catch (error) {
+        console.error('Lỗi khi tải danh sách loại dịch vụ:', error);
+        message.error('Không thể tải danh sách loại dịch vụ cho filter');
+      } finally {
+        setLoadingServiceTypes(false);
+      }
+    };
+
+    fetchServiceTypes();
+  }, []);
   
-  const handleView = (id: string) => {
-    console.log('Xem dịch vụ:', id);
+  const handleView = (service: Service) => {
+    setSelectedServiceId(service._id);
+    setDetailVisible(true);
   };
 
-  const handleEdit = (id: string) => {
-    if (onEdit) {
-      onEdit(id);
-    } else {
-      console.log('Sửa dịch vụ:', id);
-    }
+  const handleDetailClose = () => {
+    setDetailVisible(false);
+    setSelectedServiceId(null);
   };
 
-  const handleDelete = (id: string) => {
-    Modal.confirm({
-      title: 'Xác nhận xóa',
-      content: 'Bạn có chắc chắn muốn xóa dịch vụ này không?',
-      okText: 'Xóa',
-      cancelText: 'Hủy',
-      onOk: () => {
-        console.log('Xóa dịch vụ:', id);
-      },
-    });
-  };
-
-  // Format số tiền VND
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
-  };
-
-  // Format thời gian
-  const formatDuration = (minutes: number) => {
-    if (minutes === 0) return 'Không xác định';
-    if (minutes < 60) return `${minutes} phút`;
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-    return remainingMinutes > 0 ? `${hours} giờ ${remainingMinutes} phút` : `${hours} giờ`;
-  };
-
-  const columns: ColumnsType<ServiceTableItem> = [
+  const columns: ColumnsType<Service> = [
     {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
+      title: 'Hình ảnh',
+      dataIndex: 'image_url',
+      key: 'image_url',
+      render: (imageUrl?: string) => (
+        imageUrl ? (
+          <Image
+            src={imageUrl}
+            width={60}
+            height={40}
+            style={{ objectFit: 'cover' }}
+            preview={false}
+          />
+        ) : (
+          <div style={{ 
+            width: 60, 
+            height: 40, 
+            backgroundColor: '#f5f5f5', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            borderRadius: '4px',
+            color: '#999',
+            fontSize: '12px'
+          }}>
+            Không có
+          </div>
+        )
+      ),
       width: 80,
     },
     {
       title: 'Tên dịch vụ',
-      dataIndex: 'name',
-      key: 'name',
-      sorter: (a, b) => a.name.localeCompare(b.name),
+      dataIndex: 'title',
+      key: 'title',
+      sorter: (a: Service, b: Service) => a.title.localeCompare(b.title),
+      render: (title: string) => <span style={{ fontWeight: 500, color: '#1890ff' }}>{title}</span>,
     },
     {
-      title: 'Danh mục',
-      dataIndex: 'category',
-      key: 'category',
-      filters: Array.from(new Set(data.map(service => service.category))).map(category => ({
-        text: category,
-        value: category,
-      })),
-      onFilter: (value, record) => record.category === value,
-    },
-    {
-      title: 'Giá',
-      dataIndex: 'price',
-      key: 'price',
-      render: (price: number) => formatCurrency(price),
-      sorter: (a, b) => a.price - b.price,
+      title: 'Loại dịch vụ',
+      dataIndex: 'service_type',
+      key: 'service_type',
+      render: (serviceType: string) => {
+        // Tìm service type tương ứng để hiển thị display_name
+        const type = serviceTypes.find(t => t.name === serviceType);
+        return type?.display_name || serviceType;
+      },
     },
     {
       title: 'Thời gian',
       dataIndex: 'duration',
       key: 'duration',
-      render: (duration: number) => formatDuration(duration),
+    },
+    {
+      title: 'Mẫu xét nghiệm',
+      dataIndex: 'sample_type',
+      key: 'sample_type',
     },
     {
       title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
-      render: (status: string) => (
-        <Tag color={status === 'active' ? 'green' : 'red'}>
-          {status === 'active' ? 'Đang hoạt động' : 'Không hoạt động'}
+      dataIndex: 'is_active',
+      key: 'is_active',
+      render: (isActive: boolean, record: Service) => (
+        onStatusChange ? (
+          <Switch
+            checkedChildren="Hoạt động"
+            unCheckedChildren="Tạm dừng"
+            checked={isActive}
+            onChange={(checked) => onStatusChange(record._id, checked)}
+          />
+        ) : (
+          <Tag color={isActive ? 'green' : 'red'}>
+            {isActive ? 'Đang hoạt động' : 'Không hoạt động'}
         </Tag>
-      ),
-      filters: [
-        { text: 'Đang hoạt động', value: 'active' },
-        { text: 'Không hoạt động', value: 'inactive' },
-      ],
-      onFilter: (value, record) => record.status === value,
+        )
+      )
     },
     {
-      title: 'Thao tác',
-      key: 'action',
-      render: (_, record) => (
-        <Space size="middle">
-          <Tooltip title="Xem">
+      title: 'Đánh giá',
+      dataIndex: 'rating',
+      key: 'rating',
+      render: (rating?: number) => rating ? `${rating}/5` : 'Chưa có',
+      sorter: (a: Service, b: Service) => (a.rating || 0) - (b.rating || 0),
+    },
+    {
+      title: 'Ngày tạo',
+      dataIndex: 'created_at',
+      key: 'created_at',
+      render: (date: string) => new Date(date).toLocaleDateString('vi-VN'),
+      sorter: (a: Service, b: Service) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+    },
+    {
+      title: 'Hành động',
+      key: 'actions',
+      render: (_: unknown, record: Service) => (
+        <Space>
             <Button
-              type="text"
+            type="default"
               icon={<EyeOutlined />}
-              onClick={() => handleView(record.id)}
+            onClick={() => handleView(record)}
             />
-          </Tooltip>
-          <Tooltip title="Sửa">
             <Button
-              type="text"
+            type="primary"
               icon={<EditOutlined />}
-              onClick={() => handleEdit(record.id)}
+            onClick={() => onEdit(record)}
             />
-          </Tooltip>
-          <Tooltip title="Xóa">
+          {/* Chỉ hiển thị nút xóa cho admin */}
+          {userRole?.toLowerCase() === 'admin' && (
+            <Popconfirm
+              title="Bạn có chắc chắn muốn xóa dịch vụ này?"
+              description="Chỉ admin mới có quyền xóa dịch vụ."
+              onConfirm={() => onDelete(record._id)}
+              okText="Có"
+              cancelText="Không"
+            >
             <Button
-              type="text"
               danger
               icon={<DeleteOutlined />}
-              onClick={() => handleDelete(record.id)}
             />
-          </Tooltip>
+            </Popconfirm>
+          )}
         </Space>
       ),
+      width: 150,
+      align: 'center',
     },
   ];
 
   return (
-    <Card title="Quản lý dịch vụ">
+    <>
+      <div className="p-6">
+        <div className="mb-4 flex flex-wrap gap-4">
+          <Search
+            placeholder="Tìm kiếm dịch vụ..."
+            allowClear
+            enterButton={<SearchOutlined />}
+            size="large"
+            onSearch={onSearch}
+            defaultValue={searchQuery}
+            loading={loading}
+            className="max-w-md"
+          />
+          
+          {onServiceTypeFilter && (
+            <Select
+              placeholder="Lọc theo loại dịch vụ"
+              allowClear
+              style={{ width: 250 }}
+              onChange={onServiceTypeFilter}
+              loading={loadingServiceTypes}
+              showSearch
+              optionFilterProp="children"
+              filterOption={(input, option) =>
+                (option?.children as unknown as string)?.toLowerCase().includes(input.toLowerCase())
+              }
+            >
+              <Option value="">Tất cả loại dịch vụ</Option>
+              {serviceTypes
+                .filter(type => type.is_active) // Chỉ hiển thị loại dịch vụ đang hoạt động
+                .map(type => (
+                  <Option key={type._id} value={type.name}>
+                    {type.display_name || type.name}
+                  </Option>
+                ))
+              }
+            </Select>
+          )}
+          
+          {onStatusFilter && (
+            <Select
+              placeholder="Trạng thái"
+              allowClear
+              style={{ width: 160 }}
+              onChange={onStatusFilter}
+            >
+              <Option value="">Tất cả</Option>
+              <Option value="true">Đang hoạt động</Option>
+              <Option value="false">Không hoạt động</Option>
+            </Select>
+          )}
+          
+          {onSortChange && (
+            <Select
+              placeholder="Sắp xếp"
+              style={{ width: 180 }}
+              onChange={onSortChange}
+              defaultValue="created_at-desc"
+            >
+              <Option value="created_at-desc">Mới nhất</Option>
+              <Option value="created_at-asc">Cũ nhất</Option>
+              <Option value="rating-desc">Đánh giá (cao-thấp)</Option>
+              <Option value="rating-asc">Đánh giá (thấp-cao)</Option>
+              <Option value="title-asc">Tên A-Z</Option>
+              <Option value="title-desc">Tên Z-A</Option>
+            </Select>
+          )}
+        </div>
+        
       <Table
-        rowSelection={{
-          selectedRowKeys,
-          onChange: setSelectedRowKeys,
-        }}
         columns={columns}
-        dataSource={data.map(service => ({ ...service, key: service.id }))}
+          dataSource={services}
+          rowKey="_id"
         loading={loading}
+          className="bg-white rounded-lg shadow"
         pagination={{
-          pageSize: 10,
+            current: pagination.current,
+            pageSize: pagination.pageSize,
+            total: pagination.total,
+            onChange: pagination.onChange,
           showSizeChanger: true,
-          showTotal: (total) => `Tổng số: ${total} dịch vụ`,
+            pageSizeOptions: ['5', '10', '20', '50'],
+            showTotal: (total: number) => `Tổng ${total} dịch vụ`
         }}
+          scroll={{ x: 1200 }}
       />
-    </Card>
+      </div>
+
+      <ServiceDetail
+        visible={detailVisible}
+        onClose={handleDetailClose}
+        serviceId={selectedServiceId}
+      />
+    </>
   );
 };
 

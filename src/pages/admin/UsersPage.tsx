@@ -1,159 +1,102 @@
-import React, { useState } from 'react';
-import { Typography, message, Modal } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Typography, message } from 'antd';
 import UserTable from '../../components/admin/user/UserTable';
 import type { User } from '../../components/admin/user/UserTable';
 import UserSearch from '../../components/admin/user/UserSearch';
-import UserForm from '../../components/admin/user/UserForm';
 import type { SearchFormValues } from '../../components/admin/user/UserSearch';
-import type { FormValues } from '../../components/admin/user/UserForm';
+import { getAllUsers, deleteUser, type GetUsersParams, type Pagination } from '../../service/api/userAPI';
   
 const { Title } = Typography;
 
-// Dữ liệu mẫu
-const dummyUsers: User[] = [
-  {
-    id: 1,
-    name: 'Nguyễn Văn A',
-    email: 'nguyenvana@example.com',
-    role: 'admin',
-    status: 'active',
-    createdAt: '01/05/2023',
-  },
-  {
-    id: 2,
-    name: 'Trần Thị B',
-    email: 'tranthib@example.com',
-    role: 'staff',
-    status: 'active',
-    createdAt: '15/05/2023',
-  },
-  {
-    id: 3,
-    name: 'Lê Văn C',
-    email: 'levanc@example.com',
-    role: 'user',
-    status: 'inactive',
-    createdAt: '20/05/2023',
-  },
-  {
-    id: 4,
-    name: 'Phạm Thị D',
-    email: 'phamthid@example.com',
-    role: 'staff',
-    status: 'active',
-    createdAt: '25/05/2023',
-  },
-  {
-    id: 5,
-    name: 'Hoàng Văn E',
-    email: 'hoangvane@example.com',
-    role: 'user',
-    status: 'active',
-    createdAt: '30/05/2023',
-  },
-];
-
 // Danh sách vai trò
-const roles = ['Quản trị viên', 'Nhân viên', 'Người dùng'];
+const roles = ['user', 'consultant', 'admin'];
 
-// Danh sách trạng thái
-const statuses = ['Hoạt động', 'Không hoạt động'];
+// Danh sách trạng thái (có thể dùng cho filter tương lai)
+const statuses = ['active', 'inactive'];
 
 const UsersPage: React.FC = () => {
-  const [users, setUsers] = useState<User[]>(dummyUsers);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
-  const [showForm, setShowForm] = useState(false);
-  const [currentUser, setCurrentUser] = useState<User | undefined>(undefined);
+  const [pagination, setPagination] = useState<Pagination>({
+    currentPage: 1,
+    totalPages: 1,
+    totalUsers: 0,
+    hasNext: false,
+    hasPrev: false
+  });
+  const [currentPageSize, setCurrentPageSize] = useState(10);
+
+  // Lấy danh sách users từ API
+  const fetchUsers = async (params?: GetUsersParams) => {
+    try {
+      setLoading(true);
+      const response = await getAllUsers(params);
+      
+      if (response.success) {
+        setUsers(response.data);
+        setPagination(response.pagination);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      message.error('Có lỗi xảy ra khi tải danh sách người dùng');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load users khi component mount
+  useEffect(() => {
+    fetchUsers({ page: 1, limit: currentPageSize });
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Xử lý phân trang
+  const handlePageChange = (page: number, pageSize?: number) => {
+    console.log('handlePageChange called:', { page, pageSize, currentPageSize });
+    
+    if (pageSize && pageSize !== currentPageSize) {
+      // Khi thay đổi page size, reset về trang 1
+      setCurrentPageSize(pageSize);
+      fetchUsers({ page: 1, limit: pageSize });
+    } else {
+      // Chỉ thay đổi page
+      fetchUsers({ page, limit: currentPageSize });
+    }
+  };
 
   // Xử lý tìm kiếm người dùng
   const handleSearch = (values: SearchFormValues) => {
-    setLoading(true);
-    
-    // Giả lập gọi API tìm kiếm
-    setTimeout(() => {
-      const { keyword, role, status } = values;
-      let filteredUsers = [...dummyUsers];
-      
-      if (keyword) {
-        filteredUsers = filteredUsers.filter(
-          user => user.name.toLowerCase().includes(keyword.toLowerCase()) || 
-                  user.email.toLowerCase().includes(keyword.toLowerCase())
-        );
-      }
-      
-      if (role) {
-        filteredUsers = filteredUsers.filter(user => user.role === role.toLowerCase());
-      }
-      
-      if (status) {
-        filteredUsers = filteredUsers.filter(user => user.status === status.toLowerCase());
-      }
-      
-      setUsers(filteredUsers);
-      setLoading(false);
-    }, 500);
+    const params: GetUsersParams = {
+      page: 1,
+      limit: currentPageSize,
+      search: values.keyword,
+      role: values.role,
+      status: values.status
+    };
+    fetchUsers(params);
   };
 
   // Xử lý reset tìm kiếm
   const handleReset = () => {
-    setUsers(dummyUsers);
-  };
-
-  // Xử lý thêm người dùng
-  const handleAdd = () => {
-    setCurrentUser(undefined);
-    setShowForm(true);
-  };
-
-  // Xử lý chỉnh sửa người dùng
-  const handleEdit = (user: User) => {
-    setCurrentUser(user);
-    setShowForm(true);
+    fetchUsers({ page: 1, limit: currentPageSize });
   };
 
   // Xử lý xóa người dùng
-  const handleDelete = (userId: number) => {
-    setLoading(true);
-    
-    // Giả lập gọi API xóa
-    setTimeout(() => {
-      setUsers(users.filter(user => user.id !== userId));
-      message.success('Xóa người dùng thành công!');
-      setLoading(false);
-    }, 500);
-  };
-
-  // Xử lý submit form
-  const handleFormSubmit = (values: FormValues) => {
-    setLoading(true);
-    
-    // Giả lập gọi API thêm/cập nhật
-    setTimeout(() => {
-      if (values.id) {
-        // Cập nhật người dùng
-        setUsers(users.map(user => user.id === values.id ? { ...user, ...values } : user));
-        message.success('Cập nhật người dùng thành công!');
-      } else {
-        // Thêm người dùng mới
-        const newUser: User = {
-          id: Math.max(...users.map(user => user.id)) + 1,
-          name: values.name,
-          email: values.email,
-          role: values.role,
-          status: values.status,
-          createdAt: new Date().toLocaleDateString('vi-VN'),
-        };
-        setUsers([...users, newUser]);
-        message.success('Thêm người dùng thành công!');
+  const handleDelete = async (userId: string) => {
+    try {
+      setLoading(true);
+      const response = await deleteUser(userId);
+      
+      if (response.success) {
+        message.success('Xóa người dùng thành công!');
+        // Refresh danh sách
+        fetchUsers({ page: pagination.currentPage, limit: currentPageSize });
       }
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      message.error('Có lỗi xảy ra khi xóa người dùng');
+    } finally {
       setLoading(false);
-      setShowForm(false);
-    }, 800);
-  };
-
-  // Xử lý hủy form
-  const handleCancel = () => {
-    setShowForm(false);
+    }
   };
 
   return (
@@ -163,7 +106,6 @@ const UsersPage: React.FC = () => {
       {/* Search Form */}
       <UserSearch 
         onSearch={handleSearch}
-        onAdd={handleAdd}
         onReset={handleReset}
         roles={roles}
         statuses={statuses}
@@ -173,44 +115,12 @@ const UsersPage: React.FC = () => {
       {/* User Table */}
       <UserTable 
         data={users} 
-        onEdit={handleEdit} 
         onDelete={handleDelete}
         loading={loading}
+        pagination={pagination}
+        onPageChange={handlePageChange}
+        currentPageSize={currentPageSize}
       />
-      
-      {/* User Form Modal */}
-      <Modal
-        open={showForm}
-        title={currentUser ? 'Chỉnh sửa người dùng' : 'Thêm người dùng mới'}
-        onCancel={handleCancel}
-        footer={null}
-        width={600}
-        className="user-form-modal"
-        maskStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.45)', backdropFilter: 'blur(4px)' }}
-        bodyStyle={{ padding: '20px' }}
-      >
-        <UserForm
-          user={currentUser}
-          onFinish={handleFormSubmit}
-          loading={loading}
-          title=""
-        />
-        <div className="mt-4 flex justify-end">
-          <button 
-            onClick={handleCancel} 
-            className="px-4 py-2 mr-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-          >
-            Hủy
-          </button>
-          <button 
-            form="userForm" // Kết nối với form ID trong UserForm
-            type="submit"
-            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors"
-          >
-            {currentUser ? 'Cập nhật' : 'Thêm mới'}
-          </button>
-        </div>
-      </Modal>
     </div>
   );
 };

@@ -35,6 +35,11 @@ import SchedulePage from "./pages/admin/SchedulePage";
 import DocumentPage from "./pages/admin/DocumentPage";
 import BlogPage from "./pages/admin/BlogPage";
 import BlogCategoriesPage from "./pages/admin/BlogCategoriesPage";
+import ServiceCategoriesPage from "./pages/admin/ServiceCategoriesPage";
+import ConsultantManagement from "./pages/admin/ConsultantManagement";
+import ConsultantDetail from "./pages/admin/ConsultantDetail";
+import DynamicFormPage from "./pages/admin/DynamicFormPage";
+import PushNotificationPage from "./pages/admin/PushNotifiactionPage";
 
 // Auth protection
 const ProtectedRoute = ({ allowedRoles = ["admin", "consultant"] }) => {
@@ -179,8 +184,15 @@ const router = createBrowserRouter([
           { path: "services", element: <ServiceManagePage /> },
           { path: "schedule", element: <SchedulePage /> },
           { path: "documents", element: <DocumentPage /> },
-          { path: "blog", element: <BlogPage /> },
+          { path: "consultants", element: <ConsultantManagement /> },
+          { path: "consultants/:id", element: <ConsultantDetail /> },
+          { path: "consultants/:id/edit", element: <UnderDevelopmentPage /> },
+          { path: "consultants/:id/schedule", element: <UnderDevelopmentPage /> },
+          { path: "blogs", element: <BlogPage /> },
           { path: "blog-categories", element: <BlogCategoriesPage /> },
+          { path: "service-categories", element: <ServiceCategoriesPage /> },
+          { path: "dynamic-forms", element: <DynamicFormPage /> },
+          { path: "push-notifications", element: <PushNotificationPage /> },
           { path: "*", element: <UnderDevelopmentPage /> },
         ],
       },

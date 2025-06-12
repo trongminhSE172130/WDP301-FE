@@ -27,9 +27,13 @@ apiClient.interceptors.response.use(
   response => response,
   error => {
     if (error.response && error.response.status === 401) {
-      // Xử lý khi token hết hạn hoặc không hợp lệ
-      localStorage.removeItem('token');
-      window.location.href = '/login'; // Hoặc dùng navigate nếu ở React Router
+      // Log để debug
+      console.error('401 Unauthorized:', error.response);
+      console.log('Current token:', localStorage.getItem('token'));
+      
+      // Tạm thời comment out auto redirect để debug
+      // localStorage.removeItem('token');
+      // window.location.href = '/login';
     }
     return Promise.reject(error);
   }

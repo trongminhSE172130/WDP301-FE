@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Modal, Form, Input, message, Select } from 'antd';
-import { LinkOutlined } from '@ant-design/icons';
+import { Modal, Form, Input, message, Select, Upload } from 'antd';
+import { LoadingOutlined, PlusOutlined } from '@ant-design/icons';
 import 'quill/dist/quill.snow.css';
-import { getBlogCategories, addBlog } from '../../../service/api/blogAPI';
+import { getBlogCategories, addBlog, uploadBlogThumbnail } from '../../../service/api/blogAPI';
 import type { BlogCategory } from '../../../service/api/blogAPI';
 
 const { Option } = Select;
@@ -70,8 +70,8 @@ const QuillEditor: React.FC<{ onChange: (content: string) => void }> = ({ onChan
           }
         });
         }
-      } catch (error) {
-        console.error("Failed to load Quill editor:", error);
+      } catch {
+        // Failed to load Quill editor
       }
     };
 
@@ -87,7 +87,7 @@ const QuillEditor: React.FC<{ onChange: (content: string) => void }> = ({ onChan
   // Demo effect để sử dụng quillInstance (tránh lỗi linter)
   useEffect(() => {
     if (quillInstance) {
-      // console.log('Quill instance is ready');
+      // Quill instance is ready
     }
   }, [quillInstance]);
 
@@ -106,9 +106,10 @@ const BlogAdd: React.FC<BlogAddProps> = ({
   const [form] = Form.useForm();
   const [blogContent, setBlogContent] = useState<string>('');
   const [uploading, setUploading] = useState<boolean>(false);
-  const [imagePreview, setImagePreview] = useState<string>('');
+  const [thumbnailUrl, setThumbnailUrl] = useState<string>('');
   const [categories, setCategories] = useState<BlogCategory[]>([]);
   const [loadingCategories, setLoadingCategories] = useState<boolean>(false);
+  const [imageUploading, setImageUploading] = useState<boolean>(false);
 
   // Fetch categories on mount
   useEffect(() => {
@@ -127,8 +128,7 @@ const BlogAdd: React.FC<BlogAddProps> = ({
       } else {
         message.error('Không thể tải danh mục blog');
       }
-    } catch (error) {
-      console.error('Lỗi khi tải danh mục blog:', error);
+    } catch {
       message.error('Không thể tải danh mục blog');
     } finally {
       setLoadingCategories(false);
@@ -140,7 +140,7 @@ const BlogAdd: React.FC<BlogAddProps> = ({
     if (!isOpen) {
       form.resetFields();
       setBlogContent('');
-      setImagePreview('');
+      setThumbnailUrl('');
     }
   }, [isOpen, form]);
 
@@ -148,76 +148,82 @@ const BlogAdd: React.FC<BlogAddProps> = ({
     setBlogContent(content);
   };
 
-  const handleImageUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const url = e.target.value.trim();
+  const handleImageUpload = async (file: File) => {
+    setImageUploading(true);
     
-    // Cập nhật giá trị vào form
-    form.setFieldValue('thumbnail_url', url);
-    
-    // Chỉ đặt preview nếu URL có vẻ hợp lệ
-    if (url.startsWith('http://') || url.startsWith('https://')) {
-      setImagePreview(url);
-    } else if (url) {
-      // Nếu người dùng không nhập http/https, thử thêm vào
-      const httpsUrl = `https://${url}`;
-      setImagePreview(httpsUrl);
-    } else {
-      setImagePreview('');
+    try {
+      const response = await uploadBlogThumbnail(file);
+      
+      if (response.success && response.data && response.data.url) {
+        // Lưu URL vào state - sử dụng url từ response
+        setThumbnailUrl(response.data.url);
+        message.success('Tải ảnh thành công');
+      } else {
+        message.error('Tải ảnh thất bại - không có URL');
+      }
+    } catch {
+      message.error('Tải ảnh thất bại');
+    } finally {
+      setImageUploading(false);
     }
+  };
+
+  const beforeUpload = (file: File) => {
+    const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png' || file.type === 'image/webp';
+    if (!isJpgOrPng) {
+      message.error('Chỉ chấp nhận file JPG/PNG/WEBP!');
+      return false;
+    }
+    const isLt2M = file.size / 1024 / 1024 < 2;
+    if (!isLt2M) {
+      message.error('Kích thước ảnh phải nhỏ hơn 2MB!');
+      return false;
+    }
+    
+    // Upload file ngay khi được chọn
+    handleImageUpload(file);
+    return false; // Prevent default upload behavior
   };
 
   const handleAdd = async () => {
     try {
+      setUploading(true);
+      
+      // Validate các field bắt buộc
       const values = await form.validateFields();
-
-      // Check if quill editor has content
-      if (!blogContent || blogContent === '<p><br></p>') {
-        message.error('Nội dung bài viết là bắt buộc');
+      
+      if (!blogContent.trim()) {
+        message.error('Vui lòng nhập nội dung blog');
         return;
       }
 
-      setUploading(true);
+      if (!thumbnailUrl) {
+        message.error('Vui lòng tải ảnh thumbnail');
+        return;
+      }
 
-      let thumbnailUrl = values.thumbnail_url;
+      const blogData = {
+        title: values.title,
+        excerpt: values.excerpt,
+        content: blogContent,
+        author: values.author,
+        category_id: values.category_id,
+        thumbnail_url: thumbnailUrl, // Sử dụng URL từ state
+        status: 'published' // Thêm status field bắt buộc
+      };
+
+      const response = await addBlog(blogData);
       
-      // Chuẩn hóa URL (thêm https:// nếu chưa có)
-      if (thumbnailUrl && !thumbnailUrl.startsWith('http://') && !thumbnailUrl.startsWith('https://')) {
-        thumbnailUrl = `https://${thumbnailUrl}`;
-      }
-
-      try {
-        // Gọi API thêm blog
-        console.log('Đang gửi dữ liệu blog:', {
-          title: values.title,
-          excerpt: values.excerpt || '',
-          content: blogContent,
-          author: values.author,
-          category_id: values.category_id,
-          thumbnail_url: thumbnailUrl,
-          status: values.status || 'draft'
-        });
-        
-        await addBlog({
-          title: values.title,
-          excerpt: values.excerpt || '',
-          content: blogContent,
-          author: values.author,
-          category_id: values.category_id,
-          thumbnail_url: thumbnailUrl,
-          status: values.status || 'draft'
-        });
-        
-        message.success('Thêm bài viết thành công');
-        setUploading(false);
-        handleCancel();
+      if (response.success) {
+        message.success('Thêm blog thành công!');
         onSuccess();
-      } catch (apiError) {
-        console.error("API error:", apiError);
-        message.error('Thêm bài viết thất bại');
-        setUploading(false);
+        handleCancel();
+      } else {
+        message.error('Có lỗi xảy ra khi thêm blog');
       }
-    } catch (info) {
-      console.log('Validate Failed:', info);
+    } catch {
+      message.error('Có lỗi xảy ra khi thêm blog');
+    } finally {
       setUploading(false);
     }
   };
@@ -225,60 +231,111 @@ const BlogAdd: React.FC<BlogAddProps> = ({
   const handleCancel = () => {
     form.resetFields();
     setBlogContent('');
-    setImagePreview('');
-    setUploading(false);
+    setThumbnailUrl('');
     onClose();
   };
 
+  const uploadButton = (
+    <div>
+      {imageUploading ? <LoadingOutlined /> : <PlusOutlined />}
+      <div style={{ marginTop: 8 }}>Tải ảnh</div>
+    </div>
+  );
+
   return (
     <Modal
-      title="Thêm bài viết mới"
+      title="Thêm Blog Mới"
       open={isOpen}
-      onCancel={handleCancel}
-      okText="Thêm"
-      cancelText="Hủy"
       onOk={handleAdd}
-      maskClosable={false}
+      onCancel={handleCancel}
       width={800}
       confirmLoading={uploading}
+      okText="Thêm Blog"
+      cancelText="Hủy"
+      destroyOnClose
     >
       <Form
         form={form}
         layout="vertical"
-        initialValues={{ status: 'draft' }}
+        name="add_blog_form"
       >
+        {/* Thumbnail Upload */}
         <Form.Item
-          name="title"
-          label="Tiêu đề bài viết"
-          rules={[{ required: true, message: 'Vui lòng nhập tiêu đề bài viết' }]}
+          label="Ảnh Thumbnail"
+          required
         >
-          <Input placeholder="Nhập tiêu đề bài viết" />
+          <Upload
+            name="thumbnail"
+            listType="picture-card"
+            className="avatar-uploader"
+            showUploadList={false}
+            beforeUpload={beforeUpload}
+            accept="image/*"
+          >
+            {thumbnailUrl ? (
+              <img 
+                src={thumbnailUrl} 
+                alt="thumbnail" 
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+              />
+            ) : (
+              uploadButton
+            )}
+          </Upload>
         </Form.Item>
 
+        {/* Title */}
+        <Form.Item
+          name="title"
+          label="Tiêu đề"
+          rules={[
+            { required: true, message: 'Vui lòng nhập tiêu đề blog!' },
+            { max: 255, message: 'Tiêu đề không được vượt quá 255 ký tự!' }
+          ]}
+        >
+          <Input placeholder="Nhập tiêu đề blog" />
+        </Form.Item>
+
+        {/* Excerpt */}
         <Form.Item
           name="excerpt"
-          label="Tóm tắt"
-          rules={[{ required: true, message: 'Vui lòng nhập tóm tắt bài viết' }]}
+          label="Mô tả ngắn"
+          rules={[
+            { required: true, message: 'Vui lòng nhập mô tả ngắn!' },
+            { max: 500, message: 'Mô tả ngắn không được vượt quá 500 ký tự!' }
+          ]}
         >
           <TextArea 
-            placeholder="Nhập tóm tắt ngắn gọn về bài viết" 
-            rows={3}
-            maxLength={200}
-            showCount 
+            rows={3} 
+            placeholder="Nhập mô tả ngắn về blog"
+            showCount
+            maxLength={500}
           />
         </Form.Item>
 
+        {/* Author */}
+        <Form.Item
+          name="author"
+          label="Tác giả"
+          rules={[
+            { required: true, message: 'Vui lòng nhập tên tác giả!' },
+            { max: 100, message: 'Tên tác giả không được vượt quá 100 ký tự!' }
+          ]}
+        >
+          <Input placeholder="Nhập tên tác giả" />
+        </Form.Item>
+
+        {/* Category */}
         <Form.Item
           name="category_id"
           label="Danh mục"
-          rules={[{ required: true, message: 'Vui lòng chọn danh mục' }]}
+          rules={[{ required: true, message: 'Vui lòng chọn danh mục!' }]}
         >
-          <Select
-            placeholder="Chọn danh mục"
+          <Select 
+            placeholder="Chọn danh mục blog"
             loading={loadingCategories}
-            allowClear
           >
-            {categories.map(category => (
+            {categories.map((category) => (
               <Option key={category._id} value={category._id}>
                 {category.name}
               </Option>
@@ -286,63 +343,12 @@ const BlogAdd: React.FC<BlogAddProps> = ({
           </Select>
         </Form.Item>
 
-        <Form.Item
-          name="author"
-          label="Tác giả"
-          rules={[{ required: true, message: 'Vui lòng nhập tên tác giả' }]}
-        >
-          <Input placeholder="Nhập tên tác giả" />
-        </Form.Item>
-
-        <Form.Item
-          name="status"
-          label="Trạng thái"
-          rules={[{ required: true, message: 'Vui lòng chọn trạng thái' }]}
-        >
-          <Select placeholder="Chọn trạng thái">
-            <Option value="draft">Bản nháp</Option>
-            <Option value="published">Xuất bản</Option>
-          </Select>
-        </Form.Item>
-
-        <Form.Item
-          name="thumbnail_url"
-          label="Ảnh đại diện"
-          extra="Nhập URL ảnh (ví dụ: https://example.com/image.jpg)"
-          rules={[{ required: true, message: 'Vui lòng cung cấp URL ảnh đại diện' }]}
-        >
-          <Input
-            placeholder="Nhập URL ảnh (ví dụ: https://example.com/image.jpg)"
-            onChange={handleImageUrlChange}
-            prefix={<LinkOutlined />}
-          />
-          {imagePreview && (
-            <div style={{ marginTop: '16px', textAlign: 'center' }}>
-              <img 
-                src={imagePreview} 
-                alt="Preview" 
-                style={{ 
-                  maxWidth: '100%', 
-                  maxHeight: '200px',
-                  objectFit: 'contain',
-                  borderRadius: '4px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
-                }} 
-              />
-            </div>
-          )}
-        </Form.Item>
-
+        {/* Content Editor */}
         <Form.Item
           label="Nội dung"
-          rules={[{ required: true, message: 'Vui lòng nhập nội dung bài viết' }]}
+          required
         >
-          {typeof window !== 'undefined' && (
-            <QuillEditor onChange={handleContentChange} />
-          )}
-          {typeof window === 'undefined' && (
-            <div>Đang tải trình soạn thảo...</div>
-          )}
+          <QuillEditor onChange={handleContentChange} />
         </Form.Item>
       </Form>
     </Modal>

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Input, Select, Button, Form, Row, Col, Card, Flex, Space } from 'antd';
-import { SearchOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
 
 const { Option } = Select;
 
@@ -12,7 +12,6 @@ export interface SearchFormValues {
 
 interface UserSearchProps {
   onSearch: (values: SearchFormValues) => void;
-  onAdd: () => void;
   onReset: () => void;
   roles: string[];
   statuses: string[];
@@ -21,7 +20,6 @@ interface UserSearchProps {
 
 const UserSearch: React.FC<UserSearchProps> = ({
   onSearch,
-  onAdd,
   onReset,
   roles,
   statuses,
@@ -78,32 +76,22 @@ const UserSearch: React.FC<UserSearchProps> = ({
               </Col>
 
               <Col xs={24} sm={12} md={6} lg={9}>
-                <Flex justify="space-between">
-                  <Space>
-                    <Button 
-                      type="primary" 
-                      htmlType="submit" 
-                      icon={<SearchOutlined />} 
-                      loading={loading}
-                    >
-                      Tìm kiếm
-                    </Button>
-                    <Button 
-                      onClick={handleReset} 
-                      icon={<ReloadOutlined />}
-                    >
-                      Đặt lại
-                    </Button>
-                  </Space>
-                  <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    onClick={onAdd}
-                    className="bg-green-500 hover:bg-green-600 border-green-500"
+                <Space>
+                  <Button 
+                    type="primary" 
+                    htmlType="submit" 
+                    icon={<SearchOutlined />} 
+                    loading={loading}
                   >
-                    Thêm mới
+                    Tìm kiếm
                   </Button>
-                </Flex>
+                  <Button 
+                    onClick={handleReset} 
+                    icon={<ReloadOutlined />}
+                  >
+                    Đặt lại
+                  </Button>
+                </Space>
               </Col>
             </Row>
           </Form>
