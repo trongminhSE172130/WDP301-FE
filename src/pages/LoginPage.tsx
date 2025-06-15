@@ -11,6 +11,17 @@ import { toast } from "react-toastify";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+function isTokenExpired(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    if (!payload.exp) return true;
+    // exp là số giây kể từ epoch
+    return Date.now() >= payload.exp * 1000;
+  } catch {
+    return true;
+  }
+}
+
 const LoginPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -42,6 +53,17 @@ const LoginPage = () => {
     if (location.pathname === "/register") setIsLogin(false);
     else setIsLogin(true);
   }, [location.pathname]);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (token && isTokenExpired(token)) {
+      localStorage.removeItem("token");
+      // Nếu có lưu user thì xóa luôn
+      localStorage.removeItem("user");
+      navigate("/login");
+      toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
