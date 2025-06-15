@@ -1,18 +1,29 @@
 import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useProfile } from '../../context/ProfileContext';
-import { logoutUser } from '../../service/api/authApi';
+import { logoutUser, uploadAvatar } from '../../service/api/authApi';
 
 const ProfileSidebar: React.FC = () => {
   const location = useLocation();
   const currentPath = location.pathname;
-  const { profile, setProfile } = useProfile();
+  const { profile, setProfile, refreshProfile } = useProfile();
   const navigate = useNavigate();
 
   const handleLogout = () => {
     logoutUser();
     setProfile(null);
     navigate('/login');
+  };
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      try {
+        await uploadAvatar(e.target.files[0]);
+        await refreshProfile(); // Cập nhật lại avatar mới
+      } catch {
+        alert('Upload avatar thất bại!');
+      }
+    }
   };
 
   const navigationItems = [
@@ -105,20 +116,33 @@ const ProfileSidebar: React.FC = () => {
   return (
     <div className="md:w-1/3 bg-white rounded-4xl shadow-md p-6 border border-gray-300 flex flex-col h-full">
       <div className="text-center mb-6">
-        {profile.avatar ? (
-          <img
-            src={profile.avatar}
-            alt="Profile"
-            className="w-40 h-40 rounded-full mx-auto mb-4 object-cover border-2 border-gray-300"
-          />
-        ) : (
-          <div
-            className="w-40 h-40 rounded-full mx-auto mb-4 flex items-center justify-center text-5xl font-bold text-white"
-            style={{ background: "#3B9AB8" }}
-          >
-            {profile.full_name ? profile.full_name.charAt(0).toUpperCase() : "U"}
-          </div>
-        )}
+        <div className="relative w-40 h-40 mx-auto mb-4">
+          {profile.avatar ? (
+            <img
+              src={profile.avatar}
+              alt="Profile"
+              className="w-40 h-40 rounded-full object-cover border-2 border-gray-300"
+            />
+          ) : (
+            <div
+              className="w-40 h-40 rounded-full flex items-center justify-center text-5xl font-bold text-white bg-[#3B9AB8]"
+            >
+              {profile.full_name ? profile.full_name.charAt(0).toUpperCase() : "U"}
+            </div>
+          )}
+          {/* Nút upload avatar */}
+          <label className="absolute bottom-2 right-2 bg-white rounded-full p-2 shadow cursor-pointer border border-gray-200 hover:bg-gray-100 transition">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#3B9AB8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarChange}
+            />
+          </label>
+        </div>
         <h2 className="text-xl font-semibold text-gray-800">
           {profile.full_name}
         </h2>

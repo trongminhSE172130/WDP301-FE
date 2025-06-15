@@ -44,3 +44,21 @@ export const updateProfile = async (data: Partial<{
 }>) => {
   return await apiClient.put('/auth/updatedetails', data);
 };
+
+export const getBlogCategories = async () => {
+  return await apiClient.get('/blogs/categories');
+};
+
+export const getBlogs = async () => {
+  return await apiClient.get('/blogs');
+};
+
+export const uploadAvatar = async (file: File) => {
+  const formData = new FormData();
+  formData.append('avatar', file);
+  return await apiClient.post('/upload/avatar', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+};

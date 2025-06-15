@@ -11,7 +11,7 @@ import ProfileLayout from './layouts/ProfileLayout';
 // Public pages
 import HomePage from './pages/HomePage';
 import UnderDevelopmentPage from './pages/UnderDevelopmentPage';
-import ServicesPage from './pages/ServicesPage';
+import ServicesPage from './pages/BlogPage';
 import ProfilePage from './pages/ProfilePage';
 import ConsultationHistoryPage from './pages/ConsultationHistoryPage';
 import CycleTrackingPage from './pages/CycleTrackingPage';
