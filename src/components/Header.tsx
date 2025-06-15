@@ -1,24 +1,14 @@
-import React, { useEffect, useState, useRef } from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { GiHealthNormal } from "react-icons/gi";
+import { useProfile } from '../context/ProfileContext';
+import { logoutUser } from '../service/api/authApi';
 
 const Header: React.FC = () => {
-  const [user, setUser] = useState<{ full_name?: string } | null>(null);
+  const { profile, setProfile } = useProfile();
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const userStr = localStorage.getItem("user");
-    if (userStr) {
-      try {
-        setUser(JSON.parse(userStr));
-      } catch {
-        setUser(null);
-      }
-    } else {
-      setUser(null);
-    }
-  }, []);
+  const navigate = useNavigate();
 
   // Đóng dropdown khi click ra ngoài
   useEffect(() => {
@@ -38,9 +28,9 @@ const Header: React.FC = () => {
   }, [dropdownOpen]);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    window.location.href = "/";
+    logoutUser();
+    setProfile(null);
+    navigate("/");
   };
 
   return (
@@ -80,16 +70,16 @@ const Header: React.FC = () => {
           </ul>
         </nav>
         <div className="flex space-x-4 items-center">
-          {user ? (
+          {profile ? (
             <div className="relative" ref={dropdownRef}>
               <button
                 className="flex items-center gap-2 focus:outline-none"
                 onClick={() => setDropdownOpen((open) => !open)}
               >
                 <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-teal-600 font-bold text-lg">
-                  {user.full_name ? user.full_name.charAt(0).toUpperCase() : "U"}
+                  {profile.full_name ? profile.full_name.charAt(0).toUpperCase() : "U"}
                 </div>
-                <span className="hidden sm:inline">Hi, {user.full_name || "User"}</span>
+                <span className="hidden sm:inline">Hi, {profile.full_name || "User"}</span>
               </button>
               {dropdownOpen && (
                 <div className="absolute right-0 mt-3 w-48 bg-white text-gray-800 rounded-xl shadow-2xl z-50 border border-gray-100 animate-fade-in transition-all duration-200 ease-out drop-shadow-lg">

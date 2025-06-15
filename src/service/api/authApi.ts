@@ -31,3 +31,16 @@ export const logoutUser = () => {
   localStorage.removeItem("user");
   localStorage.removeItem("token");
 };
+
+export const getProfile = async () => {
+  return await apiClient.get('/auth/profile');
+};
+
+export const updateProfile = async (data: Partial<{
+  full_name: string;
+  gender: string;
+  dob: string;
+  phone: string;
+}>) => {
+  return await apiClient.put('/auth/updatedetails', data);
+};

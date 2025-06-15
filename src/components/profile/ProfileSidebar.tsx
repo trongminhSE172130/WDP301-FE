@@ -1,16 +1,18 @@
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useProfile } from '../../context/ProfileContext';
+import { logoutUser } from '../../service/api/authApi';
 
 const ProfileSidebar: React.FC = () => {
   const location = useLocation();
   const currentPath = location.pathname;
+  const { profile, setProfile } = useProfile();
+  const navigate = useNavigate();
 
-  // Mock user data
-  const userData = {
-    username: "UserName",
-    id: "Sdt-0123456789",
-    location: "48 Văn Lương, BBVT",
-    avatar: "https://picture.dzogame.vn/Img/cap5_pp_058.jpg",
+  const handleLogout = () => {
+    logoutUser();
+    setProfile(null);
+    navigate('/login');
   };
 
   const navigationItems = [
@@ -96,19 +98,32 @@ const ProfileSidebar: React.FC = () => {
     },
   ];
 
+  if (!profile) {
+    return <div className="p-8 text-center">Đang tải...</div>;
+  }
+
   return (
     <div className="md:w-1/3 bg-white rounded-4xl shadow-md p-6 border border-gray-300 flex flex-col h-full">
       <div className="text-center mb-6">
-        <img
-          src={userData.avatar}
-          alt="Profile"
-          className="w-40 h-40 rounded-full mx-auto mb-4 object-cover border-2 border-gray-300"
-        />
+        {profile.avatar ? (
+          <img
+            src={profile.avatar}
+            alt="Profile"
+            className="w-40 h-40 rounded-full mx-auto mb-4 object-cover border-2 border-gray-300"
+          />
+        ) : (
+          <div
+            className="w-40 h-40 rounded-full mx-auto mb-4 flex items-center justify-center text-5xl font-bold text-white"
+            style={{ background: "#3B9AB8" }}
+          >
+            {profile.full_name ? profile.full_name.charAt(0).toUpperCase() : "U"}
+          </div>
+        )}
         <h2 className="text-xl font-semibold text-gray-800">
-          {userData.username}
+          {profile.full_name}
         </h2>
-        <p className="text-gray-600 text-sm mb-2 font-bold">{userData.id}</p>
-        <p className="text-gray-600 text-sm font-bold">{userData.location}</p>
+        <p className="text-gray-600 text-sm mb-2 font-bold">{profile.phone || profile._id}</p>
+        <p className="text-gray-600 text-sm font-bold">{profile.location || ''}</p>
       </div>
 
       {/* Navigation Buttons */}
@@ -131,8 +146,8 @@ const ProfileSidebar: React.FC = () => {
 
       {/* Logout Button - Fixed at bottom */}
       <div className="mt-6">
-        <Link
-          to="/login"
+        <button
+          onClick={handleLogout}
           className="block w-full py-4 px-4 border border-red-500 text-red-500 rounded-4xl hover:bg-red-50 transition-colors font-medium text-center flex items-center justify-center gap-2"
         >
           <svg
@@ -150,7 +165,7 @@ const ProfileSidebar: React.FC = () => {
             />
           </svg>
           Đăng xuất
-        </Link>
+        </button>
       </div>
     </div>
   );
