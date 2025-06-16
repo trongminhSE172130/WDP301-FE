@@ -1,102 +1,47 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaSearch } from "react-icons/fa";
 import ServiceCard from "../components/services/ServiceCard";
 import HeroSection from "../components/home/HeroSection";
 import ServicesSection from "../components/home/ServicesSection";
+import { getAllServices } from "../service/api/serviceAPI";
 
 interface Service {
-  id: number;
+  id: string;
   title: string;
   price: string;
   description: string;
   image: string;
+  rating: number | undefined;
 }
 
 const ServicePage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState("");
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const services: Service[] = [
-    {
-      id: 1,
-      title: "Xét nghiệm tổng quát",
-      price: "239.000đ",
-      description:
-        "Xét nghiệm 27 chỉ số cơ bản trong cơ thể - Xét nghiệm toàn diện về tim, gan, thận, lọc đường...",
-      image: "/images/family-health.jpg",
-    },
-    {
-      id: 2,
-      title: "Xét nghiệm tổng quát",
-      price: "239.000đ",
-      description:
-        "Xét nghiệm 27 chỉ số cơ bản trong cơ thể - Xét nghiệm toàn diện về tim, gan, thận, lọc đường...",
-      image: "/images/family-health.jpg",
-    },
-    {
-      id: 3,
-      title: "Xét nghiệm tổng quát",
-      price: "239.000đ",
-      description:
-        "Xét nghiệm 27 chỉ số cơ bản trong cơ thể - Xét nghiệm toàn diện về tim, gan, thận, lọc đường...",
-      image: "/images/family-health.jpg",
-    },
-    {
-      id: 4,
-      title: "Xét nghiệm tổng quát",
-      price: "239.000đ",
-      description:
-        "Xét nghiệm 27 chỉ số cơ bản trong cơ thể - Xét nghiệm toàn diện về tim, gan, thận, lọc đường...",
-      image: "/images/family-health.jpg",
-    },
-    {
-      id: 5,
-      title: "Xét nghiệm tổng quát",
-      price: "239.000đ",
-      description:
-        "Xét nghiệm 27 chỉ số cơ bản trong cơ thể - Xét nghiệm toàn diện về tim, gan, thận, lọc đường...",
-      image: "/images/family-health.jpg",
-    },
-    {
-      id: 6,
-      title: "Xét nghiệm tổng quát",
-      price: "239.000đ",
-      description:
-        "Xét nghiệm 27 chỉ số cơ bản trong cơ thể - Xét nghiệm toàn diện về tim, gan, thận, lọc đường...",
-      image: "/images/family-health.jpg",
-    },
-    {
-      id: 7,
-      title: "Xét nghiệm tổng quát",
-      price: "239.000đ",
-      description:
-        "Xét nghiệm 27 chỉ số cơ bản trong cơ thể - Xét nghiệm toàn diện về tim, gan, thận, lọc đường...",
-      image: "/images/family-health.jpg",
-    },
-    {
-      id: 8,
-      title: "Xét nghiệm tổng quát",
-      price: "239.000đ",
-      description:
-        "Xét nghiệm 27 chỉ số cơ bản trong cơ thể - Xét nghiệm toàn diện về tim, gan, thận, lọc đường...",
-      image: "/images/family-health.jpg",
-    },
-    {
-      id: 9,
-      title: "Xét nghiệm tổng quát",
-      price: "239.000đ",
-      description:
-        "Xét nghiệm 27 chỉ số cơ bản trong cơ thể - Xét nghiệm toàn diện về tim, gan, thận, lọc đường...",
-      image: "/images/family-health.jpg",
-    },
-    {
-      id: 10,
-      title: "Xét nghiệm tổng quát",
-      price: "239.000đ",
-      description:
-        "Xét nghiệm 27 chỉ số cơ bản trong cơ thể - Xét nghiệm toàn diện về tim, gan, thận, lọc đường...",
-      image: "/images/family-health.jpg",
-    },
-  ];
+  useEffect(() => {
+    const fetchServices = async () => {
+      setLoading(true);
+      try {
+        const data = await getAllServices();
+        if (data.success && Array.isArray(data.data)) {
+          setServices(
+            data.data.map((item) => ({
+              id: item._id,
+              title: item.title,
+              price: "",
+              description: item.description,
+              image: item.image_url ? item.image_url : "",
+              rating: item.rating,
+            }))
+          );
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchServices();
+  }, []);
 
   const filteredServices = services.filter((service) =>
     service.title.toLowerCase().includes(searchTerm.toLowerCase())
@@ -124,11 +69,15 @@ const ServicePage: React.FC = () => {
         </div>
 
         {/* Service Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
-          {filteredServices.map((service) => (
-            <ServiceCard key={service.id} service={service} />
-          ))}
-        </div>
+        {loading ? (
+          <div className="text-center py-8">Đang tải dịch vụ...</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-16">
+            {filteredServices.map((service) => (
+              <ServiceCard key={service.id} service={service} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
