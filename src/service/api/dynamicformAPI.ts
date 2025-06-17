@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { DynamicFormResponse, DynamicForm, FormSubmissionData } from '../../types/dynamicForm';
+import type { DynamicFormResponse, DynamicForm, FormSubmissionData, DynamicFormCreate } from '../../types/dynamicForm';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://genhealth.wizlab.io.vn/api';
 
@@ -131,12 +131,30 @@ export const getDynamicFormSchema = async (serviceId: string, formType: string):
 /**
  * Tạo dynamic form mới
  */
-export const createDynamicForm = async (formData: Partial<DynamicForm>): Promise<{ success: boolean; data: DynamicForm }> => {
+export const createDynamicForm = async (formData: DynamicFormCreate): Promise<{ success: boolean; data: DynamicForm }> => {
   try {
+    console.log('=== API CALL DEBUG ===');
+    console.log('URL:', `${API_BASE_URL}/dynamic-forms/schemas`);
+    console.log('FormData being sent:', JSON.stringify(formData, null, 2));
+    console.log('FormData service_id:', formData.service_id);
+    console.log('FormData service_id type:', typeof formData.service_id);
+    
     const response = await apiClient.post('/dynamic-forms/schemas', formData);
+    console.log('API Response:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error creating dynamic form:', error);
+    
+    // Log chi tiết error từ API
+    if (error && typeof error === 'object' && 'response' in error) {
+      const axiosError = error as { response?: { status?: number; data?: unknown; config?: unknown } };
+      console.error('API Error Details:', {
+        status: axiosError.response?.status,
+        data: axiosError.response?.data,
+        url: axiosError.response?.config,
+      });
+    }
+    
     throw error;
   }
 };
@@ -146,10 +164,27 @@ export const createDynamicForm = async (formData: Partial<DynamicForm>): Promise
  */
 export const updateDynamicForm = async (formId: string, formData: Partial<DynamicForm>): Promise<{ success: boolean; data: DynamicForm }> => {
   try {
+    console.log('=== UPDATE API CALL DEBUG ===');
+    console.log('URL:', `${API_BASE_URL}/dynamic-forms/schemas/${formId}`);
+    console.log('Form ID:', formId);
+    console.log('Update data being sent:', JSON.stringify(formData, null, 2));
+    
     const response = await apiClient.put(`/dynamic-forms/schemas/${formId}`, formData);
+    console.log('UPDATE API Response:', response.data);
     return response.data;
   } catch (error) {
     console.error('Error updating dynamic form:', error);
+    
+    // Log chi tiết error từ API
+    if (error && typeof error === 'object' && 'response' in error) {
+      const axiosError = error as { response?: { status?: number; data?: unknown; config?: unknown } };
+      console.error('UPDATE API Error Details:', {
+        status: axiosError.response?.status,
+        data: axiosError.response?.data,
+        url: axiosError.response?.config,
+      });
+    }
+    
     throw error;
   }
 };
@@ -203,7 +238,18 @@ export const getFormSubmissions = async (formId: string, params?: { page?: numbe
  */
 export const getAvailableServices = async (): Promise<{ success: boolean; data: Service[] }> => {
   try {
+    console.log('=== GET SERVICES DEBUG ===');
+    console.log('URL:', `${API_BASE_URL}/services`);
+    
     const response = await apiClient.get('/services');
+    console.log('Services API Response:', response.data);
+    console.log('Services data structure:', {
+      success: response.data.success,
+      dataType: typeof response.data.data,
+      dataLength: Array.isArray(response.data.data) ? response.data.data.length : 'not array',
+      firstService: Array.isArray(response.data.data) && response.data.data.length > 0 ? response.data.data[0] : 'no data'
+    });
+    
     return response.data;
   } catch (error) {
     console.error('Error fetching services:', error);
@@ -237,6 +283,53 @@ export const duplicateDynamicForm = async (formId: string): Promise<{ success: b
   }
 };
 
+/**
+ * Kiểm tra các form đã tồn tại cho một service type
+ * Sử dụng API getAllDynamicForms với filter service_id
+ */
+export const getExistingFormsForService = async (serviceId: string): Promise<{ success: boolean; data: { booking_form?: DynamicForm; result_form?: DynamicForm } }> => {
+  try {
+    console.log('=== GET EXISTING FORMS DEBUG ===');
+    console.log('Service ID:', serviceId);
+    
+    // Sử dụng API getAllDynamicForms với filter service_id
+    const allFormsResponse = await getAllDynamicForms({ 
+      service_id: serviceId,
+      is_active: true // Chỉ lấy forms đang active
+    });
+    
+    console.log('All forms response:', allFormsResponse);
+    
+    if (allFormsResponse.success && allFormsResponse.data) {
+      const existingForms: { booking_form?: DynamicForm; result_form?: DynamicForm } = {};
+      
+      allFormsResponse.data.forEach(form => {
+        console.log('Processing form:', { id: form._id, type: form.form_type, name: form.form_name });
+        
+        if (form.form_type === 'booking_form') {
+          existingForms.booking_form = form;
+        } else if (form.form_type === 'result_form') {
+          existingForms.result_form = form;
+        }
+      });
+      
+      console.log('Existing forms found:', existingForms);
+      
+      return {
+        success: true,
+        data: existingForms
+      };
+    }
+    
+    console.log('No forms found or API call failed');
+    return { success: true, data: {} };
+  } catch (error) {
+    console.error('Error fetching existing forms for service:', error);
+    // Trả về empty data thay vì throw error để không break UI
+    return { success: true, data: {} };
+  }
+};
+
 export default {
   getAllDynamicForms,
   getDynamicFormById,
@@ -249,4 +342,5 @@ export default {
   getAvailableServices,
   toggleFormStatus,
   duplicateDynamicForm,
+  getExistingFormsForService,
 };

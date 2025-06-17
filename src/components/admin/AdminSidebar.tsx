@@ -44,16 +44,22 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, role }) => {
       case 'Consultant':
         return [
           { key: 'dashboard', icon: <DashboardOutlined />, label: 'Tổng quan', link: '/consultant/dashboard' },
-          { key: 'schedule', icon: <CalendarOutlined />, label: 'Lịch tư vấn', link: '/consultant/schedule' },
           { key: 'consultations', icon: <TeamOutlined />, label: 'Hàng đợi tư vấn', link: '/consultant/consultations' },
-          { key: 'messages', icon: <MessageOutlined />, label: 'Tin nhắn', link: '/consultant/messages' },
-          { key: 'forms', icon: <FormOutlined />, label: 'Biểu mẫu', link: '/consultant/forms' },
+          { key: 'schedule', icon: <CalendarOutlined />, label: 'Lịch tư vấn', link: '/consultant/schedule' },
           { key: 'availability', icon: <ScheduleOutlined />, label: 'Lịch làm việc', link: '/consultant/availability' },
+          { key: 'forms', icon: <FormOutlined />, label: 'Biểu mẫu', link: '/consultant/forms' },
+          { key: 'messages', icon: <MessageOutlined />, label: 'Tin nhắn', link: '/consultant/messages' },
           { key: 'profile', icon: <UserOutlined />, label: 'Cài đặt hồ sơ', link: '/consultant/profile' },
         ];
       case 'Admin':
         return [
           { key: 'dashboard', icon: <DashboardOutlined />, label: 'Tổng quan', link: '/admin/dashboard' },
+          
+          // Quản lý nhân sự
+          { key: 'users', icon: <UserOutlined />, label: 'Quản lý người dùng', link: '/admin/users' },
+          { key: 'consultants', icon: <TeamOutlined />, label: 'Quản lý tư vấn viên', link: '/admin/consultants' },
+          
+          // Quản lý dịch vụ & biểu mẫu
           { 
             key: 'service-management', 
             icon: <AppstoreOutlined />, 
@@ -64,10 +70,13 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, role }) => {
             ]
           },
           { key: 'dynamic-forms', icon: <FormOutlined />, label: 'Quản lý biểu mẫu', link: '/admin/dynamic-forms' },
-          { key: 'consultants', icon: <TeamOutlined />, label: 'Quản lý tư vấn viên', link: '/admin/consultants' },
+          { key: 'formReview', icon: <FileTextOutlined />, label: 'Duyệt biểu mẫu', link: '/admin/form-review' },
+          
+          // Quản lý lịch trình & đặt lịch
           { key: 'schedules', icon: <CalendarOutlined />, label: 'Quản lý lịch trình', link: '/admin/schedules' },
           { key: 'bookings', icon: <ScheduleOutlined />, label: 'Tổng quan đặt lịch', link: '/admin/bookings' },
-          { key: 'formReview', icon: <FileTextOutlined />, label: 'Duyệt biểu mẫu', link: '/admin/form-review' },
+          
+          // Quản lý nội dung & thông báo
           { 
             key: 'blog', 
             icon: <EditOutlined />, 
@@ -78,7 +87,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, role }) => {
             ]
           },
           { key: 'push-notifications', icon: <BellOutlined />, label: 'Push Notification', link: '/admin/push-notifications' },
-          { key: 'users', icon: <UserOutlined />, label: 'Quản lý người dùng', link: '/admin/users' },
         ];
       default:
         return [{ key: 'dashboard', icon: <DashboardOutlined />, label: 'Tổng quan', link: '/dashboard' }];

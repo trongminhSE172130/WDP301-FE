@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { Button, message, Spin, Alert } from 'antd';
+import { Button, message, Spin, Alert, Typography } from 'antd';
 import { ArrowLeftOutlined, PlusOutlined } from '@ant-design/icons';
 import DynamicFormTable from '../../components/admin/dynamicform/DynamicFormTable';
 import DynamicFormRenderer from '../../components/admin/dynamicform/DynamicFormRenderer';
 import DynamicFormDetailModal from '../../components/admin/dynamicform/DynamicFormDetailModal';
+import DynamicFormCreator from '../../components/admin/dynamicform/DynamicFormCreator';
+import DynamicFormSearch from '../../components/admin/dynamicform/DynamicFormSearch';
 import type { DynamicForm, FormSubmissionData } from '../../types/dynamicForm';
 import { getAllDynamicForms, submitDynamicForm, deleteDynamicForm, toggleFormStatus } from '../../service/api/dynamicformAPI';
 import type { DynamicFormSearchParams } from '../../service/api/dynamicformAPI';
+import type { SearchFormValues } from '../../components/admin/dynamicform/DynamicFormSearch';
 
-
+const { Title } = Typography;
 
 const DynamicFormPage: React.FC = () => {
   const [filteredForms, setFilteredForms] = useState<DynamicForm[]>([]);
@@ -20,11 +23,15 @@ const DynamicFormPage: React.FC = () => {
   // State cho modal detail
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [detailForm, setDetailForm] = useState<DynamicForm | null>(null);
+  
+  // State cho modal tạo form
+  const [createModalVisible, setCreateModalVisible] = useState(false);
+
+  // State cho modal edit form
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [editingForm, setEditingForm] = useState<DynamicForm | null>(null);
 
   // State cho search và filter
-  const [searchQuery, setSearchQuery] = useState('');
-  const [allForms, setAllForms] = useState<DynamicForm[]>([]);
-  const [filters, setFilters] = useState<{ formType?: string; status?: string }>({});
 
   // Load forms khi component mount
   useEffect(() => {
@@ -41,7 +48,6 @@ const DynamicFormPage: React.FC = () => {
       
       if (response.success) {
         setFilteredForms(response.data);
-        setAllForms(response.data);
       } else {
         throw new Error('Không thể tải danh sách form');
       }
@@ -57,8 +63,6 @@ const DynamicFormPage: React.FC = () => {
   const handleBackToList = () => {
     setSelectedForm(null);
   };
-
-
 
   // Xử lý submit form
   const handleSubmitForm = async (data: FormSubmissionData) => {
@@ -122,14 +126,13 @@ const DynamicFormPage: React.FC = () => {
 
   // Xử lý chỉnh sửa form
   const handleEditForm = (form: DynamicForm) => {
-    message.info(`Chỉnh sửa form: ${form.form_name}`);
-    // TODO: Implement edit form logic
-    console.log('Edit form:', form);
+    console.log('Opening edit modal for form:', form);
+    setEditingForm(form);
+    setEditModalVisible(true);
   };
 
   // Xử lý xem chi tiết form
   const handlePreviewForm = (form: DynamicForm) => {
-    // Sử dụng data form hiện tại để hiển thị chi tiết
     setDetailForm(form);
     setDetailModalVisible(true);
   };
@@ -142,123 +145,141 @@ const DynamicFormPage: React.FC = () => {
 
   // Xử lý thêm schema form mới
   const handleAddForm = () => {
-    message.info('Chức năng thêm schema form đang được phát triển');
-    // TODO: Implement add form logic
-    console.log('Add new form schema');
+    setCreateModalVisible(true);
+  };
+
+  // Xử lý khi tạo form thành công
+  const handleCreateSuccess = () => {
+    setCreateModalVisible(false);
+    loadForms(); // Reload danh sách forms
+  };
+
+  // Xử lý khi edit form thành công
+  const handleEditSuccess = () => {
+    setEditModalVisible(false);
+    setEditingForm(null);
+    loadForms(); // Reload danh sách forms
   };
 
   // Xử lý search
-  const handleSearch = (value: string) => {
-    setSearchQuery(value);
+  const handleSearch = (values: SearchFormValues) => {
+    const params: DynamicFormSearchParams = {
+      keyword: values.keyword,
+      form_type: values.formType,
+      is_active: values.status === 'active' ? true : values.status === 'inactive' ? false : undefined
+    };
+    loadForms(params);
   };
 
-  // Xử lý filter
-  const handleFilterChange = (newFilters: { formType?: string; status?: string }) => {
-    setFilters(prev => ({ ...prev, ...newFilters }));
+  // Xử lý reset search
+  const handleReset = () => {
+    loadForms();
   };
 
-  // Effect để filter data
-  React.useEffect(() => {
-    let filtered = [...allForms];
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-96">
+        <Spin size="large" />
+        <span className="ml-3 text-lg">Đang tải...</span>
+      </div>
+    );
+  }
 
-    // Filter theo search query
-    if (searchQuery) {
-      filtered = filtered.filter(form => 
-        form.form_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        form.form_description.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
+  if (error) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <Alert
+          message="Lỗi tải dữ liệu"
+          description={error}
+          type="error"
+          showIcon
+          action={
+            <Button onClick={() => window.location.reload()}>
+              Thử lại
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
 
-    // Filter theo form type
-    if (filters.formType) {
-      filtered = filtered.filter(form => form.form_type === filters.formType);
-    }
-
-    // Filter theo status
-    if (filters.status) {
-      const isActive = filters.status === 'active';
-      filtered = filtered.filter(form => form.is_active === isActive);
-    }
-
-    setFilteredForms(filtered);
-  }, [allForms, searchQuery, filters]);
+  if (selectedForm) {
+    return (
+      <div>
+        <div className="bg-white shadow-sm border-b px-6 py-4">
+          <Button
+            icon={<ArrowLeftOutlined />}
+            onClick={handleBackToList}
+            className="mb-2"
+          >
+            Quay lại danh sách
+          </Button>
+        </div>
+        
+        <DynamicFormRenderer
+          form={selectedForm}
+          onSubmit={handleSubmitForm}
+          loading={submitting}
+        />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {loading ? (
-        <div className="flex justify-center items-center h-96">
-          <Spin size="large" />
-          <span className="ml-3 text-lg">Đang tải...</span>
-        </div>
-      ) : error ? (
-        <div className="max-w-4xl mx-auto p-6">
-          <Alert
-            message="Lỗi tải dữ liệu"
-            description={error}
-            type="error"
-            showIcon
-            action={
-              <Button onClick={() => window.location.reload()}>
-                Thử lại
-              </Button>
-            }
-          />
-        </div>
-      ) : selectedForm ? (
-        // Render form được chọn
-        <div>
-          <div className="bg-white shadow-sm border-b px-6 py-4">
-            <Button
-              icon={<ArrowLeftOutlined />}
-              onClick={handleBackToList}
-              className="mb-2"
-            >
-              Quay lại danh sách
-            </Button>
-          </div>
-          
-          <DynamicFormRenderer
-            form={selectedForm}
-            onSubmit={handleSubmitForm}
-            loading={submitting}
-          />
-        </div>
-      ) : (
-        // Render danh sách forms với search và table
-        <div>
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold">Quản lý biểu mẫu động</h2>
-            <div>
-              <Button
-                type="primary"
-                onClick={handleAddForm}
-                className="h-9 rounded"
-                icon={<PlusOutlined />}
-              >
-                Thêm Schema Form
-              </Button>
-            </div>
-          </div>
-          
-                      <DynamicFormTable
-            data={filteredForms}
-            onDelete={handleDeleteForm}
-            onToggleStatus={handleToggleStatus}
-            onEdit={handleEditForm}
-            onPreview={handlePreviewForm}
-            onSearch={handleSearch}
-            onFilterChange={handleFilterChange}
-            searchQuery={searchQuery}
-              loading={loading}
-            />
-        </div>
-      )}
+    <div className="w-full">
+      <div className="flex justify-between items-center mb-4">
+        <Title level={2}>Quản lý biểu mẫu động</Title>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={handleAddForm}
+        >
+          Thêm Schema Form
+        </Button>
+      </div>
+      
+      {/* Search Form */}
+      <DynamicFormSearch 
+        onSearch={handleSearch}
+        onReset={handleReset}
+        loading={loading}
+      />
+      
+      {/* Dynamic Form Table */}
+      <DynamicFormTable
+        data={filteredForms}
+        onDelete={handleDeleteForm}
+        onToggleStatus={handleToggleStatus}
+        onEdit={handleEditForm}
+        onPreview={handlePreviewForm}
+        loading={loading}
+      />
       
       {/* Modal chi tiết form */}
       <DynamicFormDetailModal
         visible={detailModalVisible}
         form={detailForm}
         onCancel={handleCloseDetailModal}
+      />
+      
+      {/* Modal tạo form mới */}
+      <DynamicFormCreator
+        visible={createModalVisible}
+        onCancel={() => setCreateModalVisible(false)}
+        onSuccess={handleCreateSuccess}
+        mode="create"
+      />
+      
+      {/* Modal edit form */}
+      <DynamicFormCreator
+        visible={editModalVisible}
+        onCancel={() => {
+          setEditModalVisible(false);
+          setEditingForm(null);
+        }}
+        onSuccess={handleEditSuccess}
+        editForm={editingForm}
+        mode="edit"
       />
     </div>
   );

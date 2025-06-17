@@ -1,10 +1,8 @@
 import React from 'react';
-import { Table, Button, Space, Tag, Tooltip, Popconfirm, Input, Select } from 'antd';
-import { EditOutlined, EyeOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Tag, Tooltip, Popconfirm } from 'antd';
+import { EditOutlined, EyeOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { DynamicForm } from '../../../types/dynamicForm';
-
-const { Option } = Select;
 
 interface DynamicFormTableProps {
   data: DynamicForm[];
@@ -12,9 +10,6 @@ interface DynamicFormTableProps {
   onPreview?: (form: DynamicForm) => void;
   onDelete?: (formId: string) => Promise<void>;
   onToggleStatus?: (formId: string) => Promise<void>;
-  onSearch?: (value: string) => void;
-  onFilterChange?: (filters: { formType?: string; status?: string }) => void;
-  searchQuery?: string;
   loading: boolean;
 }
 
@@ -24,15 +19,14 @@ const DynamicFormTable: React.FC<DynamicFormTableProps> = ({
   onPreview,
   onDelete,
   onToggleStatus,
-  onSearch,
-  onFilterChange,
-  searchQuery,
   loading
 }) => {
   const getFormTypeColor = (formType: string) => {
     switch (formType) {
       case 'booking_form':
         return 'blue';
+      case 'result_form':
+        return 'purple';
       case 'survey_form':
         return 'green';
       case 'registration_form':
@@ -45,7 +39,9 @@ const DynamicFormTable: React.FC<DynamicFormTableProps> = ({
   const getFormTypeName = (formType: string) => {
     switch (formType) {
       case 'booking_form':
-        return 'Đặt lịch';
+        return 'Form đặt lịch';
+      case 'result_form':
+        return 'Form kết quả';
       case 'survey_form':
         return 'Khảo sát';
       case 'registration_form':
@@ -209,53 +205,20 @@ const DynamicFormTable: React.FC<DynamicFormTableProps> = ({
 
   return (
     <div>
-      {/* Search and Filter */}
-      <div className="mb-4 flex gap-4">
-        <Input
-          placeholder="Tìm kiếm form..."
-          prefix={<SearchOutlined />}
-          value={searchQuery}
-          onChange={(e) => onSearch && onSearch(e.target.value)}
-          allowClear
-          className="max-w-md"
-        />
-        <Select
-          placeholder="Loại form"
-          style={{ width: 150 }}
-          allowClear
-          onChange={(value) => onFilterChange && onFilterChange({ formType: value })}
-        >
-          <Option value="booking_form">Đặt lịch</Option>
-          <Option value="survey_form">Khảo sát</Option>
-          <Option value="registration_form">Đăng ký</Option>
-        </Select>
-        <Select
-          placeholder="Trạng thái"
-          style={{ width: 130 }}
-          allowClear
-          onChange={(value) => onFilterChange && onFilterChange({ status: value })}
-        >
-          <Option value="active">Hoạt động</Option>
-          <Option value="inactive">Không hoạt động</Option>
-        </Select>
-      </div>
-
-    <Table
-      columns={columns}
-      dataSource={data}
-      rowKey="_id"
-      loading={loading}
-      pagination={{
-        pageSize: 10,
-        showSizeChanger: true,
-        showQuickJumper: true,
-        showTotal: (total, range) =>
-          `${range[0]}-${range[1]} của ${total} form`,
-      }}
-      scroll={{ x: 1500 }}
-      className="dynamic-form-table"
-      rowClassName="hover:bg-gray-50"
-    />
+      <Table
+        columns={columns}
+        dataSource={data}
+        rowKey="_id"
+        loading={loading}
+        pagination={{
+          pageSize: 10,
+          showSizeChanger: true,
+          showQuickJumper: true,
+          showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} mục`,
+        }}
+        scroll={{ x: 1200 }}
+        className="bg-white rounded-lg shadow-sm"
+      />
     </div>
   );
 };
