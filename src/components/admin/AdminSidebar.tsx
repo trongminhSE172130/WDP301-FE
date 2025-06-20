@@ -70,7 +70,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, role }) => {
             ]
           },
           { key: 'dynamic-forms', icon: <FormOutlined />, label: 'Quản lý biểu mẫu', link: '/admin/dynamic-forms' },
-          { key: 'formReview', icon: <FileTextOutlined />, label: 'Duyệt biểu mẫu', link: '/admin/form-review' },
+          { key: 'formReview', icon: <FileTextOutlined />, label: 'Quản lý gói đăng ký', link: '/admin/subscription' },
           
           // Quản lý lịch trình & đặt lịch
           { key: 'schedules', icon: <CalendarOutlined />, label: 'Quản lý lịch trình', link: '/admin/schedules' },

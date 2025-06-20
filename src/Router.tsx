@@ -40,6 +40,7 @@ import ConsultantManagement from "./pages/admin/ConsultantManagement";
 import ConsultantDetail from "./pages/admin/ConsultantDetail";
 import DynamicFormPage from "./pages/admin/DynamicFormPage";
 import PushNotificationPage from "./pages/admin/PushNotifiactionPage";
+import SubscriptionPage from "./pages/admin/SubscriptionPage";
 
 // Auth protection
 const ProtectedRoute = ({ allowedRoles = ["admin", "consultant"] }) => {
@@ -193,6 +194,7 @@ const router = createBrowserRouter([
           { path: "service-categories", element: <ServiceCategoriesPage /> },
           { path: "dynamic-forms", element: <DynamicFormPage /> },
           { path: "push-notifications", element: <PushNotificationPage /> },
+          { path: "subscription", element: <SubscriptionPage /> },
           { path: "*", element: <UnderDevelopmentPage /> },
         ],
       },

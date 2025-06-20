@@ -32,25 +32,16 @@ import {
   BookOutlined
 } from '@ant-design/icons';
 import type { Consultant } from '../../components/admin/consultant/ConsultantTable';
+import type { Schedule } from '../../components/admin/schedule/ScheduleTypes';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import { getConsultantById } from '../../service/api/consultantAPI';
+import { getSchedulesByConsultantId } from '../../service/api/scheduleAPI';
 
 const { Title, Text } = Typography;
 const { Panel } = Collapse;
 
 // Interface cho các dữ liệu bổ sung
-interface ConsultationHistory {
-  id: string;
-  patientName: string;
-  date: string;
-  service: string;
-  status: 'completed' | 'cancelled' | 'no-show';
-  duration: number;
-  rating?: number;
-  notes?: string;
-}
-
 interface Achievement {
   id: string;
   title: string;
@@ -59,36 +50,7 @@ interface Achievement {
   icon: string;
 }
 
-// Dữ liệu mẫu cho các phần chưa có API
-const consultationHistory: ConsultationHistory[] = [
-  {
-    id: 'C001',
-    patientName: 'Nguyễn Thị Hoa',
-    date: '2024-01-15',
-    service: 'Tư vấn dinh dưỡng',
-    status: 'completed',
-    duration: 30,
-    rating: 5,
-    notes: 'Bệnh nhân hài lòng với lời khuyên'
-  },
-  {
-    id: 'C002',
-    patientName: 'Trần Văn Nam',
-    date: '2024-01-14',
-    service: 'Tư vấn sức khỏe',
-    status: 'completed',
-    duration: 45,
-    rating: 4
-  },
-  {
-    id: 'C003',
-    patientName: 'Lê Thị Mai',
-    date: '2024-01-13',
-    service: 'Phân tích kết quả',
-    status: 'cancelled',
-    duration: 0
-  }
-];
+// Dữ liệu mẫu cho thành tích
 
 const achievements: Achievement[] = [
   {
@@ -113,6 +75,8 @@ const ConsultantDetail: React.FC = () => {
   const [consultant, setConsultant] = useState<Consultant | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [selectedDate, setSelectedDate] = useState<Dayjs>(dayjs());
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [schedulesLoading, setSchedulesLoading] = useState<boolean>(false);
 
   useEffect(() => {
     const loadConsultant = async () => {
@@ -143,6 +107,42 @@ const ConsultantDetail: React.FC = () => {
     loadConsultant();
   }, [id, navigate]);
 
+  // Load schedules của tư vấn viên
+  useEffect(() => {
+    const loadSchedules = async () => {
+      if (!id) return;
+
+      try {
+        setSchedulesLoading(true);
+        const response = await getSchedulesByConsultantId(id, {
+          sortBy: 'date',
+          sortOrder: 'desc',
+          limit: 50 // Lấy 50 lịch gần nhất
+        });
+        if (response.success) {
+          console.log('Schedules data from API:', response.data);
+          // Debug từng schedule để xem format
+          response.data.forEach((schedule, index) => {
+            console.log(`Schedule ${index}:`, {
+              id: schedule._id,
+              date: schedule.date,
+              time_slot: schedule.time_slot,
+              created_at: schedule.created_at
+            });
+          });
+          setSchedules(response.data);
+        }
+      } catch (error) {
+        console.error('Error loading consultant schedules:', error);
+        message.error('Có lỗi xảy ra khi tải lịch tư vấn');
+      } finally {
+        setSchedulesLoading(false);
+      }
+    };
+
+    loadSchedules();
+  }, [id]);
+
   const handleBack = () => {
     navigate('/admin/consultants');
   };
@@ -165,22 +165,41 @@ const ConsultantDetail: React.FC = () => {
     }
   };
 
-  const getConsultationStatusTag = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <Tag color="success">Hoàn thành</Tag>;
-      case 'cancelled':
-        return <Tag color="error">Đã hủy</Tag>;
-      case 'no-show':
-        return <Tag color="warning">Không đến</Tag>;
-      default:
-        return <Tag>Không xác định</Tag>;
-    }
-  };
 
-  const dateCellRender = () => {
-    const hasAppointment = Math.random() > 0.7;
-    return hasAppointment ? <Badge status="processing" /> : null;
+
+  const dateCellRender = (value: Dayjs) => {
+    // Tìm các lịch trình trong ngày này
+    const schedulesOnThisDate = schedules.filter(schedule => {
+      if (!schedule.date) return false;
+      const scheduleDate = dayjs(schedule.date);
+      return scheduleDate.isSame(value, 'day');
+    });
+
+    if (schedulesOnThisDate.length === 0) return null;
+
+    return (
+      <div className="space-y-1">
+        {schedulesOnThisDate.slice(0, 3).map(schedule => {
+          const badgeStatus = schedule.is_booked ? 'success' : 'processing';
+          
+          return (
+            <div key={schedule._id} className="text-xs">
+              <Badge 
+                status={badgeStatus} 
+                text={
+                  <span className="text-xs">
+                    {schedule.time_slot} - {schedule.schedule_type === 'advice' ? 'Tư vấn' : 'Phân tích'}
+                  </span>
+                } 
+              />
+            </div>
+          );
+        })}
+        {schedulesOnThisDate.length > 3 && (
+          <div className="text-xs text-gray-400">+{schedulesOnThisDate.length - 3} khác</div>
+        )}
+      </div>
+    );
   };
 
   if (loading) {
@@ -332,8 +351,8 @@ const ConsultantDetail: React.FC = () => {
             <Row gutter={16}>
               <Col span={6}>
                 <Statistic
-                  title={<span className="text-gray-600">Tư vấn tháng này</span>}
-                  value={Math.floor(Math.random() * 30) + 10}
+                  title={<span className="text-gray-600">Tổng lịch trình</span>}
+                  value={schedules.length}
                   prefix={<TeamOutlined className="text-blue-500" />}
                   valueStyle={{ color: '#1890ff' }}
                 />
@@ -358,10 +377,8 @@ const ConsultantDetail: React.FC = () => {
               </Col>
               <Col span={6}>
                 <Statistic
-                  title={<span className="text-gray-600">Tỷ lệ hoàn thành</span>}
-                  value={95.5}
-                  precision={1}
-                  suffix="%"
+                  title={<span className="text-gray-600">Lịch đã đặt</span>}
+                  value={schedules.filter(s => s.is_booked).length}
                   prefix={<CheckCircleOutlined className="text-purple-500" />}
                   valueStyle={{ color: '#722ed1' }}
                 />
@@ -371,58 +388,23 @@ const ConsultantDetail: React.FC = () => {
 
           {/* Tabs nội dung */}
           <Collapse defaultActiveKey={['1']} className="shadow-sm">
-            {/* Lịch sử tư vấn */}
-            <Panel 
-              header={<span className="font-medium text-gray-800">📋 Lịch sử tư vấn gần đây</span>} 
-              key="1"
-            >
-              <div className="space-y-4">
-                {consultationHistory.map(item => (
-                  <div key={item.id} className="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <div className="font-medium text-gray-800">{item.patientName}</div>
-                        <div className="text-sm text-gray-600">{item.service}</div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm text-gray-500">{item.date}</div>
-                        {getConsultationStatusTag(item.status)}
-                      </div>
-                    </div>
-                    {item.status === 'completed' && (
-                      <div className="flex items-center space-x-4 mt-3">
-                        <div className="text-sm text-gray-600">
-                          <ClockCircleOutlined className="mr-1" />
-                          {item.duration} phút
-                        </div>
-                        {item.rating && (
-                          <div className="text-sm">
-                            <Rate disabled defaultValue={item.rating} className="text-xs" />
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    {item.notes && (
-                      <div className="mt-2 text-sm text-gray-600 italic">
-                        "{item.notes}"
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </Panel>
-
             {/* Lịch làm việc */}
             <Panel 
-              header={<span className="font-medium text-gray-800">📅 Lịch làm việc tháng này</span>} 
-              key="2"
+              header={<span className="font-medium text-gray-800">📅 Lịch trình tư vấn</span>} 
+              key="1"
             >
-              <Calendar
-                dateCellRender={dateCellRender}
-                onSelect={setSelectedDate}
-                value={selectedDate}
-                className="bg-white"
-              />
+              {schedulesLoading ? (
+                <div className="text-center py-8">
+                  <div className="text-gray-500">Đang tải lịch trình...</div>
+                </div>
+              ) : (
+                <Calendar
+                  dateCellRender={dateCellRender}
+                  onSelect={setSelectedDate}
+                  value={selectedDate}
+                  className="bg-white"
+                />
+              )}
             </Panel>
 
             {/* Đánh giá từ bệnh nhân */}

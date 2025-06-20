@@ -71,11 +71,11 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
           handleServiceChange(basicData.service_id);
         }
         
-        console.log('Loaded edit data:', { basicData, sections: editForm.sections });
+
       } else {
         // Reset form khi tạo mới
-        form.resetFields();
-        setSections([]);
+      form.resetFields();
+      setSections([]);
         setFormBasicData({});
         setExistingForms({});
         setValidationMessage('');
@@ -88,10 +88,8 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
   const loadServices = async () => {
     try {
       const response = await getAvailableServices();
-      console.log('Services response:', response);
       if (response.success) {
         setServices(response.data);
-        console.log('Loaded services:', response.data);
       } else {
         message.error('Không thể tải danh sách dịch vụ');
       }
@@ -130,10 +128,7 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
   // Kiểm tra form đã tồn tại khi thay đổi service
   const handleServiceChange = async (serviceId: string) => {
     try {
-      console.log('Service changed to:', serviceId);
       const response = await getExistingFormsForService(serviceId);
-      
-      console.log('Existing forms response:', response);
       
       if (response.success) {
         setExistingForms(response.data);
@@ -193,7 +188,6 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
         .then((values) => {
           // Lưu form data vào state
           setFormBasicData(values);
-          console.log('Saved form data to state:', values);
           setCurrentStep(1);
         })
         .catch(() => {
@@ -206,7 +200,6 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
     // Restore form values khi quay lại step 1
     if (formBasicData.service_id) {
       form.setFieldsValue(formBasicData);
-      console.log('Restored form values:', formBasicData);
     }
     setCurrentStep(0);
   };
@@ -218,16 +211,8 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
       // Sử dụng data từ state thay vì validate form lại
       const basicData = formBasicData.service_id ? formBasicData : await form.validateFields();
 
-      // Log chi tiết để debug
-      console.log('=== DEBUG FORM SUBMISSION ===');
-      console.log('Basic data from form:', basicData);
-      console.log('Form data from state:', formBasicData);
-      console.log('Available services:', services);
-      console.log('Selected service_id:', basicData.service_id);
-      
       // Kiểm tra service_id có trong danh sách services không
       const selectedService = services.find(s => s._id === basicData.service_id);
-      console.log('Found selected service:', selectedService);
 
       // Validation bổ sung
       if (!basicData.service_id) {
@@ -237,10 +222,6 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
 
       if (!selectedService) {
         message.error('Dịch vụ đã chọn không hợp lệ. Vui lòng chọn lại.');
-        console.error('Service validation failed:', {
-          selectedId: basicData.service_id,
-          availableServices: services.map(s => ({ _id: s._id, title: s.title }))
-        });
         return;
       }
 
@@ -279,14 +260,11 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
         sections: sections,
       };
 
-      console.log('Form data being sent:', JSON.stringify(formData, null, 2));
-      console.log('Selected service_id type:', typeof basicData.service_id);
-      console.log('Mode:', mode, 'Edit form ID:', editForm?._id);
+
 
       // Gọi API tương ứng với mode
       let response;
       if (isEditMode && editForm?._id) {
-        console.log('Calling UPDATE API for form:', editForm._id);
         // Tạo update data với cấu trúc phù hợp cho PUT API
         const updateData = {
           service_id: basicData.service_id,
@@ -295,7 +273,6 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
           form_description: basicData.form_description,
           sections: sections,
         };
-        console.log('Update data being sent:', JSON.stringify(updateData, null, 2));
         
         response = await updateDynamicForm(editForm._id, updateData);
         if (response.success) {
@@ -305,7 +282,6 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
           throw new Error('Cập nhật form thất bại');
         }
       } else {
-        console.log('Calling CREATE API');
         response = await createDynamicForm(formData);
       if (response.success) {
         message.success('Tạo form schema thành công!');
@@ -315,25 +291,9 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
         }
       }
     } catch (error) {
-      console.error('Error creating form:', error);
-      
-      // Chi tiết hóa error message
-      if (error instanceof Error) {
-        console.error('Error details:', {
-          message: error.message,
-          stack: error.stack,
-        });
-      }
-
       // Kiểm tra nếu là axios error
       if (error && typeof error === 'object' && 'response' in error) {
         const axiosError = error as { response?: { status?: number; statusText?: string; data?: { message?: string; error?: string } }; config?: unknown };
-        console.error('Axios error details:', {
-          status: axiosError.response?.status,
-          statusText: axiosError.response?.statusText,
-          data: axiosError.response?.data,
-          config: axiosError.config
-        });
         
         // Hiển thị error message từ server nếu có
         const serverMessage = axiosError.response?.data?.message || axiosError.response?.data?.error;

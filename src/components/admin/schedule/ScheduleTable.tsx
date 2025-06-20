@@ -1,14 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Table, Space, Button, Tag, Popconfirm, Tooltip } from 'antd';
 import { EditOutlined, DeleteOutlined, EyeOutlined, ClockCircleOutlined, CheckCircleOutlined, CalendarOutlined } from '@ant-design/icons';
 import type { Schedule } from './ScheduleTypes';
 import type { ColumnsType } from 'antd/es/table';
+import ScheduleDetailModal from './ScheduleDetailModal';
 
 interface ScheduleTableProps {
   data: Schedule[];
   loading?: boolean;
   onEdit?: (id: string) => void;
-  onView?: (id: string) => void;
   onDelete?: (id: string) => void;
 }
 
@@ -16,9 +16,10 @@ const ScheduleTable: React.FC<ScheduleTableProps> = ({
   data, 
   loading = false,
   onEdit,
-  onView,
   onDelete
 }) => {
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(null);
   const handleEdit = (id: string) => {
     if (onEdit) {
       onEdit(id);
@@ -26,9 +27,8 @@ const ScheduleTable: React.FC<ScheduleTableProps> = ({
   };
 
   const handleView = (id: string) => {
-    if (onView) {
-      onView(id);
-    }
+    setSelectedScheduleId(id);
+    setDetailModalVisible(true);
   };
 
   const handleDelete = (id: string) => {
@@ -37,42 +37,37 @@ const ScheduleTable: React.FC<ScheduleTableProps> = ({
     }
   };
 
-  const renderStatus = (status: string) => {
-    let color = '';
-    let text = '';
-    let icon = null;
-
-    switch (status) {
-      case 'available':
-        color = 'green';
-        text = 'Còn trống';
-        icon = <ClockCircleOutlined />;
-        break;
-      case 'booked':
-        color = 'blue';
-        text = 'Đã đặt';
-        icon = <CheckCircleOutlined />;
-        break;
-      case 'completed':
-        color = 'cyan';
-        text = 'Đã hoàn thành';
-        icon = <CheckCircleOutlined />;
-        break;
-      case 'cancelled':
-        color = 'red';
-        text = 'Đã hủy';
-        icon = <ClockCircleOutlined />;
-        break;
-      default:
-        color = 'default';
-        text = status;
-    }
+  const renderStatus = (isBooked: boolean) => {
+    const color = isBooked ? 'blue' : 'green';
+    const text = isBooked ? 'Đã đặt' : 'Còn trống';
+    const icon = isBooked ? <CheckCircleOutlined /> : <ClockCircleOutlined />;
 
     return (
       <Tag color={color} icon={icon}>
         {text}
       </Tag>
     );
+  };
+
+  const renderScheduleType = (type: string) => {
+    const color = type === 'advice' ? 'cyan' : 'purple';
+    const text = type === 'advice' ? 'Tư vấn' : 'Khám bệnh';
+    
+    return (
+      <Tag color={color}>
+        {text}
+      </Tag>
+    );
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('vi-VN', {
+      weekday: 'short',
+      year: 'numeric',
+      month: '2-digit', 
+      day: '2-digit'
+    });
   };
 
   const columns: ColumnsType<Schedule> = [
@@ -85,53 +80,55 @@ const ScheduleTable: React.FC<ScheduleTableProps> = ({
             <CalendarOutlined className="text-blue-600" />
           </div>
           <div>
-            <div className="font-semibold text-gray-800">{record.title}</div>
-            <div className="text-sm text-gray-500">{record.date} • {record.startTime} - {record.endTime}</div>
+            <div className="font-semibold text-gray-800">{formatDate(record.date)}</div>
+            <div className="text-sm text-gray-500">{record.time_slot}</div>
           </div>
         </div>
       ),
-      width: 300,
+      width: 250,
     },
     {
-      title: 'Bác sĩ',
-      dataIndex: 'doctor',
-      key: 'doctor',
+      title: 'Tư vấn viên',
+      key: 'consultant',
       width: 200,
-      render: (doctor) => (
-        <span className="text-gray-700">{doctor}</span>
+      render: (_, record) => (
+        <div>
+          <div className="font-medium text-gray-800">{record.consultant_user_id.full_name}</div>
+          <div className="text-sm text-gray-500">{record.consultant_user_id.email}</div>
+        </div>
       ),
     },
     {
-      title: 'Chuyên khoa',
-      dataIndex: 'specialty',
-      key: 'specialty',
-      width: 150,
-      render: (specialty) => (
-        <Tag color="cyan">{specialty}</Tag>
-      ),
+      title: 'Loại lịch',
+      dataIndex: 'schedule_type',
+      key: 'schedule_type',
+      width: 120,
+      render: (type) => renderScheduleType(type),
+      filters: [
+        { text: 'Tư vấn', value: 'advice' },
+        { text: 'Khám bệnh', value: 'consultation' },
+      ],
+      onFilter: (value, record) => record.schedule_type === value,
     },
     {
       title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
-      width: 150,
-      render: (status) => renderStatus(status),
+      dataIndex: 'is_booked',
+      key: 'is_booked',
+      width: 120,
+      render: (isBooked) => renderStatus(isBooked),
       filters: [
-        { text: 'Còn trống', value: 'available' },
-        { text: 'Đã đặt', value: 'booked' },
-        { text: 'Đã hoàn thành', value: 'completed' },
-        { text: 'Đã hủy', value: 'cancelled' },
+        { text: 'Còn trống', value: false },
+        { text: 'Đã đặt', value: true },
       ],
-      onFilter: (value, record) => record.status === value,
+      onFilter: (value, record) => record.is_booked === value,
     },
     {
-      title: 'Ghi chú',
-      dataIndex: 'note',
-      key: 'note',
-      width: 200,
-      ellipsis: true,
-      render: (note) => (
-        <span className="text-gray-600">{note || 'Không có ghi chú'}</span>
+      title: 'Ngày tạo',
+      dataIndex: 'created_at',
+      key: 'created_at',
+      width: 150,
+      render: (createdAt) => (
+        <span className="text-gray-600">{formatDate(createdAt)}</span>
       ),
     },
     {
@@ -141,19 +138,19 @@ const ScheduleTable: React.FC<ScheduleTableProps> = ({
       render: (_, record) => (
         <Space size="small">
           <Tooltip title="Xem chi tiết">
-            <Button
-              type="text"
-              icon={<EyeOutlined />}
-              onClick={() => handleView(record.id)}
+            <Button 
+              type="text" 
+              icon={<EyeOutlined />} 
+              onClick={() => handleView(record._id)}
               className="text-blue-600 hover:text-blue-800"
             />
           </Tooltip>
           
           <Tooltip title="Chỉnh sửa">
-            <Button
-              type="text"
-              icon={<EditOutlined />}
-              onClick={() => handleEdit(record.id)}
+            <Button 
+              type="text" 
+              icon={<EditOutlined />} 
+              onClick={() => handleEdit(record._id)}
               className="text-green-600 hover:text-green-800"
             />
           </Tooltip>
@@ -161,18 +158,18 @@ const ScheduleTable: React.FC<ScheduleTableProps> = ({
           <Popconfirm
             title="Xác nhận xóa"
             description="Bạn có chắc chắn muốn xóa lịch trình này?"
-            onConfirm={() => handleDelete(record.id)}
+            onConfirm={() => handleDelete(record._id)}
             okText="Xóa"
             cancelText="Hủy"
             okButtonProps={{ danger: true }}
           >
-            <Tooltip title="Xóa">
-              <Button
-                type="text"
-                icon={<DeleteOutlined />}
+          <Tooltip title="Xóa">
+            <Button 
+              type="text" 
+              icon={<DeleteOutlined />} 
                 className="text-red-600 hover:text-red-800"
-              />
-            </Tooltip>
+            />
+          </Tooltip>
           </Popconfirm>
         </Space>
       ),
@@ -180,21 +177,38 @@ const ScheduleTable: React.FC<ScheduleTableProps> = ({
   ];
 
   return (
-    <Table
-      columns={columns}
-      dataSource={data}
-      rowKey="id"
-      loading={loading}
-      pagination={{
-        pageSize: 10,
-        showSizeChanger: true,
-        showQuickJumper: true,
-        showTotal: (total, range) =>
-          `${range[0]}-${range[1]} của ${total} lịch trình`,
-      }}
-      scroll={{ x: 1200 }}
-      className="schedule-table"
-    />
+    <>
+      <Table
+        columns={columns}
+        dataSource={data}
+        rowKey="_id"
+        loading={loading}
+        pagination={{
+          pageSize: 10,
+          showSizeChanger: true,
+          showQuickJumper: true,
+          showTotal: (total, range) =>
+            `${range[0]}-${range[1]} của ${total} lịch trình`,
+        }}
+        scroll={{ x: 1200 }}
+        className="schedule-table"
+      />
+
+      {/* Schedule Detail Modal */}
+      <ScheduleDetailModal
+        visible={detailModalVisible}
+        scheduleId={selectedScheduleId}
+        onClose={() => {
+          setDetailModalVisible(false);
+          setSelectedScheduleId(null);
+        }}
+        onEdit={(schedule) => {
+          if (onEdit) {
+            onEdit(schedule._id);
+          }
+        }}
+      />
+    </>
   );
 };
 

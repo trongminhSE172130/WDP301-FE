@@ -205,20 +205,20 @@ const DynamicFormTable: React.FC<DynamicFormTableProps> = ({
 
   return (
     <div>
-      <Table
-        columns={columns}
-        dataSource={data}
-        rowKey="_id"
-        loading={loading}
-        pagination={{
-          pageSize: 10,
-          showSizeChanger: true,
-          showQuickJumper: true,
+    <Table
+      columns={columns}
+      dataSource={data}
+      rowKey="_id"
+      loading={loading}
+      pagination={{
+        pageSize: 10,
+        showSizeChanger: true,
+        showQuickJumper: true,
           showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} mục`,
-        }}
+      }}
         scroll={{ x: 1200 }}
         className="bg-white rounded-lg shadow-sm"
-      />
+    />
     </div>
   );
 };
