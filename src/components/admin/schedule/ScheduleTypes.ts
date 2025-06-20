@@ -1,18 +1,23 @@
+export interface ConsultantUser {
+  _id: string;
+  full_name: string;
+  email: string;
+}
+
 export interface Schedule {
-  id: string;
-  title: string;
-  doctor: string;
-  specialty: string;
+  _id: string;
+  consultant_user_id: string | ConsultantUser; // Can be either ID string or populated object
   date: string;
-  startTime: string;
-  endTime: string;
-  status: 'available' | 'booked' | 'completed' | 'cancelled';
-  note?: string;
+  time_slot: string;
+  schedule_type: 'advice' | 'consultation';
+  is_booked: boolean;
+  created_at: string;
+  updated_at: string;
+  __v: number;
 }
 
 export interface FilterParams {
-  doctor?: string;
-  specialty?: string;
   date?: string;
-  status?: string;
+  schedule_type?: string;
+  is_booked?: boolean;
 } 

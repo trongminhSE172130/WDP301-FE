@@ -1,28 +1,25 @@
 import React, { useState } from 'react';
-import { Table, Card, Space, Button, Tag, Modal, Tooltip } from 'antd';
-import { EditOutlined, DeleteOutlined, EyeOutlined, ClockCircleOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { Table, Space, Button, Tag, Popconfirm, Tooltip } from 'antd';
+import { EditOutlined, DeleteOutlined, EyeOutlined, ClockCircleOutlined, CheckCircleOutlined, CalendarOutlined } from '@ant-design/icons';
 import type { Schedule } from './ScheduleTypes';
 import type { ColumnsType } from 'antd/es/table';
+import ScheduleDetailModal from './ScheduleDetailModal';
 
 interface ScheduleTableProps {
   data: Schedule[];
   loading?: boolean;
   onEdit?: (id: string) => void;
-  onView?: (id: string) => void;
-}
-
-interface TableItem extends Schedule {
-  key: string;
+  onDelete?: (id: string) => void;
 }
 
 const ScheduleTable: React.FC<ScheduleTableProps> = ({ 
   data, 
   loading = false,
   onEdit,
-  onView
+  onDelete
 }) => {
-  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
-
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [selectedScheduleId, setSelectedScheduleId] = useState<string | null>(null);
   const handleEdit = (id: string) => {
     if (onEdit) {
       onEdit(id);
@@ -30,183 +27,188 @@ const ScheduleTable: React.FC<ScheduleTableProps> = ({
   };
 
   const handleView = (id: string) => {
-    if (onView) {
-      onView(id);
-    }
+    setSelectedScheduleId(id);
+    setDetailModalVisible(true);
   };
 
   const handleDelete = (id: string) => {
-    Modal.confirm({
-      title: 'Xác nhận xóa',
-      content: 'Bạn có chắc chắn muốn xóa lịch trình này không?',
-      okText: 'Xóa',
-      cancelText: 'Hủy',
-      okButtonProps: { danger: true },
-      onOk: () => {
-        console.log('Xóa lịch trình với ID:', id);
-      }
+    if (onDelete) {
+      onDelete(id);
+    }
+  };
+
+  const renderStatus = (isBooked: boolean) => {
+    const color = isBooked ? 'blue' : 'green';
+    const text = isBooked ? 'Đã đặt' : 'Còn trống';
+    const icon = isBooked ? <CheckCircleOutlined /> : <ClockCircleOutlined />;
+
+    return (
+      <Tag color={color} icon={icon}>
+        {text}
+      </Tag>
+    );
+  };
+
+  const renderScheduleType = (type: string) => {
+    const color = type === 'advice' ? 'cyan' : 'purple';
+    const text = type === 'advice' ? 'Tư vấn' : 'Khám bệnh';
+    
+    return (
+      <Tag color={color}>
+        {text}
+      </Tag>
+    );
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('vi-VN', {
+      weekday: 'short',
+      year: 'numeric',
+      month: '2-digit', 
+      day: '2-digit'
     });
   };
 
-  const columns: ColumnsType<TableItem> = [
+  const columns: ColumnsType<Schedule> = [
     {
-      title: 'ID',
-      dataIndex: 'id',
-      key: 'id',
-      width: 100,
-      sorter: (a, b) => a.id.localeCompare(b.id),
-    },
-    {
-      title: 'Tiêu đề',
-      dataIndex: 'title',
-      key: 'title',
-      ellipsis: true,
-      sorter: (a, b) => a.title.localeCompare(b.title),
-    },
-    {
-      title: 'Bác sĩ',
-      dataIndex: 'doctor',
-      key: 'doctor',
-      ellipsis: true,
-      sorter: (a, b) => a.doctor.localeCompare(b.doctor),
-      filters: Array.from(new Set(data.map(item => item.doctor))).map(doctor => ({
-        text: doctor,
-        value: doctor,
-      })),
-      onFilter: (value, record) => record.doctor === value,
-    },
-    {
-      title: 'Chuyên khoa',
-      dataIndex: 'specialty',
-      key: 'specialty',
-      width: 130,
-      filters: Array.from(new Set(data.map(item => item.specialty))).map(specialty => ({
-        text: specialty,
-        value: specialty,
-      })),
-      onFilter: (value, record) => record.specialty === value,
-    },
-    {
-      title: 'Ngày',
-      dataIndex: 'date',
-      key: 'date',
-      width: 120,
-      sorter: (a, b) => {
-        const dateA = a.date.split('/').reverse().join('');
-        const dateB = b.date.split('/').reverse().join('');
-        return dateA.localeCompare(dateB);
-      },
-    },
-    {
-      title: 'Thời gian',
-      key: 'time',
-      width: 150,
+      title: 'Lịch trình',
+      key: 'schedule',
       render: (_, record) => (
-        <span>{record.startTime} - {record.endTime}</span>
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+            <CalendarOutlined className="text-blue-600" />
+          </div>
+          <div>
+            <div className="font-semibold text-gray-800">{formatDate(record.date)}</div>
+            <div className="text-sm text-gray-500">{record.time_slot}</div>
+          </div>
+        </div>
+      ),
+      width: 250,
+    },
+    {
+      title: 'Tư vấn viên',
+      key: 'consultant',
+      width: 200,
+      render: (_, record) => (
+        <div>
+          <div className="font-medium text-gray-800">{record.consultant_user_id.full_name}</div>
+          <div className="text-sm text-gray-500">{record.consultant_user_id.email}</div>
+        </div>
       ),
     },
     {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
-      width: 150,
-      render: (status) => {
-        let color = '';
-        let text = '';
-        let icon = null;
-
-        switch (status) {
-          case 'available':
-            color = 'green';
-            text = 'Còn trống';
-            icon = <ClockCircleOutlined />;
-            break;
-          case 'booked':
-            color = 'blue';
-            text = 'Đã đặt';
-            icon = <CheckCircleOutlined />;
-            break;
-          case 'completed':
-            color = 'cyan';
-            text = 'Đã hoàn thành';
-            icon = <CheckCircleOutlined />;
-            break;
-          case 'cancelled':
-            color = 'red';
-            text = 'Đã hủy';
-            icon = <ClockCircleOutlined />;
-            break;
-          default:
-            color = 'default';
-            text = status;
-        }
-
-        return (
-          <Tag color={color} icon={icon}>
-            {text}
-          </Tag>
-        );
-      },
+      title: 'Loại lịch',
+      dataIndex: 'schedule_type',
+      key: 'schedule_type',
+      width: 120,
+      render: (type) => renderScheduleType(type),
       filters: [
-        { text: 'Còn trống', value: 'available' },
-        { text: 'Đã đặt', value: 'booked' },
-        { text: 'Đã hoàn thành', value: 'completed' },
-        { text: 'Đã hủy', value: 'cancelled' },
+        { text: 'Tư vấn', value: 'advice' },
+        { text: 'Khám bệnh', value: 'consultation' },
       ],
-      onFilter: (value, record) => record.status === value,
+      onFilter: (value, record) => record.schedule_type === value,
+    },
+    {
+      title: 'Trạng thái',
+      dataIndex: 'is_booked',
+      key: 'is_booked',
+      width: 120,
+      render: (isBooked) => renderStatus(isBooked),
+      filters: [
+        { text: 'Còn trống', value: false },
+        { text: 'Đã đặt', value: true },
+      ],
+      onFilter: (value, record) => record.is_booked === value,
+    },
+    {
+      title: 'Ngày tạo',
+      dataIndex: 'created_at',
+      key: 'created_at',
+      width: 150,
+      render: (createdAt) => (
+        <span className="text-gray-600">{formatDate(createdAt)}</span>
+      ),
     },
     {
       title: 'Thao tác',
-      key: 'action',
+      key: 'actions',
       width: 150,
       render: (_, record) => (
-        <Space size="middle">
+        <Space size="small">
           <Tooltip title="Xem chi tiết">
             <Button 
               type="text" 
               icon={<EyeOutlined />} 
-              onClick={() => handleView(record.id)} 
+              onClick={() => handleView(record._id)}
+              className="text-blue-600 hover:text-blue-800"
             />
           </Tooltip>
+          
           <Tooltip title="Chỉnh sửa">
             <Button 
               type="text" 
               icon={<EditOutlined />} 
-              onClick={() => handleEdit(record.id)} 
+              onClick={() => handleEdit(record._id)}
+              className="text-green-600 hover:text-green-800"
             />
           </Tooltip>
+          
+          <Popconfirm
+            title="Xác nhận xóa"
+            description="Bạn có chắc chắn muốn xóa lịch trình này?"
+            onConfirm={() => handleDelete(record._id)}
+            okText="Xóa"
+            cancelText="Hủy"
+            okButtonProps={{ danger: true }}
+          >
           <Tooltip title="Xóa">
             <Button 
               type="text" 
-              danger 
               icon={<DeleteOutlined />} 
-              onClick={() => handleDelete(record.id)} 
+                className="text-red-600 hover:text-red-800"
             />
           </Tooltip>
+          </Popconfirm>
         </Space>
       ),
     },
   ];
 
   return (
-    <Card>
+    <>
       <Table
-        rowSelection={{
-          selectedRowKeys,
-          onChange: setSelectedRowKeys,
-        }}
         columns={columns}
-        dataSource={data.map(item => ({ ...item, key: item.id }))}
+        dataSource={data}
+        rowKey="_id"
         loading={loading}
         pagination={{
-          defaultPageSize: 10,
+          pageSize: 10,
           showSizeChanger: true,
-          pageSizeOptions: ['10', '20', '50'],
-          showTotal: (total) => `Tổng số: ${total} lịch trình`,
+          showQuickJumper: true,
+          showTotal: (total, range) =>
+            `${range[0]}-${range[1]} của ${total} lịch trình`,
         }}
         scroll={{ x: 1200 }}
+        className="schedule-table"
       />
-    </Card>
+
+      {/* Schedule Detail Modal */}
+      <ScheduleDetailModal
+        visible={detailModalVisible}
+        scheduleId={selectedScheduleId}
+        onClose={() => {
+          setDetailModalVisible(false);
+          setSelectedScheduleId(null);
+        }}
+        onEdit={(schedule) => {
+          if (onEdit) {
+            onEdit(schedule._id);
+          }
+        }}
+      />
+    </>
   );
 };
 

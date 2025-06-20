@@ -31,7 +31,7 @@ import AppointmentDetailPage from "./pages/admin/AppointmentDetailPage";
 import PatientPage from "./pages/admin/PatientPage";
 import PatientDetailPage from "./pages/admin/PatientDetailPage";
 import ServiceManagePage from "./pages/admin/ServicePage";
-import SchedulePage from "./pages/admin/SchedulePage";
+import ConsultantSchedulePage from "./pages/admin/ConsultantSchedulePage";
 import DocumentPage from "./pages/admin/DocumentPage";
 import BlogPage from "./pages/admin/BlogPage";
 import BlogCategoriesPage from "./pages/admin/BlogCategoriesPage";
@@ -40,6 +40,7 @@ import ConsultantManagement from "./pages/admin/ConsultantManagement";
 import ConsultantDetail from "./pages/admin/ConsultantDetail";
 import DynamicFormPage from "./pages/admin/DynamicFormPage";
 import PushNotificationPage from "./pages/admin/PushNotifiactionPage";
+import SubscriptionPage from "./pages/admin/SubscriptionPage";
 
 // Auth protection
 const ProtectedRoute = ({ allowedRoles = ["admin", "consultant"] }) => {
@@ -157,7 +158,7 @@ const router = createBrowserRouter([
           { path: "appointments/:id", element: <AppointmentDetailPage /> },
           { path: "patients", element: <PatientPage /> },
           { path: "patients/:id", element: <PatientDetailPage /> },
-          { path: "schedule", element: <SchedulePage /> },
+          { path: "schedules", element: <ConsultantSchedulePage /> },
           { path: "documents", element: <DocumentPage /> },
           { path: "*", element: <UnderDevelopmentPage /> },
         ],
@@ -182,7 +183,7 @@ const router = createBrowserRouter([
           { path: "patients", element: <PatientPage /> },
           { path: "patients/:id", element: <PatientDetailPage /> },
           { path: "services", element: <ServiceManagePage /> },
-          { path: "schedule", element: <SchedulePage /> },
+          { path: "schedules", element: <ConsultantSchedulePage /> },
           { path: "documents", element: <DocumentPage /> },
           { path: "consultants", element: <ConsultantManagement /> },
           { path: "consultants/:id", element: <ConsultantDetail /> },
@@ -193,6 +194,7 @@ const router = createBrowserRouter([
           { path: "service-categories", element: <ServiceCategoriesPage /> },
           { path: "dynamic-forms", element: <DynamicFormPage /> },
           { path: "push-notifications", element: <PushNotificationPage /> },
+          { path: "subscription", element: <SubscriptionPage /> },
           { path: "*", element: <UnderDevelopmentPage /> },
         ],
       },

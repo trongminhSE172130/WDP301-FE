@@ -69,6 +69,14 @@ export interface DynamicFormResponse {
   data: DynamicForm[];
 }
 
+export interface DynamicFormCreate {
+  service_id: string;
+  form_type: string;
+  form_name: string;
+  form_description: string;
+  sections: FormSection[];
+}
+
 export interface FormSubmissionData {
   [key: string]: string | number | boolean | string[] | File | null | undefined;
 } 
