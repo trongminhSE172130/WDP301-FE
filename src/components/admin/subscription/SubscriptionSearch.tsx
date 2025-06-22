@@ -6,20 +6,19 @@ const { Option } = Select;
 
 export interface SearchFormValues {
   keyword?: string;
-  formType?: string;
-  status?: string;
+  is_active?: boolean;
 }
 
-interface DynamicFormSearchProps {
+interface SubscriptionSearchProps {
   onSearch: (values: SearchFormValues) => void;
   onReset: () => void;
-  loading: boolean;
+  loading?: boolean;
 }
 
-const DynamicFormSearch: React.FC<DynamicFormSearchProps> = ({
+const SubscriptionSearch: React.FC<SubscriptionSearchProps> = ({
   onSearch,
   onReset,
-  loading
+  loading = false,
 }) => {
   const [form] = Form.useForm();
 
@@ -41,32 +40,22 @@ const DynamicFormSearch: React.FC<DynamicFormSearchProps> = ({
               <Col xs={24} sm={12} md={6} lg={5}>
                 <Form.Item name="keyword" className="mb-0">
                   <Input 
-                    placeholder="Tìm kiếm form..." 
+                    placeholder="Tên gói đăng ký" 
                     prefix={<SearchOutlined className="text-gray-400" />}
-                    allowClear
                   />
                 </Form.Item>
               </Col>
 
               <Col xs={24} sm={12} md={6} lg={5}>
-                <Form.Item name="formType" className="mb-0">
-                  <Select placeholder="Loại form" allowClear className="w-full">
-                    <Option value="booking_form">Đặt lịch</Option>
-                    <Option value="result_form">Kết quả</Option>
-                  </Select>
-                </Form.Item>
-              </Col>
-
-              <Col xs={24} sm={12} md={6} lg={5}>
-                <Form.Item name="status" className="mb-0">
+                <Form.Item name="is_active" className="mb-0">
                   <Select placeholder="Trạng thái" allowClear className="w-full">
-                    <Option value="active">Đang hoạt động</Option>
-                    <Option value="inactive">Không hoạt động</Option>
+                    <Option value={true}>Đang hoạt động</Option>
+                    <Option value={false}>Tạm dừng</Option>
                   </Select>
                 </Form.Item>
               </Col>
 
-              <Col xs={24} sm={12} md={6} lg={9}>
+              <Col xs={24} sm={12} md={6} lg={14}>
                 <Space>
                   <Button 
                     type="primary" 
@@ -92,4 +81,4 @@ const DynamicFormSearch: React.FC<DynamicFormSearchProps> = ({
   );
 };
 
-export default DynamicFormSearch; 
+export default SubscriptionSearch; 

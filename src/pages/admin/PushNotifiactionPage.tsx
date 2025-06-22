@@ -5,16 +5,20 @@ import {
   message,
   Typography,
   Spin,
+  Space,
 } from 'antd';
 import {
   PlusOutlined,
   BellOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 import PushNotificationTable from '../../components/admin/pushnotifications/PushNotificationTable';
 import PushNotificationForm from '../../components/admin/pushnotifications/PushNotificationForm';
-import { broadcastNotification, getNotifications } from '../../service/api/notificationAPI';
+import PushNotificationUserForm from '../../components/admin/pushnotifications/PushNotificationUserForm';
+import { broadcastNotification, getNotifications, sendToUserNotification } from '../../service/api/notificationAPI';
 import type { 
-  CreateNotificationRequest
+  CreateNotificationRequest,
+  CreateUserNotificationRequest
 } from '../../components/admin/pushnotifications/PushNotificationTypes';
 import type { NotificationItem, GetNotificationsParams } from '../../service/api/notificationAPI';
 
@@ -23,7 +27,8 @@ const { Title } = Typography;
 const PushNotificationPage: React.FC = () => {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [isBroadcastModalOpen, setIsBroadcastModalOpen] = useState<boolean>(false);
+  const [isUserModalOpen, setIsUserModalOpen] = useState<boolean>(false);
   const [pagination, setPagination] = useState({
     current: 1,
     pageSize: 10,
@@ -78,17 +83,22 @@ const PushNotificationPage: React.FC = () => {
     });
   };
 
-  // Mở modal tạo mới
-  const handleAdd = () => {
-    setIsModalOpen(true);
+  // Mở modal broadcast
+  const handleBroadcast = () => {
+    setIsBroadcastModalOpen(true);
   };
 
-  // Xử lý submit form và gửi notification
-  const handleSubmit = async (data: CreateNotificationRequest) => {
+  // Mở modal gửi cho user cụ thể
+  const handleSendToUser = () => {
+    setIsUserModalOpen(true);
+  };
+
+  // Xử lý submit form broadcast
+  const handleBroadcastSubmit = async (data: CreateNotificationRequest) => {
     try {
       setLoading(true);
       
-      console.log('Sending notification:', data);
+      console.log('Sending broadcast notification:', data);
       
       // Gửi broadcast notification qua API
       const response = await broadcastNotification({
@@ -104,22 +114,64 @@ const PushNotificationPage: React.FC = () => {
         // Hiển thị thông báo thành công với thống kê
         if (response.data) {
           message.success(
-            `Gửi thông báo thành công! Đã gửi cho ${response.data.sentCount}/${response.data.totalUsers} người dùng có role "${data.role}"`
+            `Gửi thông báo broadcast thành công! Đã gửi cho ${response.data.sentCount}/${response.data.totalUsers} người dùng có role "${data.role}"`
           );
         } else {
-          message.success('Gửi thông báo thành công!');
+          message.success('Gửi thông báo broadcast thành công!');
         }
 
         // Refresh danh sách để hiển thị notification mới
         await fetchNotifications();
       } else {
-        message.error('Gửi thông báo thất bại');
+        message.error('Gửi thông báo broadcast thất bại');
       }
 
-      setIsModalOpen(false);
+      setIsBroadcastModalOpen(false);
     } catch (error) {
-      console.error('Error sending notification:', error);
-      message.error('Có lỗi xảy ra khi gửi thông báo');
+      console.error('Error sending broadcast notification:', error);
+      message.error('Có lỗi xảy ra khi gửi thông báo broadcast');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Xử lý submit form gửi cho user cụ thể
+  const handleUserSubmit = async (data: CreateUserNotificationRequest) => {
+    try {
+      setLoading(true);
+      
+      console.log('Sending user notification:', data);
+      
+      // Gửi notification cho user cụ thể qua API
+      const response = await sendToUserNotification({
+        user_id: data.user_id,
+        title: data.title,
+        body: data.body,
+        data: data.data
+      });
+
+      console.log('API Response:', response);
+
+      if (response.success) {
+        // Hiển thị thông báo thành công với thông tin user
+        if (response.data?.user_info) {
+          message.success(
+            `Gửi thông báo thành công cho ${response.data.user_info.full_name} (${response.data.user_info.email})`
+          );
+        } else {
+          message.success('Gửi thông báo cho người dùng thành công!');
+        }
+
+        // Refresh danh sách để hiển thị notification mới
+        await fetchNotifications();
+      } else {
+        message.error('Gửi thông báo cho người dùng thất bại');
+      }
+
+      setIsUserModalOpen(false);
+    } catch (error) {
+      console.error('Error sending user notification:', error);
+      message.error('Có lỗi xảy ra khi gửi thông báo cho người dùng');
     } finally {
       setLoading(false);
     }
@@ -136,14 +188,24 @@ const PushNotificationPage: React.FC = () => {
       <Card>
         <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
           <Title level={4} style={{ margin: 0 }}>Danh sách thông báo</Title>
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />}
-            onClick={handleAdd}
-            loading={loading}
-          >
-            Gửi thông báo broadcast
-          </Button>
+          <Space>
+            <Button 
+              type="default" 
+              icon={<UserOutlined />}
+              onClick={handleSendToUser}
+              loading={loading}
+            >
+              Gửi cho người dùng
+            </Button>
+            <Button 
+              type="primary" 
+              icon={<PlusOutlined />}
+              onClick={handleBroadcast}
+              loading={loading}
+            >
+              Gửi thông báo broadcast
+            </Button>
+          </Space>
         </div>
 
         <Spin spinning={loading}>
@@ -156,13 +218,21 @@ const PushNotificationPage: React.FC = () => {
         </Spin>
       </Card>
 
-      {/* Modal tạo/sửa notification */}
+      {/* Modal broadcast notification */}
       <PushNotificationForm
-        visible={isModalOpen}
-        onCancel={() => setIsModalOpen(false)}
-        onSubmit={handleSubmit}
+        visible={isBroadcastModalOpen}
+        onCancel={() => setIsBroadcastModalOpen(false)}
+        onSubmit={handleBroadcastSubmit}
         initialValues={null}
-        title="Gửi thông báo cho tất cả người dùng"
+        title="Gửi thông báo broadcast cho tất cả người dùng"
+      />
+
+      {/* Modal gửi notification cho user cụ thể */}
+      <PushNotificationUserForm
+        visible={isUserModalOpen}
+        onCancel={() => setIsUserModalOpen(false)}
+        onSubmit={handleUserSubmit}
+        title="Gửi thông báo cho người dùng cụ thể"
       />
     </div>
   );
