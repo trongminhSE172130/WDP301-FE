@@ -45,7 +45,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, role }) => {
         return [
           { key: 'dashboard', icon: <DashboardOutlined />, label: 'Tổng quan', link: '/consultant/dashboard' },
           { key: 'consultations', icon: <TeamOutlined />, label: 'Hàng đợi tư vấn', link: '/consultant/consultations' },
-          { key: 'schedule', icon: <CalendarOutlined />, label: 'Lịch tư vấn', link: '/consultant/schedule' },
+          { key: 'schedule', icon: <CalendarOutlined />, label: 'Lịch hẹn xét nghiệm', link: '/consultant/schedules' },
           { key: 'availability', icon: <ScheduleOutlined />, label: 'Lịch làm việc', link: '/consultant/availability' },
           { key: 'forms', icon: <FormOutlined />, label: 'Biểu mẫu', link: '/consultant/forms' },
           { key: 'messages', icon: <MessageOutlined />, label: 'Tin nhắn', link: '/consultant/messages' },

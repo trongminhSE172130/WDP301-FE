@@ -42,6 +42,10 @@ import ConsultantDetail from "./pages/admin/ConsultantDetail";
 import DynamicFormPage from "./pages/admin/DynamicFormPage";
 import PushNotificationPage from "./pages/admin/PushNotifiactionPage";
 import SubscriptionPage from "./pages/admin/SubscriptionPage";
+import ConsultantConsultations from './components/admin/consultant/ConsultantConsultations';
+import ConsultantScheduleBookings from './components/admin/consultant/ConsultantScheduleBookings';
+import ConsultantAvailability from './components/admin/consultant/ConsultantAvailability';
+import ConsultantMessages from './components/admin/consultant/ConsultantMessages';
 
 // Auth protection
 const ProtectedRoute = ({ allowedRoles = ["admin", "consultant"] }) => {
@@ -160,8 +164,11 @@ const router = createBrowserRouter([
           { path: "appointments/:id", element: <AppointmentDetailPage /> },
           { path: "patients", element: <PatientPage /> },
           { path: "patients/:id", element: <PatientDetailPage /> },
-          { path: "schedules", element: <ConsultantSchedulePage /> },
+          { path: "schedules", element: <ConsultantScheduleBookings /> },
+          { path: "consultations", element: <ConsultantConsultations /> },
           { path: "documents", element: <DocumentPage /> },
+          { path: "availability", element: <ConsultantAvailability /> },
+          { path: "messages", element: <ConsultantMessages /> },
           { path: "*", element: <UnderDevelopmentPage /> },
         ],
       },
@@ -186,6 +193,7 @@ const router = createBrowserRouter([
           { path: "patients/:id", element: <PatientDetailPage /> },
           { path: "services", element: <ServiceManagePage /> },
           { path: "schedules", element: <ConsultantSchedulePage /> },
+          { path: "consultations", element: <ConsultantConsultations /> },
           { path: "documents", element: <DocumentPage /> },
           { path: "consultants", element: <ConsultantManagement /> },
           { path: "consultants/:id", element: <ConsultantDetail /> },
@@ -197,6 +205,8 @@ const router = createBrowserRouter([
           { path: "dynamic-forms", element: <DynamicFormPage /> },
           { path: "push-notifications", element: <PushNotificationPage /> },
           { path: "subscription", element: <SubscriptionPage /> },
+          { path: "availability", element: <ConsultantAvailability /> },
+          { path: "messages", element: <ConsultantMessages /> },
           { path: "*", element: <UnderDevelopmentPage /> },
         ],
       },
