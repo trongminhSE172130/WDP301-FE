@@ -7,7 +7,7 @@ import AdminHeader from '../components/admin/AdminHeader';
 const { Content } = Layout;
 
 interface AdminLayoutProps {
-  role: 'Consultant' | 'Staff' | 'Manager' | 'Admin';
+  role: 'Consultant' | 'Admin';
 }
 
 const AdminLayout: React.FC<AdminLayoutProps> = ({ role }) => {

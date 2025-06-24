@@ -1,20 +1,18 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { GiHealthNormal } from "react-icons/gi";
+import { SessionManager } from "../utils/sessionManager";
 
 const Header: React.FC = () => {
-  const [user, setUser] = useState<{ full_name?: string } | null>(null);
+  const [user, setUser] = useState<{ full_name?: string; [key: string]: unknown } | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const userStr = localStorage.getItem("user");
-    if (userStr) {
-      try {
-        setUser(JSON.parse(userStr));
-      } catch {
-        setUser(null);
-      }
+    // Sử dụng SessionManager để lấy user info
+    if (SessionManager.isSessionValid()) {
+      const userInfo = SessionManager.getUserInfo();
+      setUser(userInfo);
     } else {
       setUser(null);
     }
@@ -38,8 +36,7 @@ const Header: React.FC = () => {
   }, [dropdownOpen]);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    SessionManager.clearSession();
     window.location.href = "/";
   };
 

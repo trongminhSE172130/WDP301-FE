@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import React, { useEffect, useState } from "react";
+import { SessionManager } from './utils/sessionManager';
 // import { isAuthorizedRole } from "./service/api/adminloginAPI";
 
 // Layouts
@@ -41,33 +42,33 @@ import ConsultantDetail from "./pages/admin/ConsultantDetail";
 import DynamicFormPage from "./pages/admin/DynamicFormPage";
 import PushNotificationPage from "./pages/admin/PushNotifiactionPage";
 import SubscriptionPage from "./pages/admin/SubscriptionPage";
+import BookingManagerPage from "./pages/admin/BookingManagerPage";
 
-// Auth protection
-const ProtectedRoute = ({ allowedRoles = ["admin", "consultant"] }) => {
+// Auth protection với SessionManager
+const ProtectedRoute = ({ allowedRoles = ["admin"] }) => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    // Kiểm tra đăng nhập bằng token
-    const token = localStorage.getItem("token");
-    
-    if (!token) {
+    // Kiểm tra session có hợp lệ không bằng SessionManager
+    if (!SessionManager.isSessionValid()) {
       setIsAuthenticated(false);
       setIsLoading(false);
       return;
     }
 
-    // Lấy thông tin user từ localStorage
+    // Lấy thông tin user từ SessionManager
     try {
-      const userStr = localStorage.getItem("user");
-      if (userStr) {
-        const userData = JSON.parse(userStr);
-        setUserRole(userData.role?.toLowerCase() || null);
-      }
+      const userRole = SessionManager.getUserRole();
+      setUserRole(userRole);
       setIsAuthenticated(true);
+      
+      // Gia hạn session khi truy cập protected route
+      SessionManager.extendSession();
     } catch (error) {
-      console.error("Lỗi khi phân tích dữ liệu người dùng:", error);
+      console.error("Lỗi khi lấy thông tin session:", error);
+      SessionManager.clearSession();
       setIsAuthenticated(false);
     } finally {
       setIsLoading(false);
@@ -76,10 +77,17 @@ const ProtectedRoute = ({ allowedRoles = ["admin", "consultant"] }) => {
 
   // Đang tải
   if (isLoading) {
-    return <div>Đang kiểm tra quyền truy cập...</div>;
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+          <p>Đang kiểm tra quyền truy cập...</p>
+        </div>
+      </div>
+    );
   }
   
-  // Chưa đăng nhập
+  // Chưa đăng nhập hoặc session hết hạn
   if (!isAuthenticated) {
     return <Navigate to="/admin/login" replace />;
   }
@@ -167,10 +175,10 @@ const router = createBrowserRouter([
   },
 
 
-  // Admin routes - Chỉ cho phép admin và consultant
+  // Admin routes - CHỈ cho phép admin
   {
     path: "/admin",
-    element: <ProtectedRoute allowedRoles={["admin", "consultant"]} />,
+    element: <ProtectedRoute allowedRoles={["admin"]} />,
     children: [
       {
         element: <AdminLayout role="Admin" />,
@@ -195,6 +203,7 @@ const router = createBrowserRouter([
           { path: "dynamic-forms", element: <DynamicFormPage /> },
           { path: "push-notifications", element: <PushNotificationPage /> },
           { path: "subscription", element: <SubscriptionPage /> },
+          { path: "bookings", element: <BookingManagerPage /> },
           { path: "*", element: <UnderDevelopmentPage /> },
         ],
       },

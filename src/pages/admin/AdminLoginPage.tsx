@@ -33,9 +33,9 @@ const AdminLoginPage: React.FC = () => {
         password: values.password
       });
       
-      // Lưu token vào localStorage
-      if (response.data && response.data.token) {
-        localStorage.setItem("token", response.data.token);
+      // Lưu token và user info bằng SessionManager
+      if (response.data && response.data.token && response.data.user) {
+        // Note: SessionManager sẽ được gọi tự động trong loginUser function
         
         message.success("Đăng nhập thành công!");
         
@@ -49,6 +49,8 @@ const AdminLoginPage: React.FC = () => {
           redirectPath = '/manager/dashboard';
         } else if (userRole === 'staff') {
           redirectPath = '/staff/dashboard';
+        } else if (userRole === 'admin') {
+          redirectPath = '/admin/dashboard';
         }
         
         navigate(redirectPath);

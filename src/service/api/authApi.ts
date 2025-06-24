@@ -1,4 +1,5 @@
 import apiClient from '../instance';
+import { SessionManager } from '../../utils/sessionManager';
 
 export interface RegisterPayload {
   full_name: string;
@@ -21,13 +22,13 @@ export const registerUser = async (data: RegisterPayload) => {
 
 export const loginUser = async (data: LoginPayload) => {
   const res = await apiClient.post('/auth/login', data);
-  if ('user' in res.data && res.data.user) {
-    localStorage.setItem("user", JSON.stringify(res.data.user));
+  if ('user' in res.data && res.data.user && res.data.token) {
+    // Sử dụng SessionManager để lưu session với timeout
+    SessionManager.saveSession(res.data.token, res.data.user);
   }
   return res;
 };
 
 export const logoutUser = () => {
-  localStorage.removeItem("user");
-  localStorage.removeItem("token");
+  SessionManager.clearSession();
 };

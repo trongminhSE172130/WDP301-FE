@@ -60,9 +60,7 @@ const LoginPage = () => {
           typeof res.data.token === 'string' &&
           res.data.token
         ) {
-          localStorage.setItem("token", res.data.token);
-          // Log user trong localStorage
-          console.log('User:', localStorage.getItem('user'));
+          // Note: SessionManager sẽ được gọi tự động trong loginUser function
           toast.success("Đăng nhập thành công!");
           navigate("/");
           window.location.reload();
