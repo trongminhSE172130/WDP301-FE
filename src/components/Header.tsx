@@ -94,16 +94,16 @@ const Header: React.FC = () => {
           </ul>
         </nav>
         <div className="flex space-x-4 items-center">
-          {profile ? (
+          {user ? (
             <div className="relative" ref={dropdownRef}>
               <button
                 className="flex items-center gap-2 focus:outline-none"
                 onClick={() => setDropdownOpen((open) => !open)}
               >
                 <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-teal-600 font-bold text-lg">
-                  {profile.full_name ? profile.full_name.charAt(0).toUpperCase() : "U"}
+                  {user.full_name ? user.full_name.charAt(0).toUpperCase() : "U"}
                 </div>
-                <span className="hidden sm:inline">Hi, {profile.full_name || "User"}</span>
+                <span className="hidden sm:inline">Hi, {user.full_name || "User"}</span>
               </button>
               {dropdownOpen && (
                 <div className="absolute right-0 mt-3 w-48 bg-white text-gray-800 rounded-xl shadow-2xl z-50 border border-gray-100 animate-fade-in transition-all duration-200 ease-out drop-shadow-lg">
