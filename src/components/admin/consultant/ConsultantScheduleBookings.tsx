@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Spin, Alert } from 'antd';
+import { Table, Spin, Alert, Modal, Descriptions, Tag, message } from 'antd';
 import apiClient from '../../../service/instance';
 
 interface Booking {
@@ -8,21 +8,92 @@ interface Booking {
     full_name: string;
     email: string;
     phone: string;
+    gender?: string;
+    dob?: string;
   };
   service_id: {
     title: string;
+    description?: string;
+    duration?: string;
+    sample_type?: string;
+    test_details?: any;
   };
   consultant_schedule_id: {
     date: string;
     time_slot: string;
+    consultant_user_id?: { full_name: string };
   };
   status: string;
 }
+
+// Modal hiển thị chi tiết booking
+const BookingDetailModal = ({ visible, loading, booking, onClose }: any) => {
+  if (!booking) return null;
+  const user = booking.user_id;
+  const service = booking.service_id;
+  const schedule = booking.consultant_schedule_id;
+  return (
+    <Modal open={visible} onCancel={onClose} footer={null} title="Chi tiết lịch hẹn" width={800}>
+      {loading ? <Spin /> : (
+        <Descriptions
+          bordered
+          column={1}
+          size="middle"
+          labelStyle={{
+            minWidth: 150,
+            fontWeight: 600,
+            fontSize: 15,
+            whiteSpace: 'nowrap',
+            background: '#fafafa'
+          }}
+          contentStyle={{
+            fontSize: 15,
+            verticalAlign: 'middle'
+          }}
+        >
+          <Descriptions.Item label="Khách hàng">
+            <b>{user.full_name}</b> {user.gender ? `(${user.gender === 'female' ? 'Nữ' : 'Nam'})` : ''}<br/>
+            <span>Email: {user.email}</span><br/>
+            <span>SĐT: {user.phone}</span><br/>
+            <span>Ngày sinh: {user.dob ? new Date(user.dob).toLocaleDateString('vi-VN') : ''}</span>
+          </Descriptions.Item>
+          <Descriptions.Item label="Dịch vụ">
+            <b>{service.title}</b><br/>
+            {service.description && <span>{service.description}<br/></span>}
+            {service.duration && <span>Thời lượng: {service.duration}<br/></span>}
+            {service.sample_type && <span>Loại mẫu: {service.sample_type}</span>}
+          </Descriptions.Item>
+          <Descriptions.Item label="Lịch tư vấn">
+            <span>Ngày: {schedule.date ? new Date(schedule.date).toLocaleDateString('vi-VN') : ''}</span><br/>
+            <span>Khung giờ: {schedule.time_slot}</span><br/>
+            <span>Tư vấn viên: {schedule.consultant_user_id?.full_name}</span>
+          </Descriptions.Item>
+          <Descriptions.Item label="Trạng thái">
+            <Tag color={booking.status === 'pending' ? 'orange' : booking.status === 'completed' ? 'green' : 'blue'}>
+              {booking.status}
+            </Tag>
+          </Descriptions.Item>
+          {service.test_details && (
+            <Descriptions.Item label="Thông tin xét nghiệm">
+              <b>Chỉ số:</b> {service.test_details.parameters?.join(', ')}<br/>
+              <b>Chuẩn bị:</b> {service.test_details.preparation}<br/>
+              <b>Thời gian trả kết quả:</b> {service.test_details.result_time}
+            </Descriptions.Item>
+          )}
+        </Descriptions>
+      )}
+    </Modal>
+  );
+};
 
 const ConsultantScheduleBookings: React.FC = () => {
   const [data, setData] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // State cho modal chi tiết booking
+  const [showBookingDetail, setShowBookingDetail] = useState(false);
+  const [bookingDetail, setBookingDetail] = useState<any>(null);
+  const [loadingBookingDetail, setLoadingBookingDetail] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -108,6 +179,25 @@ const ConsultantScheduleBookings: React.FC = () => {
     },
   ];
 
+  // Xem chi tiết booking
+  const handleShowBookingDetail = (bookingId: string) => {
+    setShowBookingDetail(true);
+    setLoadingBookingDetail(true);
+    apiClient.get(`/bookings/${bookingId}`)
+      .then(res => {
+        if (res.data && res.data.success) {
+          setBookingDetail(res.data.data.booking);
+        } else {
+          setBookingDetail(null);
+        }
+      })
+      .catch(() => {
+        message.error('Không thể tải chi tiết lịch hẹn.');
+        setBookingDetail(null);
+      })
+      .finally(() => setLoadingBookingDetail(false));
+  };
+
   return (
     <div style={{ padding: 24 }}>
       <h2 style={{ fontSize: 32, fontWeight: 700, color: '#08979c', marginBottom: 24, letterSpacing: 1 }}>
@@ -123,8 +213,17 @@ const ConsultantScheduleBookings: React.FC = () => {
           bordered
           style={{ borderRadius: 12, overflow: 'hidden', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
           className="custom-table"
+          onRow={record => ({
+            onClick: () => handleShowBookingDetail(record._id),
+          })}
         />
       )}
+      <BookingDetailModal
+        visible={showBookingDetail}
+        loading={loadingBookingDetail}
+        booking={bookingDetail}
+        onClose={() => setShowBookingDetail(false)}
+      />
       <style>{`
         .custom-table .ant-table-thead > tr > th {
           background: #e6fffb;

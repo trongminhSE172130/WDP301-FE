@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Table, Spin, Alert, Modal, Descriptions, Select, message } from 'antd';
+import { Table, Spin, Alert, Modal, Descriptions, message, Button, Tag, Space, Tooltip } from 'antd';
+import { RightOutlined, CloseOutlined } from '@ant-design/icons';
 import apiClient from '../../../service/instance';
 
 interface Booking {
@@ -46,15 +47,29 @@ interface BookingDetail {
   __v: number;
   cancellation_reason: string | null;
   cancelled_by: string | null;
+  meeting_link: string | null;
 }
 
 const statusOptions = [
   { value: 'pending', label: 'Chờ xác nhận' },
   { value: 'confirmed', label: 'Đã xác nhận' },
-  { value: 'in_progress', label: 'Đang tư vấn' },
+  { value: 'in_progress', label: 'Đang xử lí' },
   { value: 'completed', label: 'Đã hoàn thành' },
   { value: 'cancelled', label: 'Đã hủy' },
 ];
+
+const statusFlow = [
+  'pending',
+  'confirmed',
+  'in_progress',
+  'completed',
+];
+
+function getNextStatus(current: string) {
+  const idx = statusFlow.indexOf(current);
+  if (idx === -1 || idx === statusFlow.length - 1) return null;
+  return statusFlow[idx + 1];
+}
 
 const ConsultantConsultations: React.FC = () => {
   const [data, setData] = useState<Booking[]>([]);
@@ -64,6 +79,9 @@ const ConsultantConsultations: React.FC = () => {
   const [detailLoading, setDetailLoading] = useState(false);
   const [bookingDetail, setBookingDetail] = useState<BookingDetail | null>(null);
   const [statusUpdating, setStatusUpdating] = useState(false);
+  const [updateMeetingModalVisible, setUpdateMeetingModalVisible] = useState(false);
+  const [newMeetingLink, setNewMeetingLink] = useState('');
+  const [updatingMeeting, setUpdatingMeeting] = useState(false);
 
   useEffect(() => {
     fetchList();
@@ -99,20 +117,53 @@ const ConsultantConsultations: React.FC = () => {
   const handleStatusChange = (value: string) => {
     if (!bookingDetail) return;
     setStatusUpdating(true);
-    apiClient.put(`/consultants/bookings/${bookingDetail._id}`, { status: value })
+
+    let cancellation_reason = "";
+    if (value === "cancelled") {
+      cancellation_reason = "Hủy bởi tư vấn viên";
+    }
+
+    apiClient.put(`/consultants/bookings/${bookingDetail._id}`, {
+      status: value,
+      cancellation_reason
+    })
       .then(() => {
         message.success('Cập nhật trạng thái thành công!');
-        // Reload lại chi tiết booking
         return apiClient.get(`/consultants/bookings/${bookingDetail._id}`);
       })
       .then(res => {
         setBookingDetail(res.data.data);
-        fetchList(); // reload lại danh sách
+        fetchList();
       })
-      .catch(() => {
-        message.error('Cập nhật trạng thái thất bại!');
+      .catch((err) => {
+        if (err.response) {
+          console.error('Lỗi cập nhật trạng thái:', err.response.data);
+          message.error('Cập nhật trạng thái thất bại! ' + (err.response.data?.message || ''));
+        } else {
+          console.error('Lỗi cập nhật trạng thái:', err);
+          message.error('Cập nhật trạng thái thất bại!');
+        }
       })
       .finally(() => setStatusUpdating(false));
+  };
+
+  const handleUpdateMeetingLink = () => {
+    if (!bookingDetail) return;
+    setUpdatingMeeting(true);
+    apiClient.put(`/consultants/bookings/${bookingDetail._id}/meeting-link`, {
+      meeting_link: newMeetingLink
+    })
+      .then((res) => {
+        const { data, message: apiMessage } = res.data;
+        setBookingDetail(prev => prev ? { ...prev, meeting_link: data.meeting_link } : prev);
+        message.success(apiMessage || 'Cập nhật link tư vấn thành công!');
+        setUpdateMeetingModalVisible(false);
+        setNewMeetingLink('');
+      })
+      .catch(() => {
+        message.error('Cập nhật link tư vấn thất bại!');
+      })
+      .finally(() => setUpdatingMeeting(false));
   };
 
   const columns = [
@@ -201,31 +252,113 @@ const ConsultantConsultations: React.FC = () => {
         onCancel={() => setModalVisible(false)}
         footer={null}
         title="Chi tiết lịch tư vấn"
-        width={600}
+        width={800}
       >
         {detailLoading ? <Spin /> : bookingDetail ? (
-          <Descriptions column={1} bordered size="middle">
+          <Descriptions
+            column={1}
+            bordered
+            size="middle"
+            labelStyle={{
+              minWidth: 150,
+              fontWeight: 600,
+              fontSize: 15,
+              whiteSpace: 'nowrap',
+              background: '#fafafa'
+            }}
+            contentStyle={{
+              fontSize: 15,
+              verticalAlign: 'middle'
+            }}
+          >
             <Descriptions.Item label="Tên khách hàng">{bookingDetail.user_id.full_name}</Descriptions.Item>
             <Descriptions.Item label="Email khách hàng">{bookingDetail.user_id.email}</Descriptions.Item>
             <Descriptions.Item label="Thời gian">
               {new Date(bookingDetail.consultant_schedule_id.date).toLocaleDateString('vi-VN')} ({bookingDetail.consultant_schedule_id.time_slot})
             </Descriptions.Item>
             <Descriptions.Item label="Trạng thái">
-              <Select
-                value={bookingDetail.status}
-                onChange={handleStatusChange}
-                style={{ minWidth: 160 }}
-                loading={statusUpdating}
-                disabled={statusUpdating}
-              >
-                {statusOptions.map(opt => (
-                  <Select.Option key={opt.value} value={opt.value}>{opt.label}</Select.Option>
-                ))}
-              </Select>
+              <Space>
+                <Tag
+                  color={
+                    bookingDetail.status === 'pending' ? 'orange'
+                    : bookingDetail.status === 'in_progress' ? 'blue'
+                    : bookingDetail.status === 'confirmed' ? 'cyan'
+                    : bookingDetail.status === 'completed' ? 'green'
+                    : bookingDetail.status === 'cancelled' ? 'red'
+                    : 'default'
+                  }
+                  style={{ fontSize: 16, fontWeight: 600, padding: '4px 18px', borderRadius: 20 }}
+                >
+                  {statusOptions.find(opt => opt.value === bookingDetail.status)?.label}
+                </Tag>
+                {getNextStatus(bookingDetail.status) && (
+                  <Tooltip title={`Chuyển sang: ${statusOptions.find(opt => opt.value === getNextStatus(bookingDetail.status))?.label}`}>
+                    <Button
+                      type="primary"
+                      shape="round"
+                      icon={<RightOutlined />}
+                      loading={statusUpdating}
+                      onClick={() => handleStatusChange(getNextStatus(bookingDetail.status)!)}
+                      disabled={statusUpdating}
+                    >
+                      {statusOptions.find(opt => opt.value === getNextStatus(bookingDetail.status))?.label}
+                    </Button>
+                  </Tooltip>
+                )}
+                {(bookingDetail.status === 'pending' || bookingDetail.status === 'in_progress') && (
+                  <Tooltip title="Hủy lịch">
+                    <Button
+                      danger
+                      shape="round"
+                      icon={<CloseOutlined />}
+                      loading={statusUpdating}
+                      onClick={() => handleStatusChange('cancelled')}
+                      disabled={statusUpdating}
+                    >
+                      Hủy lịch
+                    </Button>
+                  </Tooltip>
+                )}
+              </Space>
             </Descriptions.Item>
+            {(bookingDetail.status === 'confirmed' || bookingDetail.status === 'completed' || bookingDetail.status === 'in_progress') && (
+              <Descriptions.Item label="Link cuộc họp">
+                {bookingDetail.meeting_link ? (
+                  <a href={bookingDetail.meeting_link} target="_blank" rel="noopener noreferrer">
+                    {bookingDetail.meeting_link}
+                  </a>
+                ) : (
+                  <>
+                    <span style={{ color: '#d48806', marginRight: 12 }}>Lịch tư vấn chưa được cập nhật</span>
+                    <Button type="primary" size="small" onClick={() => setUpdateMeetingModalVisible(true)}>
+                      Cập nhật lịch tư vấn
+                    </Button>
+                  </>
+                )}
+              </Descriptions.Item>
+            )}
             <Descriptions.Item label="Câu hỏi tư vấn">{bookingDetail.question}</Descriptions.Item>
           </Descriptions>
         ) : <Alert type="error" message="Không thể tải chi tiết lịch hẹn." showIcon />}
+      </Modal>
+      <Modal
+        open={updateMeetingModalVisible}
+        onCancel={() => { setUpdateMeetingModalVisible(false); setNewMeetingLink(''); }}
+        onOk={handleUpdateMeetingLink}
+        title="Cập nhật link tư vấn"
+        okText="Cập nhật"
+        confirmLoading={updatingMeeting}
+      >
+        <div style={{ marginBottom: 8 }}>
+          <label>Nhập link tư vấn mới:</label>
+          <input
+            type="text"
+            value={newMeetingLink}
+            onChange={e => setNewMeetingLink(e.target.value)}
+            style={{ width: '100%', padding: 8, marginTop: 4, borderRadius: 4, border: '1px solid #d9d9d9' }}
+            placeholder="https://..."
+          />
+        </div>
       </Modal>
       <style>{`
         .custom-table .ant-table-thead > tr > th {

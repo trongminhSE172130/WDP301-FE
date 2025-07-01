@@ -33,7 +33,7 @@ export const logoutUser = () => {
 };
 
 export const getProfile = async () => {
-  return await apiClient.get('/auth/profile');
+  return await apiClient.get('/auth/me');
 };
 
 export const updateProfile = async (data: Partial<{

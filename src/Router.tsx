@@ -46,6 +46,11 @@ import ConsultantConsultations from './components/admin/consultant/ConsultantCon
 import ConsultantScheduleBookings from './components/admin/consultant/ConsultantScheduleBookings';
 import ConsultantAvailability from './components/admin/consultant/ConsultantAvailability';
 import ConsultantMessages from './components/admin/consultant/ConsultantMessages';
+import PurchaseSubscriptionPage from './pages/PurchaseSubscriptionPage';
+import SubscriptionDetailPage from './pages/SubscriptionDetailPage';
+import PaymentConfirmPage from './pages/PaymentConfirmPage';
+import PaymentSuccessPage from './pages/PaymentSuccessPage';
+import ConsultantFormsPage from './components/admin/consultant/ConsultantFormsPage';
 
 // Auth protection
 const ProtectedRoute = ({ allowedRoles = ["admin", "consultant"] }) => {
@@ -119,7 +124,11 @@ const router = createBrowserRouter([
           { path: 'cycle-tracking', element: <CycleTrackingPage /> },
           { path: 'purchased-services', element: <PurchasedServicesPage /> },
         ],
-      }
+      },
+      { path: 'subscriptions', element: <PurchaseSubscriptionPage /> },
+      { path: 'subscriptions/:id', element: <SubscriptionDetailPage /> },
+      { path: 'payment/confirm/:id', element: <PaymentConfirmPage /> },
+      { path: 'payment/success', element: <PaymentSuccessPage /> },
     ],
   },
 
@@ -169,6 +178,7 @@ const router = createBrowserRouter([
           { path: "documents", element: <DocumentPage /> },
           { path: "availability", element: <ConsultantAvailability /> },
           { path: "messages", element: <ConsultantMessages /> },
+          { path: "forms", element: <ConsultantFormsPage /> },
           { path: "*", element: <UnderDevelopmentPage /> },
         ],
       },

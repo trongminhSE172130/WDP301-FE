@@ -8,14 +8,16 @@ interface SubscriptionDetailModalProps {
   visible: boolean;
   onClose: () => void;
   subscription: SubscriptionPlan | null;
+  loading?: boolean;
 }
 
 const SubscriptionDetailModal: React.FC<SubscriptionDetailModalProps> = ({
   visible,
   onClose,
-  subscription
+  subscription,
+  loading = false
 }) => {
-  if (!subscription) return null;
+  if (!subscription && !loading) return null;
 
   // Hàm format giá tiền
   const formatPrice = (price: number) => {
@@ -56,75 +58,79 @@ const SubscriptionDetailModal: React.FC<SubscriptionDetailModalProps> = ({
       width={800}
       className="subscription-detail-modal"
     >
-      <div className="py-4">
-        <Descriptions
-          column={2}
-          bordered
-          size="middle"
-          labelStyle={{ 
-            backgroundColor: '#f5f5f5', 
-            fontWeight: 'bold',
-            width: '30%' 
-          }}
-        >
-          <Descriptions.Item label="Tên gói đăng ký" span={2}>
-            <span className="text-lg font-semibold text-blue-600">
-              {subscription.name}
-            </span>
-          </Descriptions.Item>
+      {loading ? (
+        <div className="flex justify-center items-center py-12"><span>Đang tải chi tiết...</span></div>
+      ) : subscription ? (
+        <div className="py-4">
+          <Descriptions
+            column={2}
+            bordered
+            size="middle"
+            labelStyle={{ 
+              backgroundColor: '#f5f5f5', 
+              fontWeight: 'bold',
+              width: '30%' 
+            }}
+          >
+            <Descriptions.Item label="Tên gói đăng ký" span={2}>
+              <span className="text-lg font-semibold text-blue-600">
+                {subscription.name}
+              </span>
+            </Descriptions.Item>
 
-          <Descriptions.Item label="Mô tả" span={2}>
-            <div className="text-gray-700 leading-relaxed">
-              {subscription.description}
-            </div>
-          </Descriptions.Item>
+            <Descriptions.Item label="Mô tả" span={2}>
+              <div className="text-gray-700 leading-relaxed">
+                {subscription.description}
+              </div>
+            </Descriptions.Item>
 
-          <Descriptions.Item label="Giá tiền">
-            <span className="text-xl font-bold text-green-600">
-              {formatPrice(subscription.price)}
-            </span>
-          </Descriptions.Item>
+            <Descriptions.Item label="Giá tiền">
+              <span className="text-xl font-bold text-green-600">
+                {formatPrice(subscription.price)}
+              </span>
+            </Descriptions.Item>
 
-          <Descriptions.Item label="Thời hạn">
-            <Tag color="blue" className="text-sm px-3 py-1">
-              {formatDuration(subscription.duration_days, subscription.duration_months)}
-            </Tag>
-          </Descriptions.Item>
+            <Descriptions.Item label="Thời hạn">
+              <Tag color="blue" className="text-sm px-3 py-1">
+                {formatDuration(subscription.duration_days, subscription.duration_months)}
+              </Tag>
+            </Descriptions.Item>
 
-          <Descriptions.Item label="Số ngày">
-            <span className="font-medium">
-              {subscription.duration_days} ngày
-            </span>
-          </Descriptions.Item>
+            <Descriptions.Item label="Số ngày">
+              <span className="font-medium">
+                {subscription.duration_days} ngày
+              </span>
+            </Descriptions.Item>
 
-          <Descriptions.Item label="Số tháng">
-            <span className="font-medium">
-              {subscription.duration_months} tháng
-            </span>
-          </Descriptions.Item>
+            <Descriptions.Item label="Số tháng">
+              <span className="font-medium">
+                {subscription.duration_months} tháng
+              </span>
+            </Descriptions.Item>
 
-          <Descriptions.Item label="Trạng thái" span={2}>
-            <Tag 
-              color={subscription.is_active ? 'green' : 'default'} 
-              className="text-sm px-3 py-1"
-            >
-              {subscription.is_active ? '🟢 Đang hoạt động' : '⚫ Tạm dừng'}
-            </Tag>
-          </Descriptions.Item>
+            <Descriptions.Item label="Trạng thái" span={2}>
+              <Tag 
+                color={subscription.is_active ? 'green' : 'default'} 
+                className="text-sm px-3 py-1"
+              >
+                {subscription.is_active ? '🟢 Đang hoạt động' : '⚫ Tạm dừng'}
+              </Tag>
+            </Descriptions.Item>
 
-          <Descriptions.Item label="Ngày tạo">
-            <div className="text-gray-600">
-              {formatDate(subscription.created_at)}
-            </div>
-          </Descriptions.Item>
+            <Descriptions.Item label="Ngày tạo">
+              <div className="text-gray-600">
+                {formatDate(subscription.created_at)}
+              </div>
+            </Descriptions.Item>
 
-          <Descriptions.Item label="Cập nhật lần cuối">
-            <div className="text-gray-600">
-              {formatDate(subscription.updated_at)}
-            </div>
-          </Descriptions.Item>
-        </Descriptions>
-      </div>
+            <Descriptions.Item label="Cập nhật lần cuối">
+              <div className="text-gray-600">
+                {formatDate(subscription.updated_at)}
+              </div>
+            </Descriptions.Item>
+          </Descriptions>
+        </div>
+      ) : null}
     </Modal>
   );
 };

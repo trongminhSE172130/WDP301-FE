@@ -91,4 +91,15 @@ export const toggleSubscriptionPlanStatus = async (planId: string, is_active: bo
     console.error('Error toggling subscription plan status:', error);
     throw error;
   }
+};
+
+// Lấy chi tiết gói đăng ký
+export const getSubscriptionPlanDetail = async (planId: string): Promise<SubscriptionPlan> => {
+  try {
+    const response = await instance.get(`/subscriptions/plans/${planId}`);
+    return response.data.data;
+  } catch (error) {
+    console.error('Error fetching subscription plan detail:', error);
+    throw error;
+  }
 }; 
