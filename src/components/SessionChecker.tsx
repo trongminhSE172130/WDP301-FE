@@ -14,18 +14,25 @@ const SessionChecker: React.FC<SessionCheckerProps> = ({ children }) => {
   useEffect(() => {
     // Kiểm tra session mỗi 30 giây
     const sessionCheckInterval = setInterval(() => {
-      if (!SessionManager.isSessionValid()) {
-        // Session đã hết hạn, redirect
-        handleSessionExpired();
-        return;
-      }
+      // CHỈ check session nếu user đã có token (đã đăng nhập)
+      const hasToken = SessionManager.getToken();
+      
+      if (hasToken) {
+        // User đã đăng nhập, kiểm tra session validity
+        if (!SessionManager.isSessionValid()) {
+          // Session đã hết hạn, redirect
+          handleSessionExpired();
+          return;
+        }
 
-      // Kiểm tra session sắp hết hạn (còn < 5 phút)
-      if (SessionManager.isSessionExpiringSoon()) {
-        const remaining = SessionManager.getTimeRemaining();
-        setTimeRemaining(Math.floor(remaining / 1000)); // Convert to seconds
-        setWarningVisible(true);
+        // Kiểm tra session sắp hết hạn (còn < 5 phút)
+        if (SessionManager.isSessionExpiringSoon()) {
+          const remaining = SessionManager.getTimeRemaining();
+          setTimeRemaining(Math.floor(remaining / 1000)); // Convert to seconds
+          setWarningVisible(true);
+        }
       }
+      // Nếu chưa có token (chưa đăng nhập), không làm gì cả
     }, 30 * 1000); // 30 giây
 
     // Cleanup interval

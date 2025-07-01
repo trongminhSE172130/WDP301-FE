@@ -1,44 +1,5 @@
-import axios from 'axios';
+import apiClient from '../instance';
 import type { DynamicFormResponse, DynamicForm, FormSubmissionData, DynamicFormCreate } from '../../types/dynamicForm';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://genhealth.wizlab.io.vn/api';
-
-// Axios instance với cấu hình chung
-const apiClient = axios.create({
-  baseURL: API_BASE_URL,
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Request interceptor để thêm token
-apiClient.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Response interceptor để xử lý lỗi chung
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Xử lý lỗi unauthorized
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/admin/login';
-    }
-    return Promise.reject(error);
-  }
-);
 
 // Interface cho search parameters
 export interface DynamicFormSearchParams {
@@ -134,7 +95,7 @@ export const getDynamicFormSchema = async (serviceId: string, formType: string):
 export const createDynamicForm = async (formData: DynamicFormCreate): Promise<{ success: boolean; data: DynamicForm }> => {
   try {
     console.log('=== API CALL DEBUG ===');
-    console.log('URL:', `${API_BASE_URL}/dynamic-forms/schemas`);
+    console.log('URL:', '/dynamic-forms/schemas');
     console.log('FormData being sent:', JSON.stringify(formData, null, 2));
     console.log('FormData service_id:', formData.service_id);
     console.log('FormData service_id type:', typeof formData.service_id);
@@ -165,7 +126,7 @@ export const createDynamicForm = async (formData: DynamicFormCreate): Promise<{ 
 export const updateDynamicForm = async (formId: string, formData: Partial<DynamicForm>): Promise<{ success: boolean; data: DynamicForm }> => {
   try {
     console.log('=== UPDATE API CALL DEBUG ===');
-    console.log('URL:', `${API_BASE_URL}/dynamic-forms/schemas/${formId}`);
+    console.log('URL:', `/dynamic-forms/schemas/${formId}`);
     console.log('Form ID:', formId);
     console.log('Update data being sent:', JSON.stringify(formData, null, 2));
     
@@ -239,7 +200,7 @@ export const getFormSubmissions = async (formId: string, params?: { page?: numbe
 export const getAvailableServices = async (): Promise<{ success: boolean; data: Service[] }> => {
   try {
     console.log('=== GET SERVICES DEBUG ===');
-    console.log('URL:', `${API_BASE_URL}/services`);
+    console.log('URL:', '/services');
     
     const response = await apiClient.get('/services');
     console.log('Services API Response:', response.data);

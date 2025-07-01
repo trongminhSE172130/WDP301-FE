@@ -34,7 +34,7 @@ const AdminLoginPage: React.FC = () => {
       });
       
       // Lưu token và user info bằng SessionManager
-      if (response.data && response.data.token && response.data.user) {
+      if (response.data && response.data.success && response.data.token && response.data.user) {
         // Note: SessionManager sẽ được gọi tự động trong loginUser function
         
         message.success("Đăng nhập thành công!");

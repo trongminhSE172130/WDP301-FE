@@ -47,19 +47,11 @@ const LoginPage = () => {
     e.preventDefault();
     if (isLogin) {
       try {
-        type LoginResponse = { data?: { token?: string } };
-        const res: LoginResponse = await loginUser(loginFormData);
+        const res = await loginUser(loginFormData);
         console.log('Login response:', res);
-        if (
-          res &&
-          typeof res === 'object' &&
-          'data' in res &&
-          res.data &&
-          typeof res.data === 'object' &&
-          'token' in res.data &&
-          typeof res.data.token === 'string' &&
-          res.data.token
-        ) {
+        
+        // Xử lý response theo structure mới từ backend
+        if (res.data && res.data.success && res.data.token && res.data.user) {
           // Note: SessionManager sẽ được gọi tự động trong loginUser function
           toast.success("Đăng nhập thành công!");
           navigate("/");
@@ -73,16 +65,13 @@ const LoginPage = () => {
         if (
           typeof error === "object" &&
           error !== null &&
-          "response" in error &&
-          (error as AxiosError).response &&
-          typeof (error as AxiosError).response === "object" &&
-          "data" in (error as AxiosError).response &&
-          (error as AxiosError).response?.data &&
-          typeof (error as AxiosError).response?.data === "object" &&
-          "message" in ((error as AxiosError).response?.data ?? {}) &&
-          typeof (error as AxiosError).response?.data?.message === "string"
+          "response" in error
         ) {
-          message = (error as AxiosError).response?.data?.message || message;
+          const axiosError = error as AxiosError;
+          const errorMessage = axiosError.response?.data?.message;
+          if (typeof errorMessage === "string") {
+            message = errorMessage;
+          }
         }
         alert(message);
       }
@@ -111,7 +100,8 @@ const LoginPage = () => {
         setIsLogin(true);
       } catch (error: unknown) {
         // Đơn giản hóa lấy message lỗi từ backend
-        const err = error as any;
+        type RegisterError = { response?: { data?: { message?: string } } };
+        const err = error as RegisterError;
         const message = err?.response?.data?.message || "Đăng ký thất bại. Vui lòng thử lại!";
         alert(message);
       }

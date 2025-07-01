@@ -1,5 +1,5 @@
 import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { SessionManager } from './utils/sessionManager';
 // import { isAuthorizedRole } from "./service/api/adminloginAPI";
 
@@ -100,6 +100,62 @@ const ProtectedRoute = ({ allowedRoles = ["admin"] }) => {
   return <Outlet />;
 };
 
+// User Protected Route - chỉ cho phép user với role "user"
+const UserProtectedRoute = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    // Kiểm tra session có hợp lệ không bằng SessionManager
+    if (!SessionManager.isSessionValid()) {
+      setIsAuthenticated(false);
+      setIsLoading(false);
+      return;
+    }
+
+    // Lấy thông tin user từ SessionManager
+    try {
+      const userRole = SessionManager.getUserRole();
+      setUserRole(userRole);
+      setIsAuthenticated(true);
+      
+      // Gia hạn session khi truy cập protected route
+      SessionManager.extendSession();
+    } catch (error) {
+      console.error("Lỗi khi lấy thông tin session:", error);
+      SessionManager.clearSession();
+      setIsAuthenticated(false);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Đang tải
+  if (isLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+          <p>Đang kiểm tra quyền truy cập...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Chưa đăng nhập hoặc session hết hạn
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Admin/Consultant không được phép truy cập user routes
+  if (userRole && userRole !== "user") {
+    return <Navigate to={`/${userRole}/dashboard`} replace />;
+  }
+  
+  return <Outlet />;
+};
+
 // Define routes with their corresponding layouts
 const router = createBrowserRouter([
   // Guest/Public routes
@@ -113,6 +169,14 @@ const router = createBrowserRouter([
       { path: 'contact', element: <UnderDevelopmentPage /> },
       { path: "services", element: <ServicePage /> },
       { path: "blog", element: <ServicesPage /> },
+    ],
+  },
+
+  // User-only protected routes
+  {
+    path: "/",
+    element: <UserProtectedRoute />,
+    children: [
       {
         element: <ProfileLayout />,
         children: [

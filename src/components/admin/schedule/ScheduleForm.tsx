@@ -37,22 +37,27 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({
   const [consultants, setConsultants] = useState<ApiUser[]>([]);
   const [loadingConsultants, setLoadingConsultants] = useState(false);
 
-  useEffect(() => {
+    useEffect(() => {
     if (visible) {
+      // Luôn reset form trước
       form.resetFields();
       loadConsultants();
       
+      // Chỉ set giá trị khi có initialValues (edit mode)
       if (initialValues) {
-        const consultantId = typeof initialValues.consultant_user_id === 'string' 
-          ? initialValues.consultant_user_id 
-          : initialValues.consultant_user_id._id;
-        
-        form.setFieldsValue({
-          consultant_user_id: consultantId,
-          date: dayjs(initialValues.date),
-          time_slot: initialValues.time_slot,
-          schedule_type: initialValues.schedule_type
-        });
+        // Delay một chút để đảm bảo form đã reset xong
+        setTimeout(() => {
+          const consultantId = typeof initialValues.consultant_user_id === 'string' 
+            ? initialValues.consultant_user_id 
+            : initialValues.consultant_user_id._id;
+          
+          form.setFieldsValue({
+            consultant_user_id: consultantId,
+            date: dayjs(initialValues.date),
+            time_slot: initialValues.time_slot,
+            schedule_type: initialValues.schedule_type
+          });
+        }, 0);
       }
     }
   }, [visible, initialValues, form]);

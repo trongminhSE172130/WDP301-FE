@@ -9,6 +9,25 @@ const apiClient = axios.create({
   },
 });
 
+// Flag để tránh infinite loop khi refresh token
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value?: unknown) => void;
+  reject: (reason?: unknown) => void;
+}> = [];
+
+const processQueue = (error: Error | null, token: string | null = null) => {
+  failedQueue.forEach(({ resolve, reject }) => {
+    if (error) {
+      reject(error);
+    } else {
+      resolve(token);
+    }
+  });
+  
+  failedQueue = [];
+};
+
 // Interceptor cho request - sử dụng SessionManager
 apiClient.interceptors.request.use(
   config => {
@@ -43,18 +62,65 @@ apiClient.interceptors.request.use(
   error => Promise.reject(error)
 );
 
-// Interceptor cho response - xử lý auto-logout
+// Interceptor cho response - xử lý auto-logout và refresh token
 apiClient.interceptors.response.use(
   response => {
     // Gia hạn session khi có response thành công
     SessionManager.extendSession();
     return response;
   },
-  error => {
-    if (error.response && error.response.status === 401) {
-      console.error('401 Unauthorized - Token hết hạn hoặc không hợp lệ');
+  async error => {
+    const originalRequest = error.config;
+
+    if (error.response && error.response.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        // Nếu đang refresh, thêm request vào queue
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then(token => {
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return apiClient(originalRequest);
+        }).catch(err => {
+          return Promise.reject(err);
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      const refreshTokenValue = SessionManager.getRefreshToken();
       
-      // Xóa session và redirect
+      if (refreshTokenValue) {
+        try {
+          // Gọi API refresh token
+          const response = await apiClient.post('/auth/refresh', {
+            refresh_token: refreshTokenValue
+          });
+
+          if (response.data.success && response.data.token) {
+            const { token, refresh_token: newRefreshToken } = response.data;
+            const userInfo = SessionManager.getUserInfo();
+            
+            if (userInfo) {
+              // Cập nhật session với token mới
+              SessionManager.saveSession(token, userInfo, newRefreshToken);
+              
+              // Cập nhật header và retry request
+              originalRequest.headers.Authorization = `Bearer ${token}`;
+              
+              processQueue(null, token);
+              
+              return apiClient(originalRequest);
+            }
+          }
+                 } catch (refreshError) {
+           console.error('Refresh token failed:', refreshError);
+           processQueue(refreshError instanceof Error ? refreshError : new Error('Refresh failed'), null);
+         }
+      }
+
+      // Nếu refresh thất bại hoặc không có refresh token
+      isRefreshing = false;
       SessionManager.clearSession();
       
       // Kiểm tra current path để redirect đúng
@@ -65,6 +131,8 @@ apiClient.interceptors.response.use(
         window.location.href = '/login';
       }
     }
+
+    isRefreshing = false;
     return Promise.reject(error);
   }
 );

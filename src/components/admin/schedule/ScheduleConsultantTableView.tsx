@@ -66,7 +66,14 @@ const ScheduleConsultantTableView: React.FC<ScheduleConsultantTableViewProps> = 
           bookedSchedules: updatedSchedules.filter(s => s.is_booked).length,
           availableSchedules: updatedSchedules.filter(s => !s.is_booked).length,
         };
-        setSelectedConsultant(updatedConsultant);
+        
+        // Nếu không còn lịch trình nào, đóng modal
+        if (updatedSchedules.length === 0) {
+          message.info('Đã xóa hết lịch trình của tư vấn viên này');
+          handleCloseModal();
+        } else {
+          setSelectedConsultant(updatedConsultant);
+        }
       }
     }
   };
@@ -223,7 +230,14 @@ const ScheduleConsultantTableView: React.FC<ScheduleConsultantTableViewProps> = 
             bookedSchedules: updatedSchedules.filter(s => s.is_booked).length,
             availableSchedules: updatedSchedules.filter(s => !s.is_booked).length,
           };
-          setSelectedConsultant(updatedConsultant);
+          
+          // Nếu không còn lịch trình nào, đóng modal
+          if (updatedSchedules.length === 0) {
+            message.info('Đã xóa hết lịch trình của tư vấn viên này');
+            handleCloseModal();
+          } else {
+            setSelectedConsultant(updatedConsultant);
+          }
         }
 
         // Also call parent callback to update main list

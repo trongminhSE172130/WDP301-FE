@@ -1,5 +1,6 @@
 export class SessionManager {
   private static readonly TOKEN_KEY = 'token';
+  private static readonly REFRESH_TOKEN_KEY = 'refresh_token';
   private static readonly USER_KEY = 'user';
   private static readonly SESSION_INFO_KEY = 'session_info';
   
@@ -11,13 +12,14 @@ export class SessionManager {
   /**
    * Lưu session với timestamp và thông tin expiry
    */
-  static saveSession(token: string, user: { role?: string; [key: string]: unknown }) {
+  static saveSession(token: string, user: { role?: string; [key: string]: unknown }, refreshToken?: string) {
     const userRole = user.role?.toLowerCase() || 'user';
     const isAdminRole = ['admin', 'consultant', 'manager', 'staff'].includes(userRole);
     
     const sessionData = {
       token,
       user,
+      refreshToken,
       loginTime: Date.now(),
       expiryTime: Date.now() + (isAdminRole ? this.ADMIN_SESSION_TIMEOUT : this.USER_SESSION_TIMEOUT),
       isAdminRole,
@@ -26,6 +28,9 @@ export class SessionManager {
     
     localStorage.setItem(this.TOKEN_KEY, token);
     localStorage.setItem(this.USER_KEY, JSON.stringify(user));
+    if (refreshToken) {
+      localStorage.setItem(this.REFRESH_TOKEN_KEY, refreshToken);
+    }
     localStorage.setItem(this.SESSION_INFO_KEY, JSON.stringify(sessionData));
     
     console.log(`Session saved for ${userRole}, expires in ${isAdminRole ? '30 minutes' : '24 hours'}`);
@@ -113,10 +118,18 @@ export class SessionManager {
   }
 
   /**
+   * Lấy refresh token từ session
+   */
+  static getRefreshToken(): string | null {
+    return localStorage.getItem(this.REFRESH_TOKEN_KEY);
+  }
+
+  /**
    * Xóa session hoàn toàn
    */
   static clearSession() {
     localStorage.removeItem(this.TOKEN_KEY);
+    localStorage.removeItem(this.REFRESH_TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);
     localStorage.removeItem(this.SESSION_INFO_KEY);
     console.log('Session cleared');
