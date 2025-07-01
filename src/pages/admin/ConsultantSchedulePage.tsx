@@ -1,25 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { Typography, message, Modal, Button, Space } from 'antd';
-import { AppstoreOutlined, TeamOutlined, PlusOutlined, CalendarOutlined } from '@ant-design/icons';
-import ScheduleGroupedView from '../../components/admin/schedule/ScheduleGroupedView';
-import ScheduleConsultantTableView from '../../components/admin/schedule/ScheduleConsultantTableView';
-import ScheduleForm from '../../components/admin/schedule/ScheduleForm';
-import BatchScheduleForm from '../../components/admin/schedule/BatchScheduleForm';
-
-import type { Schedule } from '../../components/admin/schedule/ScheduleTypes';
-import {
-  createSchedule,
-  createSchedulesBatch,
-  updateSchedule,
-  deleteSchedule,
-  getScheduleById,
-  getMySchedules,
-} from '../../service/api/scheduleAPI';
-import type { 
-  ScheduleSearchParams,
-  CreateScheduleRequest,
-  BatchCreateScheduleRequest
-} from '../../service/api/scheduleAPI';
+import React, { useEffect, useState } from "react";
+import { Button, Typography, message, Modal, Space } from "antd";
+import { CalendarOutlined, PlusOutlined } from "@ant-design/icons";
+import ScheduleConsultantTableView from "../../components/admin/schedule/ScheduleConsultantTableView";
+import ScheduleForm from "../../components/admin/schedule/ScheduleForm";
+import BatchScheduleForm from "../../components/admin/schedule/BatchScheduleForm";
+import { getMySchedules, getScheduleById, createSchedule, updateSchedule, deleteSchedule, createSchedulesBatch } from "../../service/api/scheduleAPI";
+import type { Schedule } from "../../components/admin/schedule/ScheduleTypes";
+import type { CreateScheduleRequest, BatchCreateScheduleRequest, ScheduleSearchParams } from "../../service/api/scheduleAPI";
 
 interface ScheduleFormValues {
   consultant_user_id: string;
@@ -37,10 +24,11 @@ const ConsultantSchedulePage: React.FC = () => {
   const [showForm, setShowForm] = useState<boolean>(false);
   const [formLoading, setFormLoading] = useState<boolean>(false);
   const [currentSchedule, setCurrentSchedule] = useState<Schedule | undefined>(undefined);
-  const [viewMode, setViewMode] = useState<'grouped' | 'consultant'>('consultant');
   const [refreshKey, setRefreshKey] = useState(0);
   const [showBatchForm, setShowBatchForm] = useState<boolean>(false);
   const [batchFormLoading, setBatchFormLoading] = useState<boolean>(false);
+  const [formKey, setFormKey] = useState(0);
+  const [batchFormKey, setBatchFormKey] = useState(0);
 
   // Load schedules on component mount
   useEffect(() => {
@@ -77,11 +65,10 @@ const ConsultantSchedulePage: React.FC = () => {
     }
   };
 
-
-
   // Handle add new schedule
   const handleAdd = () => {
     setCurrentSchedule(undefined);
+    setFormKey(prev => prev + 1); // Force form remount for add mode
     setShowForm(true);
   };
 
@@ -108,17 +95,6 @@ const ConsultantSchedulePage: React.FC = () => {
       }
     } finally {
       setLoading(false);
-    }
-  };
-
-  // Handle view schedule details
-  const handleView = (id: string) => {
-    const schedule = schedules.find(s => s._id === id);
-    if (schedule) {
-      const consultant = schedule.consultant_user_id;
-      const consultantName = typeof consultant === 'string' ? 'Tư vấn viên' : consultant.full_name || 'Tư vấn viên';
-      message.info(`Xem chi tiết lịch: ${schedule.time_slot} - ${consultantName}`);
-      // TODO: Implement view details modal
     }
   };
 
@@ -166,6 +142,8 @@ const ConsultantSchedulePage: React.FC = () => {
         if (response.success) {
           message.success('Cập nhật lịch trình thành công!');
           setShowForm(false);
+          setCurrentSchedule(undefined);
+          setFormKey(prev => prev + 1); // Reset form
           loadSchedules();
         }
       } else {
@@ -176,6 +154,8 @@ const ConsultantSchedulePage: React.FC = () => {
         if (response.success) {
           message.success('Tạo lịch trình mới thành công!');
           setShowForm(false);
+          setCurrentSchedule(undefined);
+          setFormKey(prev => prev + 1); // Reset form
           loadSchedules();
         } else {
           message.error('Không thể tạo lịch trình. Vui lòng thử lại.');
@@ -207,6 +187,8 @@ const ConsultantSchedulePage: React.FC = () => {
   // Handle form cancel
   const handleCancel = () => {
     setShowForm(false);
+    setCurrentSchedule(undefined); // Reset currentSchedule khi cancel
+    setFormKey(prev => prev + 1); // Reset form key
   };
 
   // Handle batch form submit
@@ -222,6 +204,7 @@ const ConsultantSchedulePage: React.FC = () => {
         const count = result.data?.length || 0;
         message.success(`Tạo thành công ${count} lịch trình`);
         setShowBatchForm(false);
+        setBatchFormKey(prev => prev + 1); // Reset batch form
         setRefreshKey(prev => prev + 1);
         loadSchedules();
       } else {
@@ -240,8 +223,6 @@ const ConsultantSchedulePage: React.FC = () => {
       setBatchFormLoading(false);
     }
   };
-
-
 
   // Handle delete schedule
   const handleDelete = async (id: string) => {
@@ -276,6 +257,34 @@ const ConsultantSchedulePage: React.FC = () => {
     }
   };
 
+  // Handle bulk delete schedules
+  const handleBulkDelete = async (scheduleIds: string[]) => {
+    try {
+      console.log('Bulk deleting schedules:', scheduleIds);
+      
+      // Update local state immediately
+      const updatedSchedules = schedules.filter(schedule => !scheduleIds.includes(schedule._id));
+      const updatedAllSchedules = allSchedules.filter(schedule => !scheduleIds.includes(schedule._id));
+      
+      console.log('Original schedules count:', schedules.length);
+      console.log('Updated schedules count after bulk delete:', updatedSchedules.length);
+      
+      setSchedules(updatedSchedules);
+      setAllSchedules(updatedAllSchedules);
+      
+      // Force re-render by updating refresh key
+      setRefreshKey(prev => prev + 1);
+      console.log('Bulk delete - local state updated successfully');
+      
+      // Optionally reload data from server to ensure consistency
+      loadSchedules();
+    } catch (error) {
+      console.error('Error handling bulk delete:', error);
+      // Reload data from server if there's an error
+      loadSchedules();
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div>
@@ -288,8 +297,6 @@ const ConsultantSchedulePage: React.FC = () => {
             Quản lý và theo dõi lịch trình tư vấn của bạn trong hệ thống
           </p>
         </div>
-
-
 
         {/* View Mode Toggle and Add Button */}
         <div className="flex justify-between items-center mb-4">
@@ -305,52 +312,27 @@ const ConsultantSchedulePage: React.FC = () => {
             
             <Button
               icon={<CalendarOutlined />}
-              onClick={() => setShowBatchForm(true)}
+              onClick={() => {
+                setBatchFormKey(prev => prev + 1); // Reset batch form
+                setShowBatchForm(true);
+              }}
               className="bg-gradient-to-r from-green-600 to-green-700 border-0 shadow-lg hover:from-green-700 hover:to-green-800 text-white"
             >
               Tạo nhiều lịch cùng lúc
             </Button>
           </Space>
           
-          <Space>
-            <Button
-              type={viewMode === 'consultant' ? 'primary' : 'default'}
-              icon={<TeamOutlined />}
-              onClick={() => setViewMode('consultant')}
-            >
-              Theo tư vấn viên
-            </Button>
-            <Button
-              type={viewMode === 'grouped' ? 'primary' : 'default'}
-              icon={<AppstoreOutlined />}
-              onClick={() => setViewMode('grouped')}
-            >
-              Theo ngày
-            </Button>
-          </Space>
         </div>
 
-
-
         {/* Schedule Display */}
-        {viewMode === 'grouped' ? (
-          <ScheduleGroupedView
-            key={`grouped-${refreshKey}`}
-            data={schedules}
-            loading={loading}
-            onEdit={handleEdit}
-            onView={handleView}
-            onDelete={handleDelete}
-          />
-        ) : (
-          <ScheduleConsultantTableView
-            key={`consultant-${refreshKey}`}
-            data={schedules}
-            loading={loading}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
-        )}
+        <ScheduleConsultantTableView
+          key={`consultant-${refreshKey}`}
+          data={schedules}
+          loading={loading}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onBulkDelete={handleBulkDelete}
+        />
 
         {/* Schedule Form Modal */}
         <Modal
@@ -383,6 +365,7 @@ const ConsultantSchedulePage: React.FC = () => {
           <div className="bg-gray-50">
             <div className="p-6 bg-white">
               <ScheduleForm
+                key={`schedule-form-${currentSchedule?._id || 'new'}-${formKey}`}
                 visible={true}
                 initialValues={currentSchedule || undefined}
                 onFinish={handleFormSubmit}
@@ -453,7 +436,10 @@ const ConsultantSchedulePage: React.FC = () => {
               </div>
             </div>
           }
-          onCancel={() => setShowBatchForm(false)}
+          onCancel={() => {
+            setBatchFormKey(prev => prev + 1); // Reset batch form
+            setShowBatchForm(false);
+          }}
           footer={null}
           width={1000}
           className="batch-schedule-form-modal"
@@ -464,6 +450,7 @@ const ConsultantSchedulePage: React.FC = () => {
           <div className="bg-gray-50">
             <div className="p-6 bg-white">
               <BatchScheduleForm
+                key={`batch-form-${batchFormKey}`}
                 visible={showBatchForm}
                 onFinish={handleBatchSubmit}
               />
@@ -477,7 +464,10 @@ const ConsultantSchedulePage: React.FC = () => {
                 </div>
                 <div className="flex space-x-3">
                   <button 
-                    onClick={() => setShowBatchForm(false)} 
+                    onClick={() => {
+                      setBatchFormKey(prev => prev + 1); // Reset batch form
+                      setShowBatchForm(false);
+                    }}
                     className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200"
                   >
                     Hủy bỏ
@@ -505,8 +495,6 @@ const ConsultantSchedulePage: React.FC = () => {
             </div>
           </div>
         </Modal>
-
-
       </div>
     </div>
   );

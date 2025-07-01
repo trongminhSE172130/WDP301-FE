@@ -1,14 +1,39 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useEffect, useState, useRef } from "react";
+import { Link, useLocation } from "react-router-dom";
 import { GiHealthNormal } from "react-icons/gi";
-import { useProfile } from '../context/ProfileContext';
-import { logoutUser } from '../service/api/authApi';
+import { SessionManager } from "../utils/sessionManager";
 
 const Header: React.FC = () => {
-  const { profile, setProfile } = useProfile();
+  const [user, setUser] = useState<{ full_name?: string; [key: string]: unknown } | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const navigate = useNavigate();
+  const location = useLocation();
+
+  const updateUserState = () => {
+    // Sử dụng SessionManager để lấy user info
+    if (SessionManager.isSessionValid()) {
+      const userInfo = SessionManager.getUserInfo();
+      const userRole = SessionManager.getUserRole();
+      
+      // CHỈ hiển thị thông tin nếu là user thường, không hiển thị admin/consultant
+      if (userRole === 'user') {
+        setUser(userInfo);
+      } else {
+        setUser(null); // Không hiển thị admin/consultant info trong Header
+      }
+    } else {
+      setUser(null);
+    }
+  };
+
+  useEffect(() => {
+    updateUserState();
+  }, []);
+
+  // Cập nhật user state khi route changes (ví dụ từ admin về user area)
+  useEffect(() => {
+    updateUserState();
+  }, [location.pathname]);
 
   // Đóng dropdown khi click ra ngoài
   useEffect(() => {
@@ -28,9 +53,8 @@ const Header: React.FC = () => {
   }, [dropdownOpen]);
 
   const handleLogout = () => {
-    logoutUser();
-    setProfile(null);
-    navigate("/");
+    SessionManager.clearSession();
+    window.location.href = "/";
   };
 
   return (
