@@ -1,24 +1,24 @@
 import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { SessionManager } from './utils/sessionManager';
+import { SessionManager } from "./utils/sessionManager";
 // import { isAuthorizedRole } from "./service/api/adminloginAPI";
 
 // Layouts
-import GuestLayout from './layouts/GuestLayout';
-import CustomerLayout from './layouts/CustomerLayout';
-import AdminLayout from './layouts/AdminLayout';
-import ProfileLayout from './layouts/ProfileLayout';
+import GuestLayout from "./layouts/GuestLayout";
+import CustomerLayout from "./layouts/CustomerLayout";
+import AdminLayout from "./layouts/AdminLayout";
+import ProfileLayout from "./layouts/ProfileLayout";
 
 // Public pages
-import HomePage from './pages/HomePage';
-import UnderDevelopmentPage from './pages/UnderDevelopmentPage';
-import ServicesPage from './pages/BlogPage';
-import ProfilePage from './pages/ProfilePage';
-import ConsultationHistoryPage from './pages/ConsultationHistoryPage';
-import CycleTrackingPage from './pages/CycleTrackingPage';
-import PurchasedServicesPage from './pages/PurchasedServicesPage';
-import ServiceDetail from './pages/ServiceDetail';
-import ContactPage from './pages/ContactPage';
+import HomePage from "./pages/HomePage";
+import UnderDevelopmentPage from "./pages/UnderDevelopmentPage";
+import ServicesPage from "./pages/BlogPage";
+import ProfilePage from "./pages/ProfilePage";
+import ConsultationHistoryPage from "./pages/ConsultationHistoryPage";
+import CycleTrackingPage from "./pages/CycleTrackingPage";
+import PurchasedServicesPage from "./pages/PurchasedServicesPage";
+import ServiceDetail from "./pages/ServiceDetail";
+import ContactPage from "./pages/ContactPage";
 
 // Public pages
 import LoginPage from "./pages/LoginPage";
@@ -43,15 +43,15 @@ import ConsultantDetail from "./pages/admin/ConsultantDetail";
 import DynamicFormPage from "./pages/admin/DynamicFormPage";
 import PushNotificationPage from "./pages/admin/PushNotifiactionPage";
 import SubscriptionPage from "./pages/admin/SubscriptionPage";
-import ConsultantConsultations from './components/admin/consultant/ConsultantConsultations';
-import ConsultantScheduleBookings from './components/admin/consultant/ConsultantScheduleBookings';
-import ConsultantAvailability from './components/admin/consultant/ConsultantAvailability';
-import ConsultantMessages from './components/admin/consultant/ConsultantMessages';
-import PurchaseSubscriptionPage from './pages/PurchaseSubscriptionPage';
-import SubscriptionDetailPage from './pages/SubscriptionDetailPage';
-import PaymentConfirmPage from './pages/PaymentConfirmPage';
-import PaymentSuccessPage from './pages/PaymentSuccessPage';
-import ConsultantFormsPage from './components/admin/consultant/ConsultantFormsPage';
+import ConsultantConsultations from "./components/admin/consultant/ConsultantConsultations";
+import ConsultantScheduleBookings from "./components/admin/consultant/ConsultantScheduleBookings";
+import ConsultantAvailability from "./components/admin/consultant/ConsultantAvailability";
+import ConsultantMessages from "./components/admin/consultant/ConsultantMessages";
+import PurchaseSubscriptionPage from "./pages/PurchaseSubscriptionPage";
+import SubscriptionDetailPage from "./pages/SubscriptionDetailPage";
+import PaymentConfirmPage from "./pages/PaymentConfirmPage";
+import PaymentSuccessPage from "./pages/PaymentSuccessPage";
+import ConsultantFormsPage from "./components/admin/consultant/ConsultantFormsPage";
 import BookingManagerPage from "./pages/admin/BookingManagerPage";
 
 // Auth protection với SessionManager
@@ -73,7 +73,7 @@ const ProtectedRoute = ({ allowedRoles = ["admin"] }) => {
       const userRole = SessionManager.getUserRole();
       setUserRole(userRole);
       setIsAuthenticated(true);
-      
+
       // Gia hạn session khi truy cập protected route
       SessionManager.extendSession();
     } catch (error) {
@@ -96,7 +96,7 @@ const ProtectedRoute = ({ allowedRoles = ["admin"] }) => {
       </div>
     );
   }
-  
+
   // Chưa đăng nhập hoặc session hết hạn
   if (!isAuthenticated) {
     return <Navigate to="/admin/login" replace />;
@@ -106,7 +106,7 @@ const ProtectedRoute = ({ allowedRoles = ["admin"] }) => {
   if (userRole && !allowedRoles.includes(userRole)) {
     return <Navigate to="/unauthorized" replace />;
   }
-  
+
   return <Outlet />;
 };
 
@@ -129,7 +129,7 @@ const UserProtectedRoute = () => {
       const userRole = SessionManager.getUserRole();
       setUserRole(userRole);
       setIsAuthenticated(true);
-      
+
       // Gia hạn session khi truy cập protected route
       SessionManager.extendSession();
     } catch (error) {
@@ -152,7 +152,7 @@ const UserProtectedRoute = () => {
       </div>
     );
   }
-  
+
   // Chưa đăng nhập hoặc session hết hạn
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
@@ -162,7 +162,7 @@ const UserProtectedRoute = () => {
   if (userRole && userRole !== "user") {
     return <Navigate to={`/${userRole}/dashboard`} replace />;
   }
-  
+
   return <Outlet />;
 };
 
@@ -174,12 +174,16 @@ const router = createBrowserRouter([
     element: <GuestLayout />,
     children: [
       { index: true, element: <HomePage /> },
-      { path: 'login', element: <LoginPage /> },
-      { path: 'register', element: <LoginPage /> },
-      { path: 'contact', element: <ContactPage /> },
+      { path: "login", element: <LoginPage /> },
+      { path: "register", element: <LoginPage /> },
+      { path: "contact", element: <ContactPage /> },
       { path: "services", element: <ServicePage /> },
       { path: "services/:serviceId", element: <ServiceDetail /> },
       { path: "blog", element: <ServicesPage /> },
+      { path: "subscriptions", element: <PurchaseSubscriptionPage /> },
+      { path: "subscriptions/:id", element: <SubscriptionDetailPage /> },
+      { path: "payment/confirm/:id", element: <PaymentConfirmPage /> },
+      { path: "payment/success", element: <PaymentSuccessPage /> },
     ],
   },
 
@@ -191,33 +195,37 @@ const router = createBrowserRouter([
       {
         element: <ProfileLayout />,
         children: [
-          { path: 'profile', element: <ProfilePage /> },
-          { path: 'consultation-history', element: <ConsultationHistoryPage /> },
-          { path: 'cycle-tracking', element: <CycleTrackingPage /> },
-          { path: 'purchased-services', element: <PurchasedServicesPage /> },
+          { path: "profile", element: <ProfilePage /> },
+          {
+            path: "consultation-history",
+            element: <ConsultationHistoryPage />,
+          },
+          { path: "cycle-tracking", element: <CycleTrackingPage /> },
+          { path: "purchased-services", element: <PurchasedServicesPage /> },
         ],
       },
-      { path: 'subscriptions', element: <PurchaseSubscriptionPage /> },
-      { path: 'subscriptions/:id', element: <SubscriptionDetailPage /> },
-      { path: 'payment/confirm/:id', element: <PaymentConfirmPage /> },
-      { path: 'payment/success', element: <PaymentSuccessPage /> },
     ],
   },
 
   // Admin Login (không sử dụng AdminLayout vì chưa đăng nhập)
   { path: "/admin/login", element: <AdminLoginPage /> },
-  
+
   // Unauthorized page
-  { path: "/unauthorized", element: <div className="h-screen flex items-center justify-center flex-col">
-    <h1 className="text-2xl font-bold mb-4">Không có quyền truy cập</h1>
-    <p className="mb-4">Bạn không có quyền truy cập vào trang này.</p>
-    <button 
-      onClick={() => window.location.href = "/admin/login"} 
-      className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-    >
-      Quay lại trang đăng nhập
-    </button>
-  </div> },
+  {
+    path: "/unauthorized",
+    element: (
+      <div className="h-screen flex items-center justify-center flex-col">
+        <h1 className="text-2xl font-bold mb-4">Không có quyền truy cập</h1>
+        <p className="mb-4">Bạn không có quyền truy cập vào trang này.</p>
+        <button
+          onClick={() => (window.location.href = "/admin/login")}
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          Quay lại trang đăng nhập
+        </button>
+      </div>
+    ),
+  },
 
   // Customer routes
   {
@@ -257,7 +265,6 @@ const router = createBrowserRouter([
     ],
   },
 
-
   // Admin routes - CHỈ cho phép admin
   {
     path: "/admin",
@@ -280,7 +287,10 @@ const router = createBrowserRouter([
           { path: "consultants", element: <ConsultantManagement /> },
           { path: "consultants/:id", element: <ConsultantDetail /> },
           { path: "consultants/:id/edit", element: <UnderDevelopmentPage /> },
-          { path: "consultants/:id/schedule", element: <UnderDevelopmentPage /> },
+          {
+            path: "consultants/:id/schedule",
+            element: <UnderDevelopmentPage />,
+          },
           { path: "blogs", element: <BlogPage /> },
           { path: "blog-categories", element: <BlogCategoriesPage /> },
           { path: "service-categories", element: <ServiceCategoriesPage /> },
