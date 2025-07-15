@@ -240,3 +240,15 @@ export const updateBlogStatus = async (
   const response = await apiClient.put(`/blogs/${id}/status`, { status });
   return response.data;
 };
+
+/**
+ * Like hoặc unlike bài viết blog
+ * PUT /blogs/{id}/like
+ */
+export const likeBlog = async (
+  id: string,
+  action: 'like' | 'unlike'
+): Promise<ApiResponse<Blog>> => {
+  const response = await apiClient.put(`/blogs/${id}/like`, { action });
+  return response.data;
+};

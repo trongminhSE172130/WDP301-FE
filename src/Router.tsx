@@ -13,6 +13,7 @@ import ProfileLayout from "./layouts/ProfileLayout";
 import HomePage from "./pages/HomePage";
 import UnderDevelopmentPage from "./pages/UnderDevelopmentPage";
 import ServicesPage from "./pages/BlogPage";
+import BlogDetail from "./pages/BlogDetail";
 import ProfilePage from "./pages/ProfilePage";
 import ConsultationHistoryPage from "./pages/ConsultationHistoryPage";
 import CycleTrackingPage from "./pages/CycleTrackingPage";
@@ -180,6 +181,7 @@ const router = createBrowserRouter([
       { path: "services", element: <ServicePage /> },
       { path: "services/:serviceId", element: <ServiceDetail /> },
       { path: "blog", element: <ServicesPage /> },
+      { path: "blog/:id", element: <BlogDetail /> },
       { path: "subscriptions", element: <PurchaseSubscriptionPage /> },
       { path: "subscriptions/:id", element: <SubscriptionDetailPage /> },
       { path: "payment/confirm/:id", element: <PaymentConfirmPage /> },

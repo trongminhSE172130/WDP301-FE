@@ -1,15 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import HeroSection from '../components/home/HeroSection';
-import ServicesList from '../components/services/BlogList';
-import { getBlogCategories, getBlogs } from '../service/api/authApi';
+import BlogList from '../components/services/BlogList';
+import { getBlogCategories, getBlogs } from '../service/api/blogAPI';
+import type { Blog, BlogCategory } from '../service/api/blogAPI';
 
 const BlogPage: React.FC = () => {
-  const [categories, setCategories] = useState<{_id: string, name: string}[]>([]);
+  const [categories, setCategories] = useState<BlogCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Featured blogs
-  const [featuredBlogs, setFeaturedBlogs] = useState<any[]>([]);
+  const [featuredBlogs, setFeaturedBlogs] = useState<Blog[]>([]);
   const [loadingBlogs, setLoadingBlogs] = useState(true);
   const [errorBlogs, setErrorBlogs] = useState<string | null>(null);
 
@@ -17,7 +18,11 @@ const BlogPage: React.FC = () => {
     const fetchCategories = async () => {
       try {
         const res = await getBlogCategories();
-        setCategories(res.data.data);
+        if (res.success && res.data) {
+          setCategories(res.data);
+        } else {
+          setError('Không thể tải chuyên mục.');
+        }
       } catch {
         setError('Không thể tải chuyên mục.');
       } finally {
@@ -30,9 +35,16 @@ const BlogPage: React.FC = () => {
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
-        const res = await getBlogs();
-        const sorted = res.data.data.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-        setFeaturedBlogs(sorted.slice(0, 3));
+        setLoadingBlogs(true);
+        const res = await getBlogs(1, 10, undefined, undefined, undefined, 'published');
+        if (res.success && res.data) {
+          const sorted = res.data.sort((a: Blog, b: Blog) => 
+            new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+          );
+          setFeaturedBlogs(sorted.slice(0, 5));
+        } else {
+          setErrorBlogs('Không thể tải tin nổi bật.');
+        }
       } catch {
         setErrorBlogs('Không thể tải tin nổi bật.');
       } finally {
@@ -49,7 +61,7 @@ const BlogPage: React.FC = () => {
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Main Content - Services List (8 columns) */}
           <div className="lg:w-2/3">
-            <ServicesList />
+            <BlogList />
           </div>
 
           {/* Sidebar (4 columns) */}
@@ -94,12 +106,31 @@ const BlogPage: React.FC = () => {
                 <ul className="space-y-4">
                   {featuredBlogs.map((blog) => (
                     <li key={blog._id} className="border-b border-gray-100 last:border-b-0 pb-4 last:pb-0">
-                      <h3 className="font-medium text-gray-800">
-                        {blog.title}
-                      </h3>
-                      <p className="text-sm text-gray-500 mt-1">
-                        {new Date(blog.created_at).toLocaleDateString('vi-VN')}
-                      </p>
+                      <div className="flex gap-3">
+                        <img
+                          src={blog.thumbnail_url || `https://picsum.photos/80/60?random=${blog._id}`}
+                          alt={blog.title}
+                          className="w-16 h-12 object-cover rounded"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = `https://picsum.photos/80/60?random=${blog._id}`;
+                          }}
+                        />
+                        <div className="flex-1">
+                          <h4 className="font-medium text-gray-800 text-sm leading-tight mb-1">
+                            <a 
+                              href={`/blog/${blog._id}`}
+                              className="hover:text-blue-600 transition-colors"
+                            >
+                              {blog.title}
+                            </a>
+                          </h4>
+                          <div className="flex items-center justify-between text-xs text-gray-500">
+                            <span>{new Date(blog.created_at).toLocaleDateString('vi-VN')}</span>
+                            <span>{blog.view_count || 0} lượt xem</span>
+                          </div>
+                        </div>
+                      </div>
                     </li>
                   ))}
                 </ul>
