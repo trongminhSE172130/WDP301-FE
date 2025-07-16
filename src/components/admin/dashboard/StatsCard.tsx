@@ -21,7 +21,7 @@ const StatsCard: React.FC<StatsCardProps> = ({ stats }) => {
   return (
     <Row gutter={[16, 16]} className="w-full">
       {stats.map((stat) => (
-        <Col xs={24} sm={24} md={8} lg={8} key={stat.id}>
+        <Col xs={24} sm={12} md={8} lg={8} xl={4} key={stat.id}>
           <Card 
             bordered={false} 
             className="w-full rounded-lg shadow-sm"
