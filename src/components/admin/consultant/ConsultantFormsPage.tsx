@@ -20,6 +20,10 @@ const ConsultantFormsPage: React.FC = () => {
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [bookingFormData, setBookingFormData] = useState<any>({});
   const [resultFormData, setResultFormData] = useState<any>({});
+  const [bookingFormSchema, setBookingFormSchema] = useState<any | null>(null);
+  const [bookingFormSchemaLoading, setBookingFormSchemaLoading] = useState(false);
+  const [resultFormSchema, setResultFormSchema] = useState<any | null>(null);
+  const [resultFormSchemaLoading, setResultFormSchemaLoading] = useState(false);
 
   // Lấy danh sách lịch hẹn xét nghiệm khi vào trang
   useEffect(() => {
@@ -48,20 +52,139 @@ const ConsultantFormsPage: React.FC = () => {
       .finally(() => setLoading(false));
   }, []);
 
+  // Lấy schema booking_form khi sang bước 2 và đã chọn booking
+  useEffect(() => {
+    if (current === 1 && selectedBooking) {
+      setBookingFormSchemaLoading(true);
+      setBookingFormSchema(null);
+      const serviceId = selectedBooking.raw.service_id._id || selectedBooking.raw.service_id;
+      const formType = 'booking_form';
+      apiClient.get(`/dynamic-forms/schemas/${serviceId}/${formType}`)
+        .then(res => {
+          if (res.data && res.data.success) {
+            setBookingFormSchema(res.data.data);
+          } else {
+            setBookingFormSchema(null);
+          }
+        })
+        .catch(() => {
+          setBookingFormSchema(null);
+          message.error('Không thể tải biểu mẫu đặt lịch!');
+        })
+        .finally(() => setBookingFormSchemaLoading(false));
+    }
+  }, [current, selectedBooking]);
+
+  // Lấy schema result_form khi sang bước 3 và đã chọn booking
+  useEffect(() => {
+    if (current === 2 && selectedBooking) {
+      setResultFormSchemaLoading(true);
+      setResultFormSchema(null);
+      const serviceId = selectedBooking.raw.service_id._id || selectedBooking.raw.service_id;
+      const formType = 'result_form';
+      apiClient.get(`/dynamic-forms/schemas/${serviceId}/${formType}`)
+      
+        .then(res => {
+          if (res.data && res.data.success) {
+            
+            setResultFormSchema(res.data.data);
+          } else {
+            setResultFormSchema(null);
+          }
+        })
+        .catch(() => {
+          setResultFormSchema(null);
+          message.error('Không thể tải biểu mẫu kết quả!');
+        })
+        .finally(() => setResultFormSchemaLoading(false));
+    }
+  }, [current, selectedBooking]);
+
   const next = () => setCurrent((c) => c + 1);
   const prev = () => setCurrent((c) => c - 1);
 
-  // Giả lập submit booking_form
-  const handleSubmitBookingForm = (data: any) => {
-    setBookingFormData(data);
-    message.success('Đã lưu phiếu đặt lịch!');
-    next();
+  // Submit booking_form
+  const handleSubmitBookingForm = (formData: any) => {
+    if (!selectedBooking || !bookingFormSchema) return;
+    const serviceId = typeof selectedBooking.raw.service_id === 'string'
+      ? selectedBooking.raw.service_id
+      : selectedBooking.raw.service_id._id;
+    // Build data theo section
+    const sectionedData: Record<string, any> = {};
+    bookingFormSchema.sections.forEach((section: any) => {
+      sectionedData[section.section_name] = {};
+      section.fields.forEach((field: any) => {
+        sectionedData[section.section_name][field.field_name] = formData[field.field_name];
+      });
+    });
+    const body = {
+      form_type: 'booking_form',
+      service_id: serviceId,
+      booking_id: selectedBooking.raw._id,
+      form_schema_id: bookingFormSchema._id,
+      data: sectionedData
+    };
+    console.log('Submit booking_form body:', body);
+    console.log('Submit booking_form data:', JSON.stringify(body.data, null, 2));
+    setLoading(true);
+    apiClient.post('/dynamic-forms/data', body)
+      .then(res => {
+        if (res.data && res.data.success) {
+          setBookingFormData(res.data.data);
+          message.success('Đã lưu phiếu đặt lịch!');
+          next();
+        } else {
+          message.error('Không thể lưu phiếu đặt lịch.');
+        }
+      })
+      .catch((err) => {
+        message.error('Không thể lưu phiếu đặt lịch.');
+        console.error('Submit booking_form error:', err?.response?.data || err);
+      })
+      .finally(() => setLoading(false));
   };
-  // Giả lập submit result_form
-  const handleSubmitResultForm = (data: any) => {
-    setResultFormData(data);
-    message.success('Đã lưu phiếu kết quả!');
-    next();
+  // Submit result_form
+  const handleSubmitResultForm = (formData: any) => {
+    if (!selectedBooking || !resultFormSchema) return;
+    const serviceId = typeof selectedBooking.raw.service_id === 'string'
+      ? selectedBooking.raw.service_id
+      : selectedBooking.raw.service_id._id;
+    // Build data theo section
+    const sectionedData: Record<string, any> = {};
+    resultFormSchema.sections.forEach((section: any) => {
+      sectionedData[section.section_name] = {};
+      section.fields.forEach((field: any) => {
+        let value = formData[field.field_name];
+        if (value === undefined) {
+          if (field.field_type === 'checkbox') value = [];
+          else value = '';
+        }
+        sectionedData[section.section_name][field.field_name] = value;
+      });
+    });
+    const body = {
+      form_type: 'result_form',
+      service_id: serviceId,
+      booking_id: selectedBooking.raw._id,
+      form_schema_id: resultFormSchema._id,
+      data: sectionedData
+    };
+    setLoading(true);
+    apiClient.post('/dynamic-forms/data', body)
+      .then(res => {
+        if (res.data && res.data.success) {
+          setResultFormData(res.data.data);
+          message.success('Đã lưu phiếu kết quả!');
+          next();
+        } else {
+          message.error('Không thể lưu phiếu kết quả.');
+        }
+      })
+      .catch((err) => {
+        message.error('Không thể lưu phiếu kết quả.');
+        console.error('Submit result_form error:', err?.response?.data || err);
+      })
+      .finally(() => setLoading(false));
   };
 
   return (
@@ -96,20 +219,37 @@ const ConsultantFormsPage: React.FC = () => {
           )
         )}
         {current === 1 && (
-          <DynamicFormRenderer
-            form={{ form_name: '', sections: [] }} // placeholder, sẽ thay bằng API ở bước sau
-            initialValues={bookingFormData}
-            onSubmit={handleSubmitBookingForm}
-            onBack={prev}
-          />
+          bookingFormSchemaLoading ? (
+            <div style={{ textAlign: 'center', padding: 40 }}><Spin size="large" /></div>
+          ) : bookingFormSchema ? (
+            <>
+              <DynamicFormRenderer
+                form={bookingFormSchema}
+                initialValues={bookingFormData}
+                onSubmit={handleSubmitBookingForm}
+                onBack={prev}
+              />
+              <div style={{ textAlign: 'center', color: '#d4380d', padding: 40 }}>Không thể tải biểu mẫu đặt lịch.</div>
+            </>
+          ) : (
+            <div style={{ textAlign: 'center', color: '#d4380d', padding: 40 }}>Không thể tải biểu mẫu đặt lịch.</div>
+          )
         )}
         {current === 2 && (
-          <DynamicFormRenderer
-            form={{ form_name: '', sections: [] }} // placeholder, sẽ thay bằng API ở bước sau
-            initialValues={resultFormData}
-            onSubmit={handleSubmitResultForm}
-            onBack={prev}
-          />
+          resultFormSchemaLoading ? (
+            <div style={{ textAlign: 'center', padding: 40 }}><Spin size="large" /></div>
+          ) : resultFormSchema ? (
+            <DynamicFormRenderer
+              form={resultFormSchema}
+              initialValues={resultFormData}
+              onSubmit={handleSubmitResultForm}
+              onBack={prev}
+            />
+          ) : (
+            <div style={{ textAlign: 'center', color: '#d4380d', padding: 40 }}>
+              Chưa có biểu mẫu kết quả cho dịch vụ này.
+            </div>
+          )
         )}
         {current === 3 && (
           <div style={{ textAlign: 'center', padding: 40 }}>
