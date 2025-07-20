@@ -77,24 +77,11 @@ const DynamicFormFieldCST: React.FC<DynamicFormFieldCSTProps> = ({
           />
         );
         case 'date': {
-          let dateValue: Dayjs | null = null;
-          if (typeof value === 'string' && value) {
-            // Hỗ trợ cả hai format phổ biến từ API
-            const parsed = dayjs(value, ['YYYY-MM-DD', 'DD/MM/YYYY'], true);
-            dateValue = parsed.isValid() ? parsed : null;
-          } else if (dayjs.isDayjs(value)) {
-            dateValue = value;
-          } else {
-            // Nếu là object lạ hoặc bất kỳ kiểu nào khác, ép về null
-            dateValue = null;
-          }
           return (
             <DatePicker
               placeholder={field.placeholder}
               style={{ width: '100%' }}
               format="DD/MM/YYYY"
-              value={dateValue}
-              onChange={(date) => handleChange(date ? date.format('YYYY-MM-DD') : null)}
               allowClear
             />
           );
@@ -186,6 +173,17 @@ const DynamicFormFieldCST: React.FC<DynamicFormFieldCSTProps> = ({
     });
   }
 
+  // Hàm normalize cho date field
+  const normalizeDateValue = (value: any) => {
+    if (!value) return null;
+    if (dayjs.isDayjs(value) && value.isValid()) return value;
+    if (typeof value === 'string') {
+      const parsed = dayjs(value, ['YYYY-MM-DD', 'DD/MM/YYYY'], true);
+      return parsed.isValid() ? parsed : null;
+    }
+    return null;
+  };
+
   return (
     <Form.Item
       label={field.field_label}
@@ -193,6 +191,8 @@ const DynamicFormFieldCST: React.FC<DynamicFormFieldCSTProps> = ({
       rules={rules}
       help={field.help_text}
       required={field.is_required}
+      normalize={field.field_type === 'date' ? normalizeDateValue : undefined}
+      getValueFromEvent={field.field_type === 'date' ? (date) => date : undefined}
     >
       {renderField()}
     </Form.Item>

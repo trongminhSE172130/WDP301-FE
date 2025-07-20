@@ -109,23 +109,19 @@ const ConsultantFormsPage: React.FC = () => {
     const serviceId = typeof selectedBooking.raw.service_id === 'string'
       ? selectedBooking.raw.service_id
       : selectedBooking.raw.service_id._id;
-    // Build data theo section
-    const sectionedData: Record<string, any> = {};
-    bookingFormSchema.sections.forEach((section: any) => {
-      sectionedData[section.section_name] = {};
-      section.fields.forEach((field: any) => {
-        sectionedData[section.section_name][field.field_name] = formData[field.field_name];
-      });
-    });
+    
+    console.log('Form data received:', formData);
+    
+    // API yêu cầu form_data là flat object, không phải sectioned data
     const body = {
       form_type: 'booking_form',
       service_id: serviceId,
       booking_id: selectedBooking.raw._id,
       form_schema_id: bookingFormSchema._id,
-      data: sectionedData
+      form_data: formData // Sử dụng form_data thay vì data với sections
     };
-    console.log('Submit booking_form body:', body);
-    console.log('Submit booking_form data:', JSON.stringify(body.data, null, 2));
+    
+    console.log('API body to send:', JSON.stringify(body, null, 2));
     setLoading(true);
     apiClient.post('/dynamic-forms/data', body)
       .then(res => {
@@ -149,26 +145,30 @@ const ConsultantFormsPage: React.FC = () => {
     const serviceId = typeof selectedBooking.raw.service_id === 'string'
       ? selectedBooking.raw.service_id
       : selectedBooking.raw.service_id._id;
-    // Build data theo section
-    const sectionedData: Record<string, any> = {};
+    
+    console.log('Result form data received:', formData);
+    
+    // Xử lý default values cho các field không có giá trị
+    const processedFormData = { ...formData };
     resultFormSchema.sections.forEach((section: any) => {
-      sectionedData[section.section_name] = {};
       section.fields.forEach((field: any) => {
-        let value = formData[field.field_name];
-        if (value === undefined) {
-          if (field.field_type === 'checkbox') value = [];
-          else value = '';
+        if (processedFormData[field.field_name] === undefined) {
+          if (field.field_type === 'checkbox') processedFormData[field.field_name] = [];
+          else processedFormData[field.field_name] = '';
         }
-        sectionedData[section.section_name][field.field_name] = value;
       });
     });
+    
+    // API yêu cầu form_data là flat object
     const body = {
       form_type: 'result_form',
       service_id: serviceId,
       booking_id: selectedBooking.raw._id,
       form_schema_id: resultFormSchema._id,
-      data: sectionedData
+      form_data: processedFormData
     };
+    
+    console.log('Result API body to send:', JSON.stringify(body, null, 2));
     setLoading(true);
     apiClient.post('/dynamic-forms/data', body)
       .then(res => {

@@ -17,8 +17,16 @@ function convertInitialValues(form: any, initialValues: Record<string, any>) {
   if (form && form.sections) {
     form.sections.forEach((section: any) => {
       section.fields.forEach((field: any) => {
-        if (field.field_type === 'date' && typeof result[field.field_name] === 'string') {
-          result[field.field_name] = dayjs(result[field.field_name]);
+        if (field.field_type === 'date' && typeof result[field.field_name] === 'string' && result[field.field_name]) {
+          // Kiểm tra xem string có hợp lệ không trước khi convert
+          const dateStr = result[field.field_name];
+          const parsed = dayjs(dateStr, ['YYYY-MM-DD', 'DD/MM/YYYY'], true);
+          if (parsed.isValid()) {
+            result[field.field_name] = parsed;
+          } else {
+            // Nếu không parse được, set về null thay vì dayjs object không hợp lệ
+            result[field.field_name] = null;
+          }
         }
       });
     });
@@ -36,7 +44,26 @@ const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
   const [formInstance] = Form.useForm();
 
   const handleFinish = (values: any) => {
-    onSubmit(values);
+    // Convert dayjs objects về string cho date fields
+    const processedValues = { ...values };
+    if (form && form.sections) {
+      form.sections.forEach((section: any) => {
+        section.fields.forEach((field: any) => {
+          if (field.field_type === 'date' && dayjs.isDayjs(processedValues[field.field_name])) {
+            processedValues[field.field_name] = processedValues[field.field_name].format('YYYY-MM-DD');
+          }
+        });
+      });
+    }
+    
+    console.log('Form submitted with values:', processedValues);
+    onSubmit(processedValues);
+  };
+
+  // Log mỗi khi có thay đổi trong form
+  const handleValuesChange = (changedValues: any, allValues: any) => {
+    console.log('Form field changed:', changedValues);
+    console.log('All form values:', allValues);
   };
 
   return (
@@ -45,6 +72,7 @@ const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
       layout="vertical"
       initialValues={convertInitialValues(form, initialValues)}
       onFinish={handleFinish}
+      onValuesChange={handleValuesChange}
       style={{ marginTop: 16 }}
     >
       {form.sections.map((section: any) => (
