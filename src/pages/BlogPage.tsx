@@ -1,15 +1,35 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import HeroSection from '../components/home/HeroSection';
 import ServicesList from '../components/services/BlogList';
 import { getBlogCategories, getBlogs } from '../service/api/authApi';
 
+interface Blog {
+  _id: string;
+  title: string;
+  excerpt: string;
+  content: string;
+  author: string;
+  category_id: {
+    _id: string;
+    name: string;
+  };
+  thumbnail_url: string;
+  view_count: number;
+  like_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
 const BlogPage: React.FC = () => {
+  const navigate = useNavigate();
   const [categories, setCategories] = useState<{_id: string, name: string}[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Featured blogs
-  const [featuredBlogs, setFeaturedBlogs] = useState<any[]>([]);
+  // All blogs
+  const [blogs, setBlogs] = useState<Blog[]>([]);
+  const [featuredBlogs, setFeaturedBlogs] = useState<Blog[]>([]);
   const [loadingBlogs, setLoadingBlogs] = useState(true);
   const [errorBlogs, setErrorBlogs] = useState<string | null>(null);
 
@@ -31,8 +51,9 @@ const BlogPage: React.FC = () => {
     const fetchBlogs = async () => {
       try {
         const res = await getBlogs();
-        const sorted = res.data.data.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-        setFeaturedBlogs(sorted.slice(0, 3));
+        const sorted = res.data.data.sort((a: Blog, b: Blog) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        setBlogs(sorted); // Lưu tất cả blogs
+        setFeaturedBlogs(sorted.slice(0, 3)); // Lấy 3 blogs mới nhất cho sidebar
       } catch {
         setErrorBlogs('Không thể tải tin nổi bật.');
       } finally {
@@ -47,9 +68,9 @@ const BlogPage: React.FC = () => {
       <HeroSection />
       <div className="container mx-auto px-4 py-16">
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Main Content - Services List (8 columns) */}
+          {/* Main Content - Blog List (8 columns) */}
           <div className="lg:w-2/3">
-            <ServicesList />
+            <ServicesList blogs={blogs} loading={loadingBlogs} error={errorBlogs} />
           </div>
 
           {/* Sidebar (4 columns) */}
@@ -93,8 +114,12 @@ const BlogPage: React.FC = () => {
               ) : (
                 <ul className="space-y-4">
                   {featuredBlogs.map((blog) => (
-                    <li key={blog._id} className="border-b border-gray-100 last:border-b-0 pb-4 last:pb-0">
-                      <h3 className="font-medium text-gray-800">
+                    <li 
+                      key={blog._id} 
+                      className="border-b border-gray-100 last:border-b-0 pb-4 last:pb-0 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors"
+                      onClick={() => navigate(`/blog/${blog._id}`)}
+                    >
+                      <h3 className="font-medium text-gray-800 hover:text-blue-600 transition-colors">
                         {blog.title}
                       </h3>
                       <p className="text-sm text-gray-500 mt-1">

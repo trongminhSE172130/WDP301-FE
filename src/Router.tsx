@@ -18,6 +18,7 @@ import ConsultationHistoryPage from "./pages/ConsultationHistoryPage";
 import CycleTrackingPage from "./pages/CycleTrackingPage";
 import PurchasedServicesPage from "./pages/PurchasedServicesPage";
 import ServiceDetail from "./pages/ServiceDetail";
+import BlogDetail from "./pages/BlogDetail";
 import ContactPage from "./pages/ContactPage";
 
 // Public pages
@@ -180,6 +181,7 @@ const router = createBrowserRouter([
       { path: "services", element: <ServicePage /> },
       { path: "services/:serviceId", element: <ServiceDetail /> },
       { path: "blog", element: <ServicesPage /> },
+      { path: "blog/:blogId", element: <BlogDetail /> },
       { path: "subscriptions", element: <PurchaseSubscriptionPage /> },
       { path: "subscriptions/:id", element: <SubscriptionDetailPage /> },
       { path: "payment/confirm/:id", element: <PaymentConfirmPage /> },
