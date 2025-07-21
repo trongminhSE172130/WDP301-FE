@@ -1,0 +1,67 @@
+/* BookingHistoryPage Styles */
+
+.loadingContainer {
+  text-align: center;
+  padding: 64px 0;
+}
+
+.loadingText {
+  margin-top: 16px;
+}
+
+.bookingHeader {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.bookingTitle {
+  margin: 0 !important;
+  flex: 1;
+}
+
+.loadingIcon {
+  font-size: 24px;
+}
+
+.paginationContainer {
+  text-align: center;
+  margin-top: 32px;
+}
+
+/* Filter Card Styles */
+.filterCard {
+  margin-bottom: 24px;
+}
+
+.filterTitle {
+  color: #1890ff;
+  font-weight: 600;
+}
+
+/* Booking Card Styles */
+.bookingCard {
+  margin-bottom: 16px;
+  transition: all 0.3s ease;
+}
+
+.bookingCard:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.statusTag {
+  margin-left: 8px;
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+  .bookingHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .paginationContainer {
+    margin-top: 24px;
+  }
+}

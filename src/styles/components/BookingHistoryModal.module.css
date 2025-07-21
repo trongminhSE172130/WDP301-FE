@@ -1,0 +1,108 @@
+/* BookingHistoryModal Styles */
+
+/* Parameter Tags */
+.parameterTags {
+  margin-top: 8px;
+}
+
+.parameterTag {
+  margin: 2px;
+}
+
+/* Result Display */
+.resultCode {
+  white-space: pre-wrap;
+  font-size: 12px;
+  margin: 0;
+  font-family: Monaco, Consolas, monospace;
+}
+
+.resultCard {
+  background-color: #f8f9fa;
+}
+
+/* No Result State */
+.noResultContainer {
+  text-align: center;
+  padding: 32px 0;
+}
+
+.noResultIcon {
+  font-size: 48px;
+  color: #d9d9d9;
+  margin-bottom: 16px;
+}
+
+.noResultTime {
+  margin-top: 8px;
+}
+
+.noResultText {
+  font-size: 16px;
+}
+
+.noResultSubText {
+  font-size: 12px !important;
+}
+
+/* Service Information */
+.serviceTitle {
+  color: #1890ff !important;
+  margin-bottom: 8px !important;
+}
+
+/* Timeline */
+.timelineIcon {
+  font-size: 16px;
+}
+
+/* Layout */
+.spaceStyle {
+  width: 100%;
+}
+
+/* Modal Enhancements */
+.modalHeader {
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 16px;
+}
+
+.cardTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.infoCard {
+  margin-bottom: 16px;
+  border-radius: 8px;
+}
+
+.infoCard .ant-card-head {
+  background: linear-gradient(90deg, #f0f9ff 0%, #e0f2fe 100%);
+  border-radius: 8px 8px 0 0;
+}
+
+/* Status Badge */
+.statusBadge {
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 16px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .noResultContainer {
+    padding: 24px 0;
+  }
+
+  .noResultIcon {
+    font-size: 36px;
+    margin-bottom: 12px;
+  }
+
+  .serviceTitle {
+    font-size: 18px !important;
+  }
+}

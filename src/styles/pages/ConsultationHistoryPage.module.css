@@ -1,0 +1,267 @@
+/* ConsultationHistoryPage Styles */
+
+.container {
+  padding: 24px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  min-height: 600px;
+}
+
+.header {
+  margin-bottom: 24px;
+}
+
+.headerTitle {
+  margin: 0 !important;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.filterCard {
+  margin-bottom: 24px;
+  border: 1px solid #e5e7eb;
+}
+
+.filterRow {
+  align-items: center;
+}
+
+.actionButton {
+  height: 40px;
+  background-color: #3b82f6;
+  border-color: #3b82f6;
+}
+
+.actionButton:hover {
+  background-color: #2563eb;
+  border-color: #2563eb;
+}
+
+/* Consultation Cards */
+.consultationCard {
+  transition: all 0.3s ease;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.consultationCard:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-color: #3b82f6;
+}
+
+.avatarContainer {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatarFallback {
+  color: #6b7280;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.consultantInfo {
+  flex: 1;
+}
+
+.consultantName {
+  margin: 0 0 4px 0 !important;
+  color: #1f2937;
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.consultantSpecialty {
+  margin: 0 !important;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.dateTimeInfo {
+  text-align: right;
+}
+
+.date {
+  margin: 0 0 4px 0 !important;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.time {
+  margin: 0 !important;
+  color: #3b82f6;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.cardFooter {
+  margin-top: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 16px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.statusInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.question {
+  margin: 0 !important;
+  color: #6b7280;
+  font-style: italic;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.detailButton {
+  border-color: #3b82f6;
+  color: #3b82f6;
+}
+
+.detailButton:hover {
+  background-color: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+.joinButton {
+  background-color: #10b981;
+  border-color: #10b981;
+  color: white;
+}
+
+.joinButton:hover {
+  background-color: #059669;
+  border-color: #059669;
+}
+
+.disabledJoinButton {
+  background-color: #d1d5db;
+  border-color: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+/* Section Titles */
+.sectionTitle {
+  margin-bottom: 16px !important;
+  color: #374151;
+  font-weight: 600;
+  font-size: 18px;
+  border-bottom: 2px solid #e5e7eb;
+  padding-bottom: 8px;
+}
+
+.sectionContainer {
+  margin-bottom: 32px;
+}
+
+/* Empty State */
+.emptyState {
+  text-align: center;
+  padding: 60px 20px;
+  color: #6b7280;
+}
+
+.emptyIcon {
+  font-size: 48px;
+  color: #d1d5db;
+  margin-bottom: 16px;
+}
+
+.emptyText {
+  font-size: 16px;
+  color: #6b7280;
+}
+
+/* Loading */
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.loadingText {
+  color: #6b7280;
+  font-size: 16px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .container {
+    padding: 16px;
+    border-radius: 8px;
+  }
+
+  .consultationCard {
+    padding: 16px !important;
+  }
+
+  .cardFooter {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+
+  .statusInfo {
+    justify-content: center;
+  }
+
+  .actionButtons {
+    justify-content: center;
+  }
+
+  .question {
+    max-width: 100%;
+    text-align: center;
+  }
+
+  .dateTimeInfo {
+    text-align: left;
+  }
+
+  .sectionTitle {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 576px) {
+  .filterRow {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .filterRow .ant-col {
+    width: 100% !important;
+  }
+}
