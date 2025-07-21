@@ -50,17 +50,16 @@ export interface Creator {
 
 export interface DynamicForm {
   _id: string;
-  service_id?: Service | null;
+  service_id: string | Service;
   form_type: string;
   form_name: string;
   form_description: string;
   sections: FormSection[];
-  version: number;
   is_active: boolean;
-  created_by: Creator;
   created_at: string;
   updated_at: string;
   __v: number;
+  error?: string;
 }
 
 export interface DynamicFormResponse {

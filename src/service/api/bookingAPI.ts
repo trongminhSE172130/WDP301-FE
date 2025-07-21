@@ -48,13 +48,13 @@ export interface BookingResult {
 
 export interface BookingFromAPI {
   _id: string;
-  user_id: BookingUser;
+  user_id: BookingUser | null;
   service_id: BookingService;
-  consultant_schedule_id: BookingSchedule;
+  consultant_schedule_id: BookingSchedule | null;
   user_subscription_id: string | BookingSubscription;
   scheduled_date: string;
   time_slot: string;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'processing';
   created_at: string;
   updated_at: string;
   __v: number;
@@ -100,34 +100,34 @@ export const transformBookingData = (apiBooking: BookingFromAPI) => {
 
   return {
     _id: apiBooking._id,
-    patientName: apiBooking.user_id.full_name,
-    patientPhone: apiBooking.user_id.phone,
-    patientEmail: apiBooking.user_id.email,
-    gender: (apiBooking.user_id.gender === 'female' ? 'Female' : 'Male') as 'Male' | 'Female',
+    patientName: apiBooking.user_id ? apiBooking.user_id.full_name : 'Không có thông tin',
+    patientPhone: apiBooking.user_id ? apiBooking.user_id.phone : '',
+    patientEmail: apiBooking.user_id ? apiBooking.user_id.email : '',
+    gender: apiBooking.user_id && apiBooking.user_id.gender === 'female' ? 'Female' : 'Male' as 'Male' | 'Female',
     appointmentDate: apiBooking.scheduled_date,
     appointmentTime: apiBooking.time_slot,
-    service: apiBooking.service_id.title,
-    consultant: apiBooking.consultant_schedule_id.consultant_user_id._id,
-    consultantName: apiBooking.consultant_schedule_id.consultant_user_id.full_name,
-    reason: apiBooking.service_id.description,
+    service: apiBooking.service_id ? apiBooking.service_id.title : '',
+    consultant: apiBooking.consultant_schedule_id ? apiBooking.consultant_schedule_id.consultant_user_id._id : '',
+    consultantName: apiBooking.consultant_schedule_id ? apiBooking.consultant_schedule_id.consultant_user_id.full_name : 'Chưa phân công',
+    reason: apiBooking.service_id ? apiBooking.service_id.description : '',
     status: apiBooking.status,
     bookingDate: apiBooking.created_at,
-    notes: `Thời gian: ${apiBooking.service_id.duration} | Loại mẫu: ${apiBooking.service_id.sample_type}`,
+    notes: apiBooking.service_id ? `Thời gian: ${apiBooking.service_id.duration} | Loại mẫu: ${apiBooking.service_id.sample_type}` : '',
     // Additional fields for detail view
-    serviceDescription: apiBooking.service_id.description,
-    serviceDuration: apiBooking.service_id.duration,
-    sampleType: apiBooking.service_id.sample_type,
-    consultantEmail: apiBooking.consultant_schedule_id.consultant_user_id.email,
+    serviceDescription: apiBooking.service_id ? apiBooking.service_id.description : '',
+    serviceDuration: apiBooking.service_id ? apiBooking.service_id.duration : '',
+    sampleType: apiBooking.service_id ? apiBooking.service_id.sample_type : '',
+    consultantEmail: apiBooking.consultant_schedule_id ? apiBooking.consultant_schedule_id.consultant_user_id.email : '',
     subscriptionId: typeof apiBooking.user_subscription_id === 'string' 
       ? apiBooking.user_subscription_id 
       : apiBooking.user_subscription_id._id,
     subscriptionStatus,
     // New detailed fields
-    patientGender: apiBooking.user_id.gender,
-    patientDob: apiBooking.user_id.dob,
-    testParameters: apiBooking.service_id.test_details?.parameters || [],
-    testPreparation: apiBooking.service_id.test_details?.preparation,
-    resultTime: apiBooking.service_id.test_details?.result_time,
+    patientGender: apiBooking.user_id ? apiBooking.user_id.gender : '',
+    patientDob: apiBooking.user_id ? apiBooking.user_id.dob : '',
+    testParameters: apiBooking.service_id && apiBooking.service_id.test_details ? apiBooking.service_id.test_details.parameters || [] : [],
+    testPreparation: apiBooking.service_id && apiBooking.service_id.test_details ? apiBooking.service_id.test_details.preparation : '',
+    resultTime: apiBooking.service_id && apiBooking.service_id.test_details ? apiBooking.service_id.test_details.result_time : '',
     updatedAt: apiBooking.updated_at
   };
 };

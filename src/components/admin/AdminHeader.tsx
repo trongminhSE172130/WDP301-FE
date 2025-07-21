@@ -97,7 +97,15 @@ const AdminHeader: React.FC<AdminHeaderProps> = ({
   };
 
   return (
-    <Header style={{ padding: 0, background: '#fff', boxShadow: '0 1px 4px rgba(0,21,41,.08)' }}>
+    <Header style={{ 
+      padding: 0, 
+      background: '#fff', 
+      boxShadow: '0 1px 4px rgba(0,21,41,.08)',
+      position: 'sticky',
+      top: 0,
+      zIndex: 1000,
+      width: '100%'
+    }}>
       <div className="flex items-center justify-between px-4">
         <div className="flex items-center">
           <Button

@@ -72,7 +72,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ role }) => {
               background: '#fff',
               borderRadius: '4px',
               minHeight: 280,
-              boxShadow: '0 1px 4px rgba(0,21,41,.08)'
+              boxShadow: '0 1px 4px rgba(0,21,41,.08)',
+              overflowY: 'auto'
             }}
           >
           <Outlet />

@@ -94,6 +94,50 @@ export const getDynamicFormSchema = async (serviceId: string, formType: string):
  */
 export const createDynamicForm = async (formData: DynamicFormCreate): Promise<{ success: boolean; data: DynamicForm }> => {
   try {
+    // Kiểm tra xem form đã tồn tại chưa trước khi gửi request
+    const existingForms = await getExistingFormsForService(formData.service_id);
+    
+    if (existingForms.success) {
+      // Kiểm tra trùng lặp form_type
+      if (formData.form_type === 'booking_form' && existingForms.data.booking_form) {
+        return {
+          success: false,
+          data: {
+            _id: '',
+            service_id: '',
+            form_type: '',
+            form_name: '',
+            form_description: '',
+            sections: [],
+            is_active: false,
+            created_at: '',
+            updated_at: '',
+            __v: 0,
+            error: 'Dịch vụ này đã có Form đặt lịch. Mỗi dịch vụ chỉ được có 1 Form đặt lịch và 1 Form kết quả.'
+          }
+        };
+      }
+      
+      if (formData.form_type === 'result_form' && existingForms.data.result_form) {
+        return {
+          success: false,
+          data: {
+            _id: '',
+            service_id: '',
+            form_type: '',
+            form_name: '',
+            form_description: '',
+            sections: [],
+            is_active: false,
+            created_at: '',
+            updated_at: '',
+            __v: 0,
+            error: 'Dịch vụ này đã có Form kết quả. Mỗi dịch vụ chỉ được có 1 Form đặt lịch và 1 Form kết quả.'
+          }
+        };
+      }
+    }
+    
     console.log('=== API CALL DEBUG ===');
     console.log('URL:', '/dynamic-forms/schemas');
     console.log('FormData being sent:', JSON.stringify(formData, null, 2));
@@ -114,6 +158,32 @@ export const createDynamicForm = async (formData: DynamicFormCreate): Promise<{ 
         data: axiosError.response?.data,
         url: axiosError.response?.config,
       });
+      
+      // Kiểm tra lỗi duplicate key
+      if (axiosError.response?.status === 400 && 
+          axiosError.response?.data && 
+          typeof axiosError.response.data === 'object' &&
+          'error' in axiosError.response.data &&
+          typeof axiosError.response.data.error === 'string' &&
+          axiosError.response.data.error.includes('duplicate key error')) {
+        
+        return {
+          success: false,
+          data: {
+            _id: '',
+            service_id: '',
+            form_type: '',
+            form_name: '',
+            form_description: '',
+            sections: [],
+            is_active: false,
+            created_at: '',
+            updated_at: '',
+            __v: 0,
+            error: 'Dịch vụ này đã có form với loại này. Mỗi dịch vụ chỉ được có 1 Form đặt lịch và 1 Form kết quả.'
+          }
+        };
+      }
     }
     
     throw error;

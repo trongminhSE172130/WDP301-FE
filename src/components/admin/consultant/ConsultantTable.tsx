@@ -1,8 +1,9 @@
 import React from 'react';
-import { Table, Button, Space, Popconfirm, Tag, Tooltip } from 'antd';
-import { EditOutlined, DeleteOutlined, UserOutlined, EyeOutlined, CalendarOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Popconfirm, Tag, Tooltip, Modal, Select } from 'antd';
+import { EditOutlined, DeleteOutlined, UserOutlined, EyeOutlined, AppstoreAddOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { Service } from '../service/ServiceTypes';
+import { useState } from 'react';
 
 export interface Consultant {
   _id: string;
@@ -22,7 +23,7 @@ interface ConsultantTableProps {
   onEdit: (consultant: Consultant) => void;
   onDelete: (consultantId: string) => Promise<void>;
   onViewProfile: (consultantId: string) => void;
-  onManageSchedule: (consultantId: string) => void;
+  onAssignServices?: (consultantId: string, serviceIds: string[]) => Promise<void>;
   loading: boolean;
   services: Service[];
   getServiceNames: (serviceIds: string[]) => string[];
@@ -33,11 +34,36 @@ const ConsultantTable: React.FC<ConsultantTableProps> = ({
   onEdit,
   onDelete,
   onViewProfile,
-  onManageSchedule,
+  onAssignServices,
   loading,
   services,
   getServiceNames
 }) => {
+  const [assignModalVisible, setAssignModalVisible] = useState(false);
+  const [currentConsultant, setCurrentConsultant] = useState<Consultant | null>(null);
+  const [selectedServices, setSelectedServices] = useState<string[]>([]);
+  const [assignLoading, setAssignLoading] = useState(false);
+
+  const handleAssignServices = (consultant: Consultant) => {
+    setCurrentConsultant(consultant);
+    setSelectedServices(consultant.services || []);
+    setAssignModalVisible(true);
+  };
+
+  const handleAssignSubmit = async () => {
+    if (!currentConsultant || !onAssignServices) return;
+    
+    try {
+      setAssignLoading(true);
+      await onAssignServices(currentConsultant._id, selectedServices);
+      setAssignModalVisible(false);
+    } catch (error) {
+      console.error('Error assigning services:', error);
+    } finally {
+      setAssignLoading(false);
+    }
+  };
+
   const renderAvailabilityStatus = (record: Consultant) => {
     const canAdvice = record.is_available_for_advice;
     const canAnalysis = record.is_available_for_analysis;
@@ -150,7 +176,7 @@ const ConsultantTable: React.FC<ConsultantTableProps> = ({
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 200,
+      width: 240,
       render: (_, record) => (
         <Space size="small">
           <Tooltip title="Xem hồ sơ">
@@ -170,15 +196,17 @@ const ConsultantTable: React.FC<ConsultantTableProps> = ({
               className="text-green-600 hover:text-green-800"
             />
           </Tooltip>
-          
-          <Tooltip title="Quản lý lịch">
-            <Button
-              type="text"
-              icon={<CalendarOutlined />}
-              onClick={() => onManageSchedule(record._id)}
-              className="text-purple-600 hover:text-purple-800"
-            />
-          </Tooltip>
+
+          {onAssignServices && (
+            <Tooltip title="Gán dịch vụ">
+              <Button
+                type="text"
+                icon={<AppstoreAddOutlined />}
+                onClick={() => handleAssignServices(record)}
+                className="text-orange-600 hover:text-orange-800"
+              />
+            </Tooltip>
+          )}
           
           <Popconfirm
             title="Xác nhận xóa"
@@ -202,21 +230,52 @@ const ConsultantTable: React.FC<ConsultantTableProps> = ({
   ];
 
   return (
-    <Table
-      columns={columns}
-      dataSource={data}
-      rowKey="_id"
-      loading={loading}
-      pagination={{
-        pageSize: 10,
-        showSizeChanger: true,
-        showQuickJumper: true,
-        showTotal: (total, range) =>
-          `${range[0]}-${range[1]} của ${total} tư vấn viên`,
-      }}
-      scroll={{ x: 1200 }}
-      className="consultant-table"
-    />
+    <>
+      <Table
+        columns={columns}
+        dataSource={data}
+        rowKey="_id"
+        loading={loading}
+        pagination={{
+          pageSize: 10,
+          showSizeChanger: true,
+          showQuickJumper: true,
+          showTotal: (total, range) =>
+            `${range[0]}-${range[1]} của ${total} tư vấn viên`,
+        }}
+        scroll={{ x: 1200 }}
+        className="consultant-table"
+      />
+
+      <Modal
+        title={`Gán dịch vụ cho ${currentConsultant?.full_name || ''}`}
+        open={assignModalVisible}
+        onCancel={() => setAssignModalVisible(false)}
+        onOk={handleAssignSubmit}
+        confirmLoading={assignLoading}
+        okText="Lưu"
+        cancelText="Hủy"
+      >
+        <div className="mb-4">
+          <p className="mb-2">Chọn các dịch vụ mà tư vấn viên này có thể đảm nhiệm:</p>
+          <Select
+            mode="multiple"
+            style={{ width: '100%' }}
+            placeholder="Chọn dịch vụ"
+            value={selectedServices}
+            onChange={(value) => setSelectedServices(value)}
+            optionFilterProp="children"
+            showSearch
+          >
+            {services.map(service => (
+              <Select.Option key={service._id} value={service._id}>
+                {service.title}
+              </Select.Option>
+            ))}
+          </Select>
+        </div>
+      </Modal>
+    </>
   );
 };
 

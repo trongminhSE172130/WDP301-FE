@@ -10,7 +10,7 @@ export interface Booking {
   consultant: string;
   consultantName?: string;
   reason: string;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'processing';
   bookingDate: string;
   notes?: string;
   // Additional fields from API

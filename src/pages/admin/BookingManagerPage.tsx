@@ -10,7 +10,7 @@ import { getAllUsers } from '../../service/api/userAPI';
 const { Title } = Typography;
 
 // Danh sách trạng thái
-const statuses = ['pending', 'confirmed', 'completed', 'cancelled'];
+const statuses = ['pending', 'confirmed', 'completed', 'cancelled', 'processing'];
 
 const BookingManagerPage: React.FC = () => {
   const [bookings, setBookings] = useState<Booking[]>([]);

@@ -1,13 +1,19 @@
 import React from 'react';
-import { Modal, Descriptions, Tag, Divider, Card, Typography, Space } from 'antd';
+import { Modal, Descriptions, Tag, Divider, Card, Typography, Space, Select } from 'antd';
 import { FormOutlined, UserOutlined, TagOutlined, CalendarOutlined } from '@ant-design/icons';
 import type { DynamicForm } from '../../../types/dynamicForm';
+import type { Creator } from '../../../types/dynamicForm';
+
+// Mở rộng interface DynamicForm để bao gồm trường created_by
+interface ExtendedDynamicForm extends DynamicForm {
+  created_by?: Creator;
+}
 
 const { Title, Paragraph, Text } = Typography;
 
 interface DynamicFormDetailModalProps {
   visible: boolean;
-  form: DynamicForm | null;
+  form: ExtendedDynamicForm | null;
   onCancel: () => void;
 }
 
@@ -45,6 +51,18 @@ const DynamicFormDetailModal: React.FC<DynamicFormDetailModalProps> = ({
   };
 
   const totalFields = form.sections.reduce((total, section) => total + section.fields.length, 0);
+  
+  // Kiểm tra kiểu dữ liệu của service_id
+  const serviceTitle = typeof form.service_id === 'object' && form.service_id !== null 
+    ? form.service_id.title 
+    : 'Không có thông tin';
+    
+  const serviceDescription = typeof form.service_id === 'object' && form.service_id !== null 
+    ? form.service_id.description 
+    : '';
+    
+  // Kiểm tra nếu có thông tin người tạo
+  const hasCreatorInfo = form.created_by && typeof form.created_by === 'object' && form.created_by.full_name;
 
   return (
     <Modal
@@ -95,14 +113,14 @@ const DynamicFormDetailModal: React.FC<DynamicFormDetailModalProps> = ({
         </Card>
 
         {/* Thông tin dịch vụ */}
-        {form.service_id && (
+        {form.service_id && typeof form.service_id === 'object' && (
           <Card title="Dịch vụ liên quan" size="small">
             <Descriptions column={1} size="small">
               <Descriptions.Item label="Tên dịch vụ">
-                <Text strong>{form.service_id.title}</Text>
+                <Text strong>{serviceTitle}</Text>
               </Descriptions.Item>
               <Descriptions.Item label="Mô tả dịch vụ">
-                <Paragraph className="mb-0">{form.service_id.description}</Paragraph>
+                <Paragraph className="mb-0">{serviceDescription}</Paragraph>
               </Descriptions.Item>
             </Descriptions>
           </Card>
@@ -114,7 +132,7 @@ const DynamicFormDetailModal: React.FC<DynamicFormDetailModalProps> = ({
             <Descriptions.Item label="Người tạo">
               <Space>
                 <UserOutlined className="text-gray-400" />
-                <Text strong>{form.created_by.full_name}</Text>
+                <Text strong>{hasCreatorInfo && form.created_by ? form.created_by.full_name : 'Không xác định'}</Text>
               </Space>
             </Descriptions.Item>
             <Descriptions.Item label="Ngày tạo">
@@ -176,7 +194,13 @@ const DynamicFormDetailModal: React.FC<DynamicFormDetailModalProps> = ({
                                 {field.is_required ? 'Bắt buộc' : 'Tùy chọn'}
                               </Tag>
                               <Tag color="geekblue">
-                                {field.field_type}
+                                {field.field_type === 'select' ? 'Dropdown' : 
+                                 field.field_type === 'radio' ? 'Radio Button' : 
+                                 field.field_type === 'checkbox' ? 'Checkbox' : 
+                                 field.field_type === 'textarea' ? 'Văn bản dài' : 
+                                 field.field_type === 'date' ? 'Ngày tháng' : 
+                                 field.field_type === 'file' ? 'Tệp tin' : 
+                                 field.field_type}
                               </Tag>
                             </div>
                           </div>
@@ -189,6 +213,57 @@ const DynamicFormDetailModal: React.FC<DynamicFormDetailModalProps> = ({
                             <Text type="secondary" className="text-xs block">
                               Hướng dẫn: {field.help_text}
                             </Text>
+                          )}
+                          
+                          {/* Hiển thị các tùy chọn cho select, radio, checkbox */}
+                          {['select', 'radio', 'checkbox'].includes(field.field_type) && field.validation_rules.options && field.validation_rules.options.length > 0 && (
+                            <div className="mt-2 border-t pt-2">
+                              <Text type="secondary" className="text-xs block font-medium">
+                                Các tùy chọn:
+                              </Text>
+                              <div className="mt-1 max-h-32 overflow-y-auto">
+                                {field.field_type === 'select' && (
+                                  <Select 
+                                    size="small" 
+                                    style={{ width: '100%' }} 
+                                    placeholder="Chọn..." 
+                                    disabled
+                                    options={field.validation_rules.options.map(opt => ({ label: opt, value: opt }))}
+                                  />
+                                )}
+                                
+                                {field.field_type === 'radio' && (
+                                  <div className="space-y-1">
+                                    {field.validation_rules.options.map((option, i) => (
+                                      <div key={i} className="flex items-center">
+                                        <div className="w-3 h-3 rounded-full border border-gray-300 mr-2"></div>
+                                        <Text className="text-xs text-gray-600">{option}</Text>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                                
+                                {field.field_type === 'checkbox' && (
+                                  <div className="space-y-1">
+                                    {field.validation_rules.options.map((option, i) => (
+                                      <div key={i} className="flex items-center">
+                                        <div className="w-3 h-3 border border-gray-300 mr-2"></div>
+                                        <Text className="text-xs text-gray-600">{option}</Text>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Hiển thị các loại file được phép */}
+                          {field.field_type === 'file' && field.validation_rules.file_types && field.validation_rules.file_types.length > 0 && (
+                            <div className="mt-2">
+                              <Text type="secondary" className="text-xs block">
+                                Loại file: {field.validation_rules.file_types.join(', ')}
+                              </Text>
+                            </div>
                           )}
                         </div>
                       ))}

@@ -7,7 +7,7 @@ import ConsultantSearch from '../../components/admin/consultant/ConsultantSearch
 import ConsultantForm from '../../components/admin/consultant/ConsultantForm';
 import type { SearchFormValues } from '../../components/admin/consultant/ConsultantSearch';
 import type { FormValues } from '../../components/admin/consultant/ConsultantForm';
-import { getAllConsultants, createConsultant, updateConsultant, deleteConsultant } from '../../service/api/consultantAPI';
+import { getAllConsultants, createConsultant, updateConsultant, deleteConsultant, assignServices } from '../../service/api/consultantAPI';
 import { getAllServices } from '../../service/api/serviceAPI';
 import type { Service } from '../../components/admin/service/ServiceTypes';
 
@@ -119,9 +119,40 @@ const ConsultantManagement: React.FC = () => {
     navigate(`/admin/consultants/${consultantId}`);
   };
 
-  // Xử lý quản lý lịch tư vấn viên
-  const handleManageSchedule = (consultantId: string) => {
-    navigate(`/admin/consultants/${consultantId}/schedule`);
+  // Xử lý gán dịch vụ cho tư vấn viên
+  const handleAssignServices = async (consultantId: string, serviceIds: string[]) => {
+    try {
+      setLoading(true);
+      const response = await assignServices(consultantId, serviceIds);
+      
+      if (response.success) {
+        message.success('Gán dịch vụ thành công!');
+        
+        // Cập nhật danh sách tư vấn viên trong state
+        setConsultants(prevConsultants => 
+          prevConsultants.map(consultant => 
+            consultant._id === consultantId 
+              ? { ...consultant, services: serviceIds } 
+              : consultant
+          )
+        );
+        
+        setAllConsultants(prevConsultants => 
+          prevConsultants.map(consultant => 
+            consultant._id === consultantId 
+              ? { ...consultant, services: serviceIds } 
+              : consultant
+          )
+        );
+      } else {
+        message.error('Không thể gán dịch vụ cho tư vấn viên');
+      }
+    } catch (error) {
+      console.error('Error assigning services:', error);
+      message.error('Có lỗi xảy ra khi gán dịch vụ');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Xử lý submit form
@@ -228,7 +259,7 @@ const ConsultantManagement: React.FC = () => {
           onEdit={handleEdit} 
           onDelete={handleDelete}
           onViewProfile={handleViewProfile}
-          onManageSchedule={handleManageSchedule}
+          onAssignServices={handleAssignServices}
           loading={loading}
           services={services}
           getServiceNames={getServiceNames}

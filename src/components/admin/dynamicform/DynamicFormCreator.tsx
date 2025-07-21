@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Input, Select, Button, message, Steps, Card, Space, Divider, Alert } from 'antd';
+import { Modal, Form, Input, Select, Button, message, Steps, Card, Space, Divider, Alert, Switch, Tag } from 'antd';
 import { PlusOutlined, DeleteOutlined, SaveOutlined, EditOutlined } from '@ant-design/icons';
 import type { FormSection, Service, DynamicFormCreate } from '../../../types/dynamicForm';
 import type { DynamicForm } from '../../../types/dynamicForm';
@@ -34,6 +34,7 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
   const [services, setServices] = useState<Service[]>([]);
   const [sections, setSections] = useState<FormSection[]>([]);
   const [currentStep, setCurrentStep] = useState(0);
+  const [isActive, setIsActive] = useState(true);
   
   // State để lưu form data giữa các steps
   const [formBasicData, setFormBasicData] = useState<{
@@ -65,6 +66,7 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
         form.setFieldsValue(basicData);
         setFormBasicData(basicData);
         setSections(editForm.sections || []);
+        setIsActive(editForm.is_active);
         
         // Load existing forms cho service đã chọn
         if (basicData.service_id) {
@@ -79,6 +81,7 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
         setFormBasicData({});
         setExistingForms({});
         setValidationMessage('');
+        setIsActive(true);
       }
       
       setCurrentStep(0);
@@ -103,8 +106,7 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
     const newSection: FormSection = {
       section_name: `section_${sections.length + 1}`,
       section_label: `Phần ${sections.length + 1}`,
-      description: '',
-      order: sections.length,
+      order: sections.length + 1,
       fields: [],
     };
     setSections([...sections, newSection]);
@@ -117,83 +119,77 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
   };
 
   const removeSection = (index: number) => {
-    const newSections = sections.filter((_, i) => i !== index);
-    // Cập nhật lại order
-    newSections.forEach((section, i) => {
-      section.order = i;
-    });
+    // Xác nhận trước khi xóa
+    if (sections[index].fields.length > 0) {
+      if (!window.confirm(`Xóa phần "${sections[index].section_label}" sẽ xóa cả ${sections[index].fields.length} trường dữ liệu. Bạn có chắc chắn?`)) {
+        return;
+      }
+    }
+    
+    const newSections = [...sections];
+    newSections.splice(index, 1);
     setSections(newSections);
   };
 
-  // Kiểm tra form đã tồn tại khi thay đổi service
   const handleServiceChange = async (serviceId: string) => {
     try {
+      // Kiểm tra các form đã tồn tại cho service này
       const response = await getExistingFormsForService(serviceId);
-      
       if (response.success) {
         setExistingForms(response.data);
         
-        // Tạo thông báo validation
-        const existing = response.data;
-        const existingTypes = [];
-        const existingDetails = [];
-        
-        if (existing.booking_form) {
-          existingTypes.push('Form đặt lịch');
-          existingDetails.push(`• Form đặt lịch: "${existing.booking_form.form_name}"`);
-        }
-        if (existing.result_form) {
-          existingTypes.push('Form kết quả');
-          existingDetails.push(`• Form kết quả: "${existing.result_form.form_name}"`);
+        // Tạo thông báo cho người dùng
+        let message = '';
+        if (response.data.booking_form && response.data.result_form) {
+          message = 'Dịch vụ này đã có cả Form đặt lịch và Form kết quả.\nMỗi dịch vụ chỉ được có 1 Form đặt lịch và 1 Form kết quả.';
+        } else if (response.data.booking_form) {
+          message = 'Dịch vụ này đã có Form đặt lịch.\nBạn chỉ có thể tạo thêm Form kết quả.';
+        } else if (response.data.result_form) {
+          message = 'Dịch vụ này đã có Form kết quả.\nBạn chỉ có thể tạo thêm Form đặt lịch.';
         }
         
-        if (existingTypes.length > 0) {
-          setValidationMessage(`Dịch vụ này đã có ${existingTypes.length}/2 loại form:\n${existingDetails.join('\n')}`);
-        } else {
-          setValidationMessage('Dịch vụ này chưa có form nào. Bạn có thể tạo Form đặt lịch hoặc Form kết quả.');
+        setValidationMessage(message);
+        
+        // Nếu đang trong edit mode và form hiện tại là một trong các form đã tồn tại
+        if (isEditMode && editForm) {
+          if (editForm.form_type === 'booking_form' && response.data.booking_form?._id !== editForm._id) {
+            setValidationMessage('Dịch vụ này đã có Form đặt lịch khác. Bạn không thể thay đổi loại form.');
+          } else if (editForm.form_type === 'result_form' && response.data.result_form?._id !== editForm._id) {
+            setValidationMessage('Dịch vụ này đã có Form kết quả khác. Bạn không thể thay đổi loại form.');
+          }
         }
-      } else {
-        console.warn('API returned success: false');
-        setExistingForms({});
-        setValidationMessage('Không thể kiểm tra forms đã tồn tại.');
       }
     } catch (error) {
       console.error('Error checking existing forms:', error);
-      setExistingForms({});
-      setValidationMessage('Lỗi khi kiểm tra forms đã tồn tại.');
     }
   };
 
-  // Lấy danh sách form types có thể tạo
   const getAvailableFormTypes = () => {
-    if (!existingForms) return FORM_TYPES;
+    // Nếu đang edit, không cho phép thay đổi form_type
+    if (isEditMode) {
+      return FORM_TYPES.filter(type => type.value === editForm?.form_type);
+    }
     
-    return FORM_TYPES.filter(formType => {
-      if (isEditMode && editForm?.form_type === formType.value) {
-        // Cho phép giữ nguyên form type hiện tại khi edit
-        return true;
-      }
-      
-      // Chỉ hiển thị form types chưa tồn tại
-      if (formType.value === 'booking_form' && existingForms.booking_form) return false;
-      if (formType.value === 'result_form' && existingForms.result_form) return false;
-      
-      return true;
-    });
+    // Nếu đang tạo mới, chỉ hiển thị các loại form chưa tồn tại
+    const availableTypes = [...FORM_TYPES];
+    if (existingForms.booking_form) {
+      return availableTypes.filter(type => type.value !== 'booking_form');
+    }
+    if (existingForms.result_form) {
+      return availableTypes.filter(type => type.value !== 'result_form');
+    }
+    return availableTypes;
   };
 
   const handleNext = () => {
-    if (currentStep === 0) {
-      form.validateFields(['service_id', 'form_type', 'form_name', 'form_description'])
-        .then((values) => {
-          // Lưu form data vào state
-          setFormBasicData(values);
-          setCurrentStep(1);
-        })
-        .catch(() => {
-          message.error('Vui lòng điền đầy đủ thông tin bước 1');
-        });
-    }
+    form.validateFields()
+      .then(values => {
+        setFormBasicData(values);
+        setCurrentStep(1);
+      })
+      .catch(errorInfo => {
+        console.log('Validate Failed:', errorInfo);
+      });
   };
 
   const handlePrev = () => {
@@ -260,8 +256,6 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
         sections: sections,
       };
 
-
-
       // Gọi API tương ứng với mode
       let response;
       if (isEditMode && editForm?._id) {
@@ -272,22 +266,27 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
           form_name: basicData.form_name,
           form_description: basicData.form_description,
           sections: sections,
+          is_active: isActive
         };
         
         response = await updateDynamicForm(editForm._id, updateData);
         if (response.success) {
           message.success('Cập nhật form schema thành công!');
           onSuccess();
+        } else if (response.data && typeof response.data === 'object' && 'error' in response.data && typeof response.data.error === 'string') {
+          message.error(response.data.error);
         } else {
           throw new Error('Cập nhật form thất bại');
         }
       } else {
         response = await createDynamicForm(formData);
-      if (response.success) {
-        message.success('Tạo form schema thành công!');
-        onSuccess();
-      } else {
-        throw new Error('Tạo form thất bại');
+        if (response.success) {
+          message.success('Tạo form schema thành công!');
+          onSuccess();
+        } else if (response.data && typeof response.data === 'object' && 'error' in response.data && typeof response.data.error === 'string') {
+          message.error(response.data.error);
+        } else {
+          throw new Error('Tạo form thất bại');
         }
       }
     } catch (error) {
@@ -303,7 +302,7 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
           message.error(`Lỗi HTTP ${axiosError.response?.status}: ${axiosError.response?.statusText}`);
         }
       } else {
-      message.error(error instanceof Error ? error.message : 'Có lỗi xảy ra khi tạo form');
+        message.error(error instanceof Error ? error.message : 'Có lỗi xảy ra khi tạo form');
       }
     } finally {
       setLoading(false);
@@ -382,14 +381,38 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
           >
             <TextArea rows={4} placeholder="Nhập mô tả form" />
           </Form.Item>
+
+          {isEditMode && (
+            <Form.Item
+              label={
+                <div className="flex items-center">
+                  <span className="mr-2">Trạng thái</span>
+                  <Tag color={isActive ? 'green' : 'red'}>
+                    {isActive ? 'Hoạt động' : 'Không hoạt động'}
+                  </Tag>
+                </div>
+              }
+            >
+              <div className="flex items-center">
+                <Switch 
+                  checked={isActive} 
+                  onChange={(checked) => setIsActive(checked)} 
+                  className="mr-2"
+                />
+                <span className="text-sm text-gray-500">
+                  {isActive ? 'Form đang hoạt động và có thể sử dụng' : 'Form đang bị vô hiệu hóa và không thể sử dụng'}
+                </span>
+              </div>
+            </Form.Item>
+          )}
         </Form>
       ),
     },
     {
       title: 'Xây dựng sections',
       content: (
-        <div className="mt-4">
-          <div className="flex justify-between items-center mb-4">
+        <div className="mt-4 pb-4">
+          <div className="flex justify-between items-center mb-4 sticky top-0 bg-white z-10 py-2">
             <h3 className="text-lg font-semibold">Sections & Fields</h3>
             <Button
               type="primary"
@@ -400,35 +423,37 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
             </Button>
           </div>
 
-          {sections.length === 0 ? (
-            <Card className="text-center">
-              <p className="text-gray-500">Chưa có section nào. Hãy thêm section đầu tiên!</p>
-            </Card>
-          ) : (
-            sections.map((section, index) => (
-              <Card
-                key={index}
-                className="mb-4"
-                title={
-                  <div className="flex justify-between items-center">
-                    <span>{section.section_label || `Section ${index + 1}`}</span>
-                    <Button
-                      type="text"
-                      danger
-                      icon={<DeleteOutlined />}
-                      onClick={() => removeSection(index)}
-                      size="small"
-                    />
-                  </div>
-                }
-              >
-                <DynamicFormSectionBuilder
-                  section={section}
-                  onChange={(updatedSection) => updateSection(index, updatedSection)}
-                />
+          <div className="max-h-[calc(100vh-400px)] overflow-y-auto pr-1">
+            {sections.length === 0 ? (
+              <Card className="text-center">
+                <p className="text-gray-500">Chưa có section nào. Hãy thêm section đầu tiên!</p>
               </Card>
-            ))
-          )}
+            ) : (
+              sections.map((section, index) => (
+                <Card
+                  key={index}
+                  className="mb-4"
+                  title={
+                    <div className="flex justify-between items-center">
+                      <span>{section.section_label || `Section ${index + 1}`}</span>
+                      <Button
+                        type="text"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => removeSection(index)}
+                        size="small"
+                      />
+                    </div>
+                  }
+                >
+                  <DynamicFormSectionBuilder
+                    section={section}
+                    onChange={(updatedSection) => updateSection(index, updatedSection)}
+                  />
+                </Card>
+              ))
+            )}
+          </div>
         </div>
       ),
     },
@@ -442,8 +467,9 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
       width={900}
       footer={null}
       destroyOnClose
+      bodyStyle={{ maxHeight: 'calc(100vh - 200px)', overflow: 'auto' }}
     >
-      <Steps current={currentStep} className="mb-6">
+      <Steps current={currentStep} className="mb-6 sticky top-0 bg-white z-10 pt-2 pb-2">
         {steps.map(step => (
           <Steps.Step key={step.title} title={step.title} />
         ))}
@@ -455,7 +481,7 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
 
       <Divider />
 
-      <div className="flex justify-between">
+      <div className="flex justify-between sticky bottom-0 bg-white pt-3 pb-2 z-10">
         <div>
           {currentStep > 0 && (
             <Button onClick={handlePrev}>
