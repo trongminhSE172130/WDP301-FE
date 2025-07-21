@@ -13,7 +13,8 @@ import {
   ScheduleOutlined,
   EditOutlined,
   FolderOutlined,
-  BellOutlined
+  BellOutlined,
+  CommentOutlined
 } from '@ant-design/icons';
 import { GiHealthNormal } from 'react-icons/gi';
 
@@ -75,6 +76,12 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, role }) => {
           // Quản lý lịch trình & đặt lịch
           { key: 'schedules', icon: <CalendarOutlined />, label: 'Quản lý lịch trình', link: '/admin/schedules' },
           { key: 'bookings', icon: <ScheduleOutlined />, label: 'Tổng quan đặt lịch', link: '/admin/bookings' },
+          
+          // Chat hệ thống
+          { key: 'chat', icon: <MessageOutlined />, label: 'Chat hệ thống', link: '/admin/chat' },
+          
+          // Quản lý feedback
+          { key: 'feedback', icon: <CommentOutlined />, label: 'Quản lý feedback', link: '/admin/feedback' },
           
           // Quản lý nội dung & thông báo
           { 

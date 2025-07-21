@@ -58,6 +58,8 @@ const BookingTable: React.FC<BookingTableProps> = ({
         return 'purple';
       case 'cancelled':
         return 'red';
+      case 'processing':
+        return 'blue';
       default:
         return 'default';
     }
@@ -73,6 +75,8 @@ const BookingTable: React.FC<BookingTableProps> = ({
         return 'Đã hoàn thành';
       case 'cancelled':
         return 'Đã hủy';
+      case 'processing':
+        return 'Đang xử lý';
       default:
         return status;
     }

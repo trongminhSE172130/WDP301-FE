@@ -78,3 +78,9 @@ export const deleteConsultant = async (id: string): Promise<{ success: boolean; 
   const response = await apiClient.delete(`/consultants/${id}`);
   return response.data;
 };
+
+// Assign services to consultant
+export const assignServices = async (consultantId: string, serviceIds: string[]): Promise<{ success: boolean; message: string }> => {
+  const response = await apiClient.put(`/admin/consultants/${consultantId}/services`, { service_ids: serviceIds });
+  return response.data;
+};

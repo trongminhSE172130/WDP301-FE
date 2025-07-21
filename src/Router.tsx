@@ -53,6 +53,8 @@ import PaymentConfirmPage from "./pages/PaymentConfirmPage";
 import PaymentSuccessPage from "./pages/PaymentSuccessPage";
 import ConsultantFormsPage from "./components/admin/consultant/ConsultantFormsPage";
 import BookingManagerPage from "./pages/admin/BookingManagerPage";
+import ChatPage from "./pages/admin/ChatPage";
+import FeedbackPage from "./pages/admin/FeedbackPage";
 
 // Auth protection với SessionManager
 const ProtectedRoute = ({ allowedRoles = ["admin"] }) => {
@@ -300,6 +302,8 @@ const router = createBrowserRouter([
           { path: "availability", element: <ConsultantAvailability /> },
           { path: "messages", element: <ConsultantMessages /> },
           { path: "bookings", element: <BookingManagerPage /> },
+          { path: "chat", element: <ChatPage /> },
+          { path: "feedback", element: <FeedbackPage /> },
           { path: "*", element: <UnderDevelopmentPage /> },
         ],
       },

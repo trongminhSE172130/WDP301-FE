@@ -37,7 +37,6 @@ const ConsultantForm: React.FC<ConsultantFormProps> = ({
   const [form] = Form.useForm();
   const isEditing = !!consultant;
 
-  // Thiết lập giá trị ban đầu cho form
   React.useEffect(() => {
     if (consultant) {
       form.setFieldsValue({
@@ -69,14 +68,12 @@ const ConsultantForm: React.FC<ConsultantFormProps> = ({
         }}
         className="space-y-6"
       >
-        {/* ID ẩn */}
         {consultant && (
           <Form.Item name="_id" hidden>
             <Input />
           </Form.Item>
         )}
         
-        {/* Thông tin cá nhân */}
         <Card 
           title={
             <div className="flex items-center space-x-2">
@@ -144,7 +141,6 @@ const ConsultantForm: React.FC<ConsultantFormProps> = ({
             </Col>
           </Row>
 
-          {/* Password field - chỉ hiển thị khi tạo mới */}
           {!isEditing && (
             <Row gutter={[24, 16]}>
               <Col xs={24} md={12}>
@@ -168,7 +164,6 @@ const ConsultantForm: React.FC<ConsultantFormProps> = ({
           )}
         </Card>
 
-        {/* Thông tin chuyên môn */}
         <Card 
           title={
             <div className="flex items-center space-x-2">
@@ -234,33 +229,35 @@ const ConsultantForm: React.FC<ConsultantFormProps> = ({
             </Form.Item>
             </Col>
           
-            <Col xs={24} md={12}>
-            <Form.Item
-                name="services"
-                label={
-                  <span className="text-sm font-medium text-gray-700">
-                    Dịch vụ đảm nhiệm
-                    {isEditing && <span className="ml-2 text-xs text-orange-500">(Không thể chỉnh sửa)</span>}
-                  </span>
-                }
-            >
-              <Select 
-                  mode="multiple"
-                  placeholder="Chọn dịch vụ (tùy chọn)"
-                  size="large"
-                  className="rounded-lg"
-                  optionFilterProp="children"
-                  allowClear
-                  disabled={isEditing}
-              >
-                  {services.map((service) => (
-                    <Option key={service._id} value={service._id}>
-                      {service.title}
-                  </Option>
-                ))}
-              </Select>
-            </Form.Item>
-            </Col>
+            {isEditing && (
+              <Col xs={24} md={12}>
+                <Form.Item
+                  name="services"
+                  label={
+                    <span className="text-sm font-medium text-gray-700">
+                      Dịch vụ đảm nhiệm
+                      <span className="ml-2 text-xs text-orange-500">(Không thể chỉnh sửa)</span>
+                    </span>
+                  }
+                >
+                  <Select 
+                    mode="multiple"
+                    placeholder="Chọn dịch vụ (tùy chọn)"
+                    size="large"
+                    className="rounded-lg"
+                    optionFilterProp="children"
+                    allowClear
+                    disabled={true}
+                  >
+                    {services.map((service) => (
+                      <Option key={service._id} value={service._id}>
+                        {service.title}
+                      </Option>
+                    ))}
+                  </Select>
+                </Form.Item>
+              </Col>
+            )}
           </Row>
 
           <Form.Item
@@ -278,7 +275,6 @@ const ConsultantForm: React.FC<ConsultantFormProps> = ({
           </Form.Item>
         </Card>
 
-        {/* Thông báo */}
         {!consultant ? (
           <div className="bg-gradient-to-r from-blue-50 to-indigo-100 border border-blue-200 rounded-lg p-4">
             <div className="flex items-start space-x-3">
@@ -289,7 +285,8 @@ const ConsultantForm: React.FC<ConsultantFormProps> = ({
                 <p className="text-sm text-blue-800 font-medium mb-1">Lưu ý quan trọng</p>
                 <p className="text-sm text-blue-700">
                   Sau khi tạo thành công, thông tin tư vấn viên sẽ được thêm vào hệ thống. 
-                  Bạn có thể chỉnh sửa một số thông tin này sau.
+                  Bạn có thể chỉnh sửa một số thông tin này sau. Để gán dịch vụ cho tư vấn viên, 
+                  vui lòng sử dụng chức năng "Gán dịch vụ" sau khi tạo tư vấn viên.
                 </p>
               </div>
             </div>
@@ -305,7 +302,9 @@ const ConsultantForm: React.FC<ConsultantFormProps> = ({
                 <p className="text-sm text-amber-700">
                   <span className="font-medium">Có thể chỉnh sửa:</span> Bằng cấp, Chuyên khoa, Kinh nghiệm, Giới thiệu.
                   <br />
-                  <span className="font-medium">Không thể chỉnh sửa:</span> Họ tên, Email, Dịch vụ đảm nhiệm (liên hệ admin để thay đổi).
+                  <span className="font-medium">Không thể chỉnh sửa:</span> Họ tên, Email, Dịch vụ đảm nhiệm.
+                  <br />
+                  <span className="font-medium">Để gán dịch vụ:</span> Sử dụng nút "Gán dịch vụ" trong danh sách tư vấn viên.
             </p>
               </div>
             </div>
