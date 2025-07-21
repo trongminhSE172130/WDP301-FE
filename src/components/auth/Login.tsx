@@ -1,5 +1,14 @@
-import React from "react";
-import { FiEye, FiEyeOff, FiMail, FiLock } from "react-icons/fi";
+import React, { useState } from "react";
+import {
+  EyeOutlined,
+  EyeInvisibleOutlined,
+  MailOutlined,
+  LockOutlined,
+  LoginOutlined,
+  LoadingOutlined,
+  CheckCircleOutlined,
+  ExclamationCircleOutlined,
+} from "@ant-design/icons";
 import { motion } from "framer-motion";
 
 const Login = ({
@@ -7,11 +16,85 @@ const Login = ({
   setFormData,
   showPassword,
   setShowPassword,
-  rememberMe,
-  setRememberMe,
   handleSubmit,
   onSwitchToRegister,
 }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [fieldStates, setFieldStates] = useState({});
+
+  // Validate email
+  const validateEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  // Handle input change with validation
+  const handleInputChange = (field, value) => {
+    setFormData((f) => ({ ...f, [field]: value }));
+
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: null }));
+    }
+
+    // Real-time validation feedback
+    if (field === "email" && value) {
+      setFieldStates((prev) => ({
+        ...prev,
+        email: validateEmail(value) ? "success" : "error",
+      }));
+    } else if (field === "password" && value) {
+      setFieldStates((prev) => ({
+        ...prev,
+        password: value.length >= 6 ? "success" : "error",
+      }));
+    }
+  };
+
+  // Enhanced submit handler
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    // Validation
+    const newErrors = {};
+    if (!formData.email) {
+      newErrors.email = "Email là bắt buộc";
+    } else if (!validateEmail(formData.email)) {
+      newErrors.email = "Email không hợp lệ";
+    }
+
+    if (!formData.password) {
+      newErrors.password = "Mật khẩu là bắt buộc";
+    } else if (formData.password.length < 6) {
+      newErrors.password = "Mật khẩu phải có ít nhất 6 ký tự";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      await handleSubmit(e);
+    } catch (error) {
+      setErrors({ general: "Đăng nhập thất bại. Vui lòng thử lại." });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Get field validation icon
+  const getFieldIcon = (field, defaultIcon) => {
+    const state = fieldStates[field];
+    if (state === "success")
+      return <CheckCircleOutlined className="text-green-500" />;
+    if (state === "error")
+      return <ExclamationCircleOutlined className="text-red-500" />;
+    return defaultIcon;
+  };
   // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -41,127 +124,173 @@ const Login = ({
 
   return (
     <motion.div
-      className="w-full max-w-md bg-white p-8"
+      className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 border border-gray-100 backdrop-blur-sm"
       initial="hidden"
       animate="visible"
       exit="exit"
       variants={containerVariants}
     >
-      <motion.div className="mb-8" variants={itemVariants}>
-        <h1 className="text-3xl font-bold text-center text-gray-800">
-          Đăng nhập
-        </h1>
-        <p className="text-center text-gray-500 mt-2">
+      {/* Header Section */}
+      <motion.div className="mb-8 text-center" variants={itemVariants}>
+        <div className="w-16 h-16 bg-gradient-to-r from-[#3B9AB8] to-[#2d7a94] rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+          <LoginOutlined className="text-white text-2xl" />
+        </div>
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">Đăng nhập</h1>
+        <p className="text-gray-500">
           Chưa có tài khoản?{" "}
           <motion.button
             type="button"
-            className="text-[#3BA4B6] font-medium hover:underline"
+            className="text-[#3B9AB8] font-semibold hover:text-[#2d7a94] transition-colors duration-200"
             onClick={onSwitchToRegister}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            Đăng ký
+            Đăng ký ngay
           </motion.button>
         </p>
       </motion.div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleFormSubmit} className="space-y-6">
+        {/* General Error */}
+        {errors.general && (
+          <motion.div
+            className="bg-red-50 border border-red-200 rounded-xl p-3 text-red-700 text-sm"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            {errors.general}
+          </motion.div>
+        )}
+
         {/* Email field */}
-        <motion.div className="relative" variants={itemVariants}>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+        <motion.div variants={itemVariants}>
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
             Địa chỉ Email
           </label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-              <FiMail size={18} />
-            </span>
+          <div className="relative group">
+            <div
+              className={`absolute left-4 top-1/2 transform -translate-y-1/2 transition-colors duration-200 ${
+                errors.email
+                  ? "text-red-500"
+                  : fieldStates.email === "success"
+                  ? "text-green-500"
+                  : "text-gray-400 group-focus-within:text-[#3B9AB8]"
+              }`}
+            >
+              {getFieldIcon("email", <MailOutlined className="text-lg" />)}
+            </div>
             <input
               type="email"
               name="email"
               value={formData.email}
-              onChange={(e) =>
-                setFormData((f) => ({ ...f, email: e.target.value }))
-              }
+              onChange={(e) => handleInputChange("email", e.target.value)}
               placeholder="Nhập địa chỉ Email của bạn"
-              className="w-full border border-gray-300 rounded-lg py-2.5 pl-10 pr-3 focus:outline-none focus:ring-2 focus:ring-[#3BA4B6] focus:border-[#3BA4B6]"
+              className={`w-full border rounded-xl py-3.5 pl-12 pr-4 focus:outline-none focus:ring-2 transition-all duration-200 bg-gray-50 focus:bg-white ${
+                errors.email
+                  ? "border-red-300 focus:border-red-500 focus:ring-red-500/20"
+                  : fieldStates.email === "success"
+                  ? "border-green-300 focus:border-green-500 focus:ring-green-500/20"
+                  : "border-gray-300 focus:border-[#3B9AB8] focus:ring-[#3B9AB8]/20"
+              }`}
               required
             />
           </div>
+          {errors.email && (
+            <motion.p
+              className="text-red-500 text-sm mt-1"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              {errors.email}
+            </motion.p>
+          )}
         </motion.div>
 
         {/* Password field */}
         <motion.div variants={itemVariants}>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
             Mật khẩu
           </label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-              <FiLock size={18} />
-            </span>
+          <div className="relative group">
+            <div
+              className={`absolute left-4 top-1/2 transform -translate-y-1/2 transition-colors duration-200 ${
+                errors.password
+                  ? "text-red-500"
+                  : fieldStates.password === "success"
+                  ? "text-green-500"
+                  : "text-gray-400 group-focus-within:text-[#3B9AB8]"
+              }`}
+            >
+              {getFieldIcon("password", <LockOutlined className="text-lg" />)}
+            </div>
             <input
               type={showPassword ? "text" : "password"}
               name="password"
               value={formData.password}
-              onChange={(e) =>
-                setFormData((f) => ({ ...f, password: e.target.value }))
-              }
+              onChange={(e) => handleInputChange("password", e.target.value)}
               placeholder="Nhập mật khẩu của bạn"
-              className="w-full border border-gray-300 rounded-lg py-2.5 pl-10 pr-10 focus:outline-none focus:ring-2 focus:ring-[#3BA4B6] focus:border-[#3BA4B6]"
+              className={`w-full border rounded-xl py-3.5 pl-12 pr-12 focus:outline-none focus:ring-2 transition-all duration-200 bg-gray-50 focus:bg-white ${
+                errors.password
+                  ? "border-red-300 focus:border-red-500 focus:ring-red-500/20"
+                  : fieldStates.password === "success"
+                  ? "border-green-300 focus:border-green-500 focus:ring-green-500/20"
+                  : "border-gray-300 focus:border-[#3B9AB8] focus:ring-[#3B9AB8]/20"
+              }`}
               required
             />
             <motion.button
               type="button"
               onClick={() => setShowPassword((s) => !s)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-[#3B9AB8] transition-colors duration-200"
               aria-label={showPassword ? "Ẩn mật khẩu" : "Hiển thị mật khẩu"}
-              whileHover={{ scale: 1.2 }}
+              whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
             >
-              {showPassword ? <FiEyeOff size={18} /> : <FiEye size={18} />}
+              {showPassword ? (
+                <EyeInvisibleOutlined className="text-lg" />
+              ) : (
+                <EyeOutlined className="text-lg" />
+              )}
             </motion.button>
           </div>
-        </motion.div>
-
-        {/* Remember me & Forgot password */}
-        <motion.div
-          className="flex justify-between items-center"
-          variants={itemVariants}
-        >
-          <div className="flex items-center">
-            <input
-              id="remember-me"
-              name="remember-me"
-              type="checkbox"
-              checked={rememberMe}
-              onChange={() => setRememberMe((s) => !s)}
-              className="h-4 w-4 text-[#3BA4B6] border-gray-300 rounded focus:ring-[#3BA4B6]"
-            />
-            <label
-              htmlFor="remember-me"
-              className="ml-2 block text-sm text-gray-700"
+          {errors.password && (
+            <motion.p
+              className="text-red-500 text-sm mt-1"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
             >
-              Ghi nhớ tôi
-            </label>
-          </div>
-          <motion.a
-            href="#"
-            className="text-sm text-[#3BA4B6] font-medium hover:underline"
-            whileHover={{ scale: 1.05 }}
-          >
-            Quên mật khẩu?
-          </motion.a>
+              {errors.password}
+            </motion.p>
+          )}
         </motion.div>
 
         {/* Login button */}
-        <motion.div className="pt-2" variants={itemVariants}>
+        <motion.div className="pt-4" variants={itemVariants}>
           <motion.button
             type="submit"
-            className="w-full bg-[#3BA4B6] hover:bg-[#2D8A99] text-white font-medium py-2.5 px-4 rounded-lg transition duration-200 shadow-md hover:shadow-lg"
+            disabled={isLoading}
+            className={`w-full font-semibold py-3.5 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform ${
+              isLoading
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-gradient-to-r from-[#3B9AB8] to-[#2d7a94] hover:from-[#2d7a94] hover:to-[#1e5a6b] hover:-translate-y-0.5"
+            } text-white`}
             variants={buttonVariants}
-            whileHover="hover"
-            whileTap="tap"
+            whileHover={!isLoading ? "hover" : undefined}
+            whileTap={!isLoading ? "tap" : undefined}
           >
-            Đăng nhập
+            <span className="flex items-center justify-center gap-2">
+              {isLoading ? (
+                <>
+                  <LoadingOutlined className="animate-spin" />
+                  Đang đăng nhập...
+                </>
+              ) : (
+                <>
+                  <LoginOutlined />
+                  Đăng nhập
+                </>
+              )}
+            </span>
           </motion.button>
         </motion.div>
       </form>

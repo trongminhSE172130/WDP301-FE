@@ -56,6 +56,7 @@ import ConsultantFormsPage from "./components/admin/consultant/ConsultantFormsPa
 import BookingManagerPage from "./pages/admin/BookingManagerPage";
 import ChatPage from "./pages/admin/ChatPage";
 import FeedbackPage from "./pages/admin/FeedbackPage";
+import BookingHistoryPage from "./pages/BookingHistoryPage";
 
 // Auth protection với SessionManager
 const ProtectedRoute = ({ allowedRoles = ["admin"] }) => {
@@ -203,6 +204,10 @@ const router = createBrowserRouter([
           {
             path: "consultation-history",
             element: <ConsultationHistoryPage />,
+          },
+          {
+            path: "bookings-history",
+            element: <BookingHistoryPage />,
           },
           { path: "cycle-tracking", element: <CycleTrackingPage /> },
           { path: "purchased-services", element: <PurchasedServicesPage /> },

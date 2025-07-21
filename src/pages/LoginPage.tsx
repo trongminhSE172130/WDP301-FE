@@ -13,7 +13,7 @@ import "react-toastify/dist/ReactToastify.css";
 
 function isTokenExpired(token: string): boolean {
   try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
+    const payload = JSON.parse(atob(token.split(".")[1]));
     if (!payload.exp) return true;
     // exp là số giây kể từ epoch
     return Date.now() >= payload.exp * 1000;
@@ -45,7 +45,6 @@ const LoginPage = () => {
   });
 
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Tự động chuyển giao diện theo URL
@@ -70,8 +69,8 @@ const LoginPage = () => {
     if (isLogin) {
       try {
         const res = await loginUser(loginFormData);
-        console.log('Login response:', res);
-        
+        console.log("Login response:", res);
+
         // Xử lý response theo structure mới từ backend
         if (res.data && res.data.success && res.data.token && res.data.user) {
           // Note: SessionManager sẽ được gọi tự động trong loginUser function
@@ -107,24 +106,25 @@ const LoginPage = () => {
           gender: registerFormData.gender,
           dob: registerFormData.dob,
           password: registerFormData.password,
-          role: "user"
+          role: "user",
         };
         const res = await registerUser(registerData);
-        console.log('Register response:', res);
+        console.log("Register response:", res);
         // Nếu backend trả về user, có thể lưu vào localStorage nếu muốn
         if (res.data && res.data.user) {
-          localStorage.setItem('user', JSON.stringify(res.data.user));
-          console.log('User after register:', localStorage.getItem('user'));
+          localStorage.setItem("user", JSON.stringify(res.data.user));
+          console.log("User after register:", localStorage.getItem("user"));
         }
         // Xóa user khỏi localStorage sau khi đăng ký thành công
-        localStorage.removeItem('user');
+        localStorage.removeItem("user");
         toast.success("Đăng ký thành công! Hãy đăng nhập.");
         setIsLogin(true);
       } catch (error: unknown) {
         // Đơn giản hóa lấy message lỗi từ backend
         type RegisterError = { response?: { data?: { message?: string } } };
         const err = error as RegisterError;
-        const message = err?.response?.data?.message || "Đăng ký thất bại. Vui lòng thử lại!";
+        const message =
+          err?.response?.data?.message || "Đăng ký thất bại. Vui lòng thử lại!";
         alert(message);
       }
     }
@@ -191,8 +191,6 @@ const LoginPage = () => {
               setFormData={setLoginFormData}
               showPassword={showPassword}
               setShowPassword={setShowPassword}
-              rememberMe={rememberMe}
-              setRememberMe={setRememberMe}
               handleSubmit={handleSubmit}
               onSwitchToRegister={() => setIsLogin(false)}
             />

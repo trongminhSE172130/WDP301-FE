@@ -1,137 +1,310 @@
-import React from 'react';
+import React, { useState, useEffect } from "react";
+import {
+  Card,
+  Row,
+  Col,
+  Select,
+  Button,
+  Typography,
+  Spin,
+  Empty,
+  Tag,
+  Space,
+  DatePicker,
+  Avatar,
+  message,
+} from "antd";
+import {
+  CalendarOutlined,
+  VideoCameraOutlined,
+  UserOutlined,
+  EyeOutlined,
+  LoadingOutlined,
+} from "@ant-design/icons";
+import dayjs from "dayjs";
+import isBetween from "dayjs/plugin/isBetween";
 
-const mockConsultations = [
-  {
-    id: 1,
-    doctor: {
-      name: 'Steve Stewart',
-      avatar: 'https://randomuser.me/api/portraits/men/32.jpg',
-      specialty: 'Tư vấn chung'
-    },
-    date: '25/04/2025',
-    time: '09:00 - 10:00',
-    status: 'Hoàn thành',
-    notes: '2 tháng / 1 lần'
-  },
-  {
-    id: 2,
-    doctor: {
-      name: 'Lauren Williamson',
-      avatar: 'https://randomuser.me/api/portraits/women/45.jpg',
-      specialty: 'Sản phụ khoa'
-    },
-    date: '25/04/2025',
-    time: '10:30 - 11:30',
-    status: 'Đã hủy',
-    notes: '3 tháng / 1 lần'
-  },
-  {
-    id: 3,
-    doctor: {
-      name: 'Tay Atakora',
-      avatar: 'https://randomuser.me/api/portraits/men/22.jpg',
-      specialty: 'Nhi khoa'
-    },
-    date: '25/04/2025',
-    time: '13:00 - 14:00',
-    status: 'Chờ khám',
-    notes: '1 tháng / 1 lần'
-  },
-  {
-    id: 4,
-    doctor: {
-      name: 'Albert Francis',
-      avatar: 'https://randomuser.me/api/portraits/men/55.jpg',
-      specialty: 'Tim mạch'
-    },
-    date: '25/04/2025',
-    time: '15:00 - 16:00',
-    status: 'Sắp tới',
-    notes: '6 tháng / 1 lần'
-  }
-];
+// Add isBetween plugin
+dayjs.extend(isBetween);
+import { getConsultationHistory } from "../service/api/consultantAPI";
+import {
+  transformConsultationData,
+  groupConsultationsByDate,
+  getStatusColor,
+  getStatusText,
+  canJoinMeeting,
+} from "../utils/consultationHistoryUtils";
+import type { ConsultationData } from "../types/consultationHistory";
+import ConsultationDetailModal from "../components/consultant/ConsultationDetailModal";
+import styles from "../styles/pages/ConsultationHistoryPage.module.css";
+
+const { Title, Text } = Typography;
+const { RangePicker } = DatePicker;
+const { Option } = Select;
 
 const ConsultationHistoryPage: React.FC = () => {
-  return (
-    <div className="container mx-auto px-6 py-6 bg-white rounded-4xl border border-gray-300">
-      <div className="max-w-5xl mx-auto">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-800">Lịch sử tư vấn</h1>
-          <div className="flex gap-4">
-            <select className="px-6 py-2 border border-gray-300 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#3B9AB8] font-medium">
-              <option>Ngày 25 tháng 4</option>
-              <option>Tháng này</option>
-              <option>3 tháng gần đây</option>
-            </select>
-            <button className="px-4 py-2 bg-[#3B9AB8] text-white rounded-2xl hover:bg-[#2d7a94] transition-colors font-medium">
-              Cuộc hẹn mới
-            </button>
-          </div>
-        </div>
+  const [consultations, setConsultations] = useState<ConsultationData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState({
+    dateRange: null as any,
+    status: "all" as string,
+  });
+  const [detailModalVisible, setDetailModalVisible] = useState(false);
+  const [selectedConsultationId, setSelectedConsultationId] =
+    useState<string>("");
 
-        {/* Consultation List */}
-        <div className="space-y-6">
-          {/* Today's Consultations */}
-          <div>
-            <h2 className="text-lg font-semibold text-gray-700 mb-4">Hôm nay</h2>
-            <div className="space-y-4">
-              {mockConsultations.map((consultation) => (
-                <div 
-                  key={consultation.id}
-                  className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow border border-gray-300"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <img
-                        src={consultation.doctor.avatar}
-                        alt={consultation.doctor.name}
-                        className="w-12 h-12 rounded-full object-cover"
-                      />
-                      <div>
-                        <h3 className="font-semibold text-gray-800">
-                          {consultation.doctor.name}
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          {consultation.doctor.specialty}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm text-gray-600">
-                        {consultation.date}
-                      </p>
-                      <p className="text-sm font-medium text-[#3B9AB8]">
-                        {consultation.time}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className={`px-3 py-1 rounded-full text-sm ${
-                        consultation.status === 'Hoàn thành' ? 'bg-green-100 text-green-800' :
-                        consultation.status === 'Đã hủy' ? 'bg-red-100 text-red-800' :
-                        consultation.status === 'Chờ khám' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-blue-100 text-blue-800'
-                      }`}>
-                        {consultation.status}
-                      </span>
-                      <span className="text-sm text-gray-600">
-                        {consultation.notes}
-                      </span>
-                    </div>
-                    <button className="text-[#3B9AB8] hover:text-[#2d7a94] transition-colors border border-[#3B9AB8] rounded-lg px-4 py-2">
-                      Chi tiết →
-                    </button>
-                  </div>
-                </div>
-              ))}
+  const fetchConsultationHistory = async () => {
+    try {
+      setLoading(true);
+      const response = await getConsultationHistory();
+
+      if (response.success) {
+        const transformedData = response.data.map(transformConsultationData);
+        setConsultations(transformedData);
+      } else {
+        message.error("Không thể tải danh sách lịch tư vấn");
+      }
+    } catch (error) {
+      console.error("Error fetching consultation history:", error);
+      message.error("Có lỗi xảy ra khi tải dữ liệu");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleViewDetail = (consultation: ConsultationData) => {
+    setSelectedConsultationId(consultation._id);
+    setDetailModalVisible(true);
+  };
+
+  const handleCloseDetailModal = () => {
+    setDetailModalVisible(false);
+    setSelectedConsultationId("");
+  };
+
+  useEffect(() => {
+    fetchConsultationHistory();
+  }, []);
+
+  const filteredConsultations = consultations.filter((consultation) => {
+    // Filter by status
+    if (filters.status !== "all" && consultation.status !== filters.status) {
+      return false;
+    }
+
+    // Filter by date range
+    if (filters.dateRange && filters.dateRange[0] && filters.dateRange[1]) {
+      const consultationDate = dayjs(consultation.date, "DD/MM/YYYY");
+      const [startDate, endDate] = filters.dateRange;
+      if (!consultationDate.isBetween(startDate, endDate, "day", "[]")) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+
+  const groupedConsultations = groupConsultationsByDate(filteredConsultations);
+
+  const handleJoinMeeting = (consultation: ConsultationData) => {
+    if (canJoinMeeting(consultation)) {
+      window.open(consultation.meetingLink!, "_blank");
+    } else {
+      message.warning("Link cuộc họp chưa sẵn sàng hoặc cuộc họp đã kết thúc");
+    }
+  };
+
+  const renderConsultationCard = (consultation: ConsultationData) => (
+    <Card key={consultation._id} className={styles.consultationCard} hoverable>
+      <Row align="middle">
+        <Col xs={24} sm={16}>
+          <Space size="middle">
+            <div className={styles.avatarContainer}>
+              <Avatar
+                size={48}
+                icon={<UserOutlined />}
+                src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+                  consultation.consultantName
+                )}&background=3b82f6&color=fff`}
+              />
             </div>
+            <div className={styles.consultantInfo}>
+              <Title level={5} className={styles.consultantName}>
+                {consultation.consultantName}
+              </Title>
+              <Text className={styles.consultantSpecialty}>
+                {consultation.specialty}
+              </Text>
+            </div>
+          </Space>
+        </Col>
+        <Col xs={24} sm={8}>
+          <div className={styles.dateTimeInfo}>
+            <Text className={styles.date}>{consultation.date}</Text>
+            <br />
+            <Text className={styles.time}>{consultation.time}</Text>
           </div>
+        </Col>
+      </Row>
+
+      <div className={styles.cardFooter}>
+        <div className={styles.statusInfo}>
+          <Tag color={getStatusColor(consultation.status)}>
+            {getStatusText(consultation.status)}
+          </Tag>
+          <Tag color={getStatusColor(consultation.meetingStatus, "meeting")}>
+            {getStatusText(consultation.meetingStatus, "meeting")}
+          </Tag>
+          {consultation.question && (
+            <Text className={styles.question}>"{consultation.question}"</Text>
+          )}
+        </div>
+        <div className={styles.actionButtons}>
+          {canJoinMeeting(consultation) ? (
+            <Button
+              type="primary"
+              icon={<VideoCameraOutlined />}
+              className={styles.joinButton}
+              onClick={() => handleJoinMeeting(consultation)}
+            >
+              Tham gia
+            </Button>
+          ) : consultation.meetingLink &&
+            consultation.meetingLink !== "null" ? (
+            <Button
+              disabled
+              icon={<VideoCameraOutlined />}
+              className={styles.disabledJoinButton}
+            >
+              Đã kết thúc
+            </Button>
+          ) : null}
+          <Button
+            type="default"
+            icon={<EyeOutlined />}
+            className={styles.detailButton}
+            onClick={() => handleViewDetail(consultation)}
+          >
+            Chi tiết
+          </Button>
         </div>
       </div>
+    </Card>
+  );
+
+  const renderConsultationGroup = (
+    title: string,
+    consultations: ConsultationData[]
+  ) => {
+    if (consultations.length === 0) return null;
+
+    return (
+      <div key={title} className={styles.sectionContainer}>
+        <Title level={4} className={styles.sectionTitle}>
+          {title} ({consultations.length})
+        </Title>
+        <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+          {consultations.map(renderConsultationCard)}
+        </Space>
+      </div>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className={styles.loadingContainer}>
+        <Spin
+          size="large"
+          indicator={<LoadingOutlined style={{ fontSize: 24 }} spin />}
+        />
+        <Text className={styles.loadingText}>Đang tải dữ liệu...</Text>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.container}>
+      {/* Header */}
+      <div className={styles.header}>
+        <Row justify="space-between" align="middle">
+          <Col>
+            <Title level={2} className={styles.headerTitle}>
+              Danh sách lịch tư vấn
+            </Title>
+          </Col>
+        </Row>
+      </div>
+
+      {/* Filters */}
+      <Card className={styles.filterCard}>
+        <Row gutter={16} className={styles.filterRow}>
+          <Col xs={24} sm={12} md={8}>
+            <RangePicker
+              style={{ width: "100%" }}
+              placeholder={["Từ ngày", "Đến ngày"]}
+              value={filters.dateRange}
+              onChange={(dates) =>
+                setFilters((prev) => ({ ...prev, dateRange: dates }))
+              }
+              format="DD/MM/YYYY"
+            />
+          </Col>
+          <Col xs={24} sm={12} md={6}>
+            <Select
+              style={{ width: "100%" }}
+              placeholder="Trạng thái"
+              value={filters.status}
+              onChange={(value) =>
+                setFilters((prev) => ({ ...prev, status: value }))
+              }
+            >
+              <Option value="all">Tất cả</Option>
+              <Option value="pending">Chờ xác nhận</Option>
+              <Option value="confirmed">Đã xác nhận</Option>
+              <Option value="in_progress">Đang diễn ra</Option>
+              <Option value="completed">Hoàn thành</Option>
+              <Option value="cancelled_by_user">Người dùng hủy</Option>
+              <Option value="cancelled_by_consultant">Chuyên gia hủy</Option>
+            </Select>
+          </Col>
+          <Col xs={24} sm={24} md={6}>
+            <Button
+              type="default"
+              icon={<CalendarOutlined />}
+              onClick={() => setFilters({ dateRange: null, status: "all" })}
+              style={{ width: "100%" }}
+            >
+              Xóa bộ lọc
+            </Button>
+          </Col>
+        </Row>
+      </Card>
+
+      {/* Consultation List */}
+      {filteredConsultations.length === 0 ? (
+        <div className={styles.emptyState}>
+          <Empty
+            description="Không có lịch tư vấn nào"
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+          ></Empty>
+        </div>
+      ) : (
+        <div>
+          {renderConsultationGroup("Hôm nay", groupedConsultations.today)}
+          {renderConsultationGroup("Ngày mai", groupedConsultations.tomorrow)}
+          {renderConsultationGroup("Sắp tới", groupedConsultations.upcoming)}
+          {renderConsultationGroup("Đã qua", groupedConsultations.past)}
+        </div>
+      )}
+
+      {/* Detail Modal */}
+      <ConsultationDetailModal
+        visible={detailModalVisible}
+        onClose={handleCloseDetailModal}
+        consultationId={selectedConsultationId}
+      />
     </div>
   );
 };
 
-export default ConsultationHistoryPage; 
+export default ConsultationHistoryPage;

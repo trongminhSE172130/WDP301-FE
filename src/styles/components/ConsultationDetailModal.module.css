@@ -1,0 +1,171 @@
+/* Consultation Detail Modal Styles */
+
+.modal {
+  .ant-modal-content {
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .ant-modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-bottom: none;
+    padding: 20px 24px;
+
+    .ant-modal-title {
+      color: white;
+      font-weight: 600;
+      font-size: 18px;
+    }
+  }
+
+  .ant-modal-close {
+    color: white;
+
+    &:hover {
+      color: rgba(255, 255, 255, 0.8);
+    }
+  }
+}
+
+.content {
+  padding: 0;
+}
+
+.loadingContainer,
+.errorContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+}
+
+.loadingText {
+  margin-top: 16px;
+  color: #666;
+  font-size: 14px;
+}
+
+/* Consultant Card */
+.consultantCard {
+  margin-bottom: 0;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+
+  .ant-card-body {
+    padding: 24px;
+  }
+}
+
+.avatar {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.consultantName {
+  margin: 0 0 4px 0 !important;
+  color: #1a1a1a;
+  font-weight: 600;
+}
+
+.consultantEmail {
+  color: #666;
+  font-size: 14px;
+}
+
+.scheduleTypeTag {
+  margin-top: 8px;
+  font-weight: 500;
+}
+
+/* Descriptions */
+.descriptions {
+  .ant-descriptions-title {
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 16px;
+  }
+
+  .ant-descriptions-item-label {
+    font-weight: 500;
+    color: #4a5568;
+    width: 140px;
+  }
+
+  .ant-descriptions-item-content {
+    color: #2d3748;
+  }
+}
+
+.question {
+  margin: 0;
+  padding: 12px;
+  background: #f7fafc;
+  border-left: 4px solid #3182ce;
+  border-radius: 4px;
+  font-style: italic;
+  color: #2d3748;
+}
+
+.meetingLinkButton {
+  padding: 0;
+  height: auto;
+  font-weight: 500;
+
+  &:hover {
+    color: #3182ce;
+  }
+}
+
+.joinButton {
+  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(72, 187, 120, 0.2);
+
+  &:hover {
+    background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(72, 187, 120, 0.3);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .modal {
+    width: 95% !important;
+    margin: 20px auto;
+  }
+
+  .consultantCard .ant-card-body {
+    padding: 16px;
+  }
+
+  .descriptions .ant-descriptions-item-label {
+    width: 120px;
+  }
+
+  .avatar {
+    width: 48px !important;
+    height: 48px !important;
+  }
+
+  .consultantName {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .descriptions {
+    .ant-descriptions-item {
+      flex-direction: column;
+
+      .ant-descriptions-item-label,
+      .ant-descriptions-item-content {
+        width: 100% !important;
+        padding-bottom: 8px;
+      }
+    }
+  }
+}

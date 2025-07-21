@@ -1,4 +1,4 @@
-import apiClient from '../instance';
+import apiClient from "../instance";
 
 // Interface cho API response từ backend
 export interface BookingUser {
@@ -46,18 +46,35 @@ export interface BookingResult {
   [key: string]: unknown;
 }
 
+export interface BookingHistoryResponse {
+  success: boolean;
+  count: number;
+  total: number;
+  page: number;
+  pages: number;
+  data: BookingFromAPI[];
+}
+
+// Update the existing BookingFromAPI interface to include new fields
 export interface BookingFromAPI {
   _id: string;
   user_id: BookingUser | null;
   service_id: BookingService;
   consultant_schedule_id: BookingSchedule | null;
+  consultant_schedule_id: BookingSchedule | null;
   user_subscription_id: string | BookingSubscription;
   scheduled_date: string;
   time_slot: string;
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'processing';
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'processing';
   created_at: string;
   updated_at: string;
   __v: number;
+  result_status: 'pending' | 'approved' | 'rejected';
+  has_approved_result: boolean;
+  can_view_result: boolean;
+  has_feedback: boolean;
+  can_give_feedback: boolean;
 }
 
 // Interface for detailed booking response
@@ -90,6 +107,17 @@ export interface GetBookingsParams {
   status?: string;
   date?: string;
   consultant?: string;
+}
+export interface BookingHistoryParams {
+  page?: number;
+  limit?: number;
+  status?: string;
+  service_id?: string;
+  from_date?: string;
+  to_date?: string;
+  consultant?: string;
+  sort_by: 'created_at' | 'scheduled_date'| 'updated_at'| "none";
+  sort_order?: 'asc' | 'desc'| 'none';
 }
 
 // Transform API data to frontend format
@@ -199,6 +227,36 @@ export const getBookingById = async (id: string): Promise<{
 };
 
 /**
+ * Lấy raw chi tiết một booking theo ID (không transform) - cho modal
+ */
+export const getBookingDetailRaw = async (id: string): Promise<{
+  success: boolean;
+  data: {
+    booking: BookingFromAPI;
+    result: BookingResult | null;
+  };
+}> => {
+  try {
+    const response = await apiClient.get(`/bookings/${id}`);
+    
+    if (response.data.success) {
+      return {
+        success: true,
+        data: {
+          booking: response.data.data.booking,
+          result: response.data.data.result
+        }
+      };
+    }
+    
+    throw new Error('API response unsuccessful');
+  } catch (error) {
+    console.error('Error fetching booking detail:', error);
+    throw error;
+  }
+};
+
+/**
  * Xóa booking
  */
 export const deleteBooking = async (id: string): Promise<{
@@ -237,10 +295,47 @@ export const updateBookingStatus = async (id: string, status: string): Promise<{
     throw error;
   }
 };
+export const BookingHistory = async (params?: BookingHistoryParams): Promise<{
+  success: boolean;
+  data: ReturnType<typeof transformBookingData>[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalBookings: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+}> => {
+  try {
+    const response = await apiClient.get<BookingHistoryResponse>('/bookings/history', { params });
+    
+    if (response.data.success) {
+      const transformedData = response.data.data.map(transformBookingData);
+      
+      return {
+        success: true,
+        data: transformedData,
+        pagination: {
+          currentPage: response.data.page,
+          totalPages: response.data.pages,
+          totalBookings: response.data.total,
+          hasNext: response.data.page < response.data.pages,
+          hasPrev: response.data.page > 1
+        }
+      };
+    }
+    
+    throw new Error('API response unsuccessful');
+  } catch (error) {
+    console.error('Error fetching booking history:', error);
+    throw error;
+  }
+}
 
 export default {
   getAllBookings,
   getBookingById,
+  getBookingDetailRaw,
   deleteBooking,
   updateBookingStatus,
   transformBookingData
