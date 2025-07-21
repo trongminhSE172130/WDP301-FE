@@ -13,6 +13,29 @@ const steps = [
   { title: 'Hoàn tất', description: 'Xác nhận và hoàn tất quy trình.' },
 ];
 
+const updateBookingStatus = async (bookingId: string, status: string, notes: string) => {
+  try {
+    const res = await apiClient.put(`/dynamic-forms/data/${bookingId}/review`, {
+      status,
+      notes,
+    });
+    console.log('API update status response:', res.data);
+    if (res.data && res.data.success) {
+      message.success('Đã cập nhật trạng thái thành công!');
+    } else {
+      message.error('Không thể cập nhật trạng thái.');
+    }
+  } catch (err: unknown) {
+    message.error('Không thể cập nhật trạng thái.');
+    if (err && typeof err === 'object' && 'response' in err) {
+      // @ts-expect-error: err có thể là bất kỳ kiểu nào, có thể có thuộc tính response nếu là lỗi từ axios
+      console.error('Update status error:', err.response?.data || err);
+    } else {
+      console.error('Update status error:', err);
+    }
+  }
+};
+
 const ConsultantFormsPage: React.FC = () => {
   const [current, setCurrent] = useState(0);
   const [bookings, setBookings] = useState<any[]>([]);
@@ -100,6 +123,13 @@ const ConsultantFormsPage: React.FC = () => {
     }
   }, [current, selectedBooking]);
 
+  useEffect(() => {
+    if (current === 3 && selectedBooking) {
+      updateBookingStatus(selectedBooking.raw._id, 'completed', 'Hoàn tất quy trình nhập liệu');
+    }
+    // eslint-disable-next-line
+  }, [current]);
+
   const next = () => setCurrent((c) => c + 1);
   const prev = () => setCurrent((c) => c - 1);
 
@@ -117,7 +147,6 @@ const ConsultantFormsPage: React.FC = () => {
       form_type: 'booking_form',
       service_id: serviceId,
       booking_id: selectedBooking.raw._id,
-      form_schema_id: bookingFormSchema._id,
       form_data: formData // Sử dụng form_data thay vì data với sections
     };
     
@@ -164,7 +193,7 @@ const ConsultantFormsPage: React.FC = () => {
       form_type: 'result_form',
       service_id: serviceId,
       booking_id: selectedBooking.raw._id,
-      form_schema_id: resultFormSchema._id,
+      
       form_data: processedFormData
     };
     
