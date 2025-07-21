@@ -1,38 +1,52 @@
-import React, { useEffect, useState } from 'react';
-import { getBlogCategories } from '../../service/api/authApi';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-const ServicesList: React.FC = () => {
-  const [categories, setCategories] = useState<{_id: string, name: string}[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+interface Blog {
+  _id: string;
+  title: string;
+  excerpt: string;
+  content: string;
+  author: string;
+  category_id: {
+    _id: string;
+    name: string;
+  };
+  thumbnail_url: string;
+  view_count: number;
+  like_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+interface Props {
+  blogs: Blog[];
+  loading: boolean;
+  error: string | null;
+}
+
+const ServicesList: React.FC<Props> = ({ blogs, loading, error }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const res = await getBlogCategories();
-        setCategories(res.data.data);
-      } catch {
-        setError('Không thể tải chuyên mục.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchCategories();
-  }, []);
-
-  const filteredCategories = categories.filter(cat =>
-    cat.name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredBlogs = blogs.filter(blog =>
+    blog.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    blog.excerpt.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    blog.category_id.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const handleBlogClick = (blogId: string) => {
+    navigate(`/blog/${blogId}`);
+  };
 
   return (
     <div>
       {/* Search Section */}
       <div className="mb-8">
+        <h1 className="text-2xl font-bold mb-4">Danh sách bài viết</h1>
         <div className="flex gap-2">
           <input
             type="text"
-            placeholder="Tìm kiếm..."
+            placeholder="Tìm kiếm bài viết..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -47,31 +61,47 @@ const ServicesList: React.FC = () => {
         </div>
       </div>
 
-      {/* Categories List */}
+      {/* Blog List */}
       <div className="space-y-4">
         {loading ? (
           <div className="text-gray-500 py-2">Đang tải...</div>
         ) : error ? (
           <div className="text-red-500 py-2">{error}</div>
-        ) : filteredCategories.length === 0 ? (
-          <div className="text-gray-500 py-2">Không có chuyên mục nào.</div>
+        ) : filteredBlogs.length === 0 ? (
+          <div className="text-gray-500 py-2">Không có bài viết nào.</div>
         ) : (
-          filteredCategories.map((cat) => (
+          filteredBlogs.map((blog) => (
             <div
-              key={cat._id}
-              className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col sm:flex-row hover:shadow-lg transition-shadow duration-200"
+              key={blog._id}
+              onClick={() => handleBlogClick(blog._id)}
+              className="bg-white rounded-lg shadow-md overflow-hidden flex flex-col sm:flex-row hover:shadow-lg cursor-pointer transform hover:scale-[1.02] transition-all duration-200"
             >
               <div className="flex items-center">
                 <img
-                  src={'https://via.placeholder.com/120x80?text=Blog'}
-                  alt={cat.name}
+                  src={blog.thumbnail_url || 'https://via.placeholder.com/120x80?text=Blog'}
+                  alt={blog.title}
                   className="w-32 h-20 object-cover rounded-md m-4 bg-gray-100"
                 />
-                <div className="p-4">
-                  <h3 className="text-xl font-semibold mb-2">
-                    {cat.name}
-                  </h3>
-                  <p className="text-gray-500 text-sm">Nội dung...</p>
+                <div className="p-4 flex-1">
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="text-xl font-semibold text-gray-800 line-clamp-2 hover:text-blue-600 transition-colors">
+                      {blog.title}
+                    </h3>
+                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full ml-2 flex-shrink-0">
+                      {blog.category_id.name}
+                    </span>
+                  </div>
+                  <p className="text-gray-600 text-sm mb-2 line-clamp-2">
+                    {blog.excerpt}
+                  </p>
+                  <div className="flex justify-between items-center text-xs text-gray-500">
+                    <span>Tác giả: {blog.author}</span>
+                    <div className="flex gap-4">
+                      <span>👁️ {blog.view_count}</span>
+                      <span>❤️ {blog.like_count}</span>
+                      <span>{new Date(blog.created_at).toLocaleDateString('vi-VN')}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

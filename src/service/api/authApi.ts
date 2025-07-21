@@ -88,6 +88,10 @@ export const getBlogs = async () => {
   return await apiClient.get('/blogs');
 };
 
+export const getBlogById = async (blogId: string) => {
+  return await apiClient.get(`/blogs/${blogId}`);
+};
+
 export const uploadAvatar = async (file: File) => {
   const formData = new FormData();
   formData.append('avatar', file);
