@@ -25,11 +25,12 @@ import {
 } from "@ant-design/icons";
 import {
   BookingHistory,
-  getBookingDetailRaw,
+  getBookingById,
+  formatTestResultData,
   type BookingHistoryParams,
 } from "../service/api/bookingAPI";
 import { toast } from "react-toastify";
-import BookingHistoryModal from "../components/profile/BookingHistoryModal";
+import BookingHistoryModal from "../components/admin/booking/BookingHistoryModal";
 import type { BookingData, BookingPagination } from "../types/bookingHistory";
 import { STATUS_TEXT, RESULT_STATUS_TEXT } from "../types/bookingHistory";
 import dayjs from "dayjs";
@@ -46,6 +47,10 @@ const BookingHistoryPage: React.FC = () => {
   const [selectedBookingDetail, setSelectedBookingDetail] = useState<any>(null);
   const [resultData, setResultData] = useState<any>(null);
   const [viewingResult, setViewingResult] = useState<string | null>(null);
+  const [stats, setStats] = useState({
+    completedCount: 0,
+    withResultsCount: 0,
+  });
   const [filters, setFilters] = useState<BookingHistoryParams>({
     page: 1,
     limit: 10,
@@ -64,10 +69,11 @@ const BookingHistoryPage: React.FC = () => {
     try {
       setLoading(true);
       const response = await BookingHistory(filters);
-      //   console.log(response);
+      console.log(response);
       if (response.success) {
         setBookings(response.data);
         setPagination(response.pagination);
+        setStats(response.stats);
       }
     } catch (error) {
       console.error("Error fetching booking history:", error);
@@ -130,16 +136,20 @@ const BookingHistoryPage: React.FC = () => {
   const ViewResult = async (bookingId: string) => {
     try {
       setViewingResult(bookingId);
-      const response = await getBookingDetailRaw(bookingId);
+      const response = await getBookingById(bookingId);
       if (response.success) {
-        // API trả về response.data.booking và response.data.result
-        // Lưu booking detail raw và result data
-        setSelectedBookingDetail(response.data.booking);
-        setResultData(response.data.result);
+        // API trả về response.data (transformed booking), response.result (raw result), và response.resultFormInfo
+        setSelectedBookingDetail(response.data);
+        
+        // Format result data for better display if result exists
+        const formattedResult = response.result ? formatTestResultData(response.result) : null;
+        setResultData(formattedResult);
         setModalOpen(true);
 
-        console.log("Booking detail:", response.data.booking);
-        console.log("Test result data:", response.data.result);
+        console.log("Booking detail:", response.data);
+        console.log("Raw result data:", response.result);
+        console.log("Formatted result data:", formattedResult);
+        console.log("Result form info:", response.resultFormInfo);
       } else {
         toast.error("Không thể lấy kết quả đặt lịch");
       }
@@ -164,6 +174,50 @@ const BookingHistoryPage: React.FC = () => {
         <div className="mb-8">
           <Title level={2}>Lịch sử đặt lịch</Title>
           <Text type="secondary">Xem lại tất cả các lịch hẹn đã đặt</Text>
+          
+          {/* Statistics Cards */}
+          <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+            <Col xs={12} sm={8} md={6}>
+              <Card size="small">
+                <div style={{ textAlign: 'center' }}>
+                  <Text type="secondary">Tổng số lịch hẹn</Text>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1890ff' }}>
+                    {pagination.totalBookings}
+                  </div>
+                </div>
+              </Card>
+            </Col>
+            <Col xs={12} sm={8} md={6}>
+              <Card size="small">
+                <div style={{ textAlign: 'center' }}>
+                  <Text type="secondary">Đã hoàn thành</Text>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#52c41a' }}>
+                    {stats.completedCount}
+                  </div>
+                </div>
+              </Card>
+            </Col>
+            <Col xs={12} sm={8} md={6}>
+              <Card size="small">
+                <div style={{ textAlign: 'center' }}>
+                  <Text type="secondary">Có kết quả</Text>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#722ed1' }}>
+                    {stats.withResultsCount}
+                  </div>
+                </div>
+              </Card>
+            </Col>
+            <Col xs={12} sm={8} md={6}>
+              <Card size="small">
+                <div style={{ textAlign: 'center' }}>
+                  <Text type="secondary">Hiện tại</Text>
+                  <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#fa8c16' }}>
+                    {bookings.length}
+                  </div>
+                </div>
+              </Card>
+            </Col>
+          </Row>
         </div>
 
         {/* Filters */}

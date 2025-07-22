@@ -42,17 +42,62 @@ export interface BookingSubscription {
 }
 
 export interface BookingResult {
-  // Define result structure if known, or use unknown for now
-  [key: string]: unknown;
+  _id: string;
+  booking_id: string;
+  service_id: string;
+  form_schema_id: string;
+  form_type: string;
+  form_data: {
+    [key: string]: any; // Dynamic form data
+    doctor_comment?: string;
+  };
+  submitted_by: {
+    _id: string;
+    full_name: string;
+    email: string;
+  };
+  is_validated: boolean;
+  validation_errors: any[];
+  review_status: 'pending' | 'approved' | 'rejected';
+  submitted_at: string;
+  created_at: string;
+  updated_at: string;
+  __v: number;
+  review_notes?: string;
+  reviewed_at?: string;
+  reviewed_by?: {
+    _id: string;
+    full_name: string;
+    email: string;
+  };
+  id: string;
 }
 
 export interface BookingHistoryResponse {
   success: boolean;
   count: number;
-  total: number;
-  page: number;
-  pages: number;
-  data: BookingFromAPI[];
+  completed_count: number;
+  with_results_count: number;
+  data: BookingHistoryItem[];
+}
+
+export interface BookingHistoryItem {
+  booking: BookingFromAPI;
+  has_result: boolean;
+  can_feedback: boolean;
+  result_form_info: ResultFormInfo | null;
+}
+
+export interface ResultFormInfo {
+  _id: string;
+  review_status: 'pending' | 'approved' | 'rejected';
+  reviewed_by?: {
+    _id: string;
+    full_name: string;
+    email: string;
+  };
+  reviewed_at?: string;
+  submitted_at: string;
 }
 
 // Update the existing BookingFromAPI interface to include new fields
@@ -61,11 +106,9 @@ export interface BookingFromAPI {
   user_id: BookingUser | null;
   service_id: BookingService;
   consultant_schedule_id: BookingSchedule | null;
-  consultant_schedule_id: BookingSchedule | null;
   user_subscription_id: string | BookingSubscription;
   scheduled_date: string;
   time_slot: string;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'processing';
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'processing';
   created_at: string;
   updated_at: string;
@@ -82,7 +125,7 @@ export interface BookingDetailResponse {
   success: boolean;
   data: {
     booking: BookingFromAPI;
-    result: BookingResult | null; // Result can be null or contain result data
+    result: BookingResult | null; // Detailed result structure
   };
 }
 
@@ -160,6 +203,83 @@ export const transformBookingData = (apiBooking: BookingFromAPI) => {
   };
 };
 
+// Transform BookingHistoryItem to frontend format
+export const transformBookingHistoryData = (item: BookingHistoryItem) => {
+  const baseData = transformBookingData(item.booking);
+  
+  return {
+    ...baseData,
+    // Additional fields from BookingHistoryItem
+    hasResult: item.has_result,
+    canFeedback: item.can_feedback,
+    canViewResult: item.has_result, // Can view result if has result
+    resultStatus: item.result_form_info?.review_status || 'pending' as 'pending' | 'approved' | 'rejected',
+    resultFormInfo: item.result_form_info ? {
+      id: item.result_form_info._id,
+      reviewStatus: item.result_form_info.review_status,
+      reviewedBy: item.result_form_info.reviewed_by?.full_name || '',
+      reviewedAt: item.result_form_info.reviewed_at || '',
+      submittedAt: item.result_form_info.submitted_at
+    } : null,
+    // Ensure required fields have default values
+    patientGender: baseData.patientGender || '',
+    patientDob: baseData.patientDob || '',
+    testParameters: baseData.testParameters || [],
+    testPreparation: baseData.testPreparation || '',
+    resultTime: baseData.resultTime || ''
+  };
+};
+
+/**
+ * Helper function to format test result data for display
+ */
+export const formatTestResultData = (result: BookingResult) => {
+  const { form_data, ...otherData } = result;
+  
+  // Extract test parameters and doctor comment
+  const { doctor_comment, ...testValues } = form_data;
+  
+  // Format test values for display
+  const formattedTestValues = Object.entries(testValues).map(([key, value]) => ({
+    parameter: key,
+    value: value,
+    displayName: formatParameterName(key)
+  }));
+  
+  return {
+    ...otherData,
+    testValues: formattedTestValues,
+    doctorComment: doctor_comment || '',
+    reviewInfo: {
+      status: result.review_status,
+      reviewedBy: result.reviewed_by?.full_name || '',
+      reviewedAt: result.reviewed_at || '',
+      reviewNotes: result.review_notes || '',
+      submittedBy: result.submitted_by.full_name,
+      submittedAt: result.submitted_at
+    }
+  };
+};
+
+/**
+ * Helper function to format parameter names for better display
+ */
+export const formatParameterName = (paramName: string): string => {
+  const parameterNames: { [key: string]: string } = {
+    'FSH': 'FSH (Follicle Stimulating Hormone)',
+    'LH': 'LH (Luteinizing Hormone)', 
+    'Estradiol': 'Estradiol (E2)',
+    'Progesterone': 'Progesterone',
+    'Prolactin': 'Prolactin',
+    'TSH': 'TSH (Thyroid Stimulating Hormone)',
+    'AMH': 'AMH (Anti-Müllerian Hormone)',
+    'Testosterone': 'Testosterone',
+    'DHEA-S': 'DHEA-S'
+  };
+  
+  return parameterNames[paramName] || paramName;
+};
+
 /**
  * Lấy danh sách bookings từ API
  */
@@ -207,15 +327,42 @@ export const getBookingById = async (id: string): Promise<{
   success: boolean;
   data: ReturnType<typeof transformBookingData>;
   result: BookingResult | null;
+  resultFormInfo?: {
+    id: string;
+    reviewStatus: 'pending' | 'approved' | 'rejected';
+    reviewedBy: string;
+    reviewedAt: string;
+    submittedAt: string;
+    reviewNotes?: string;
+    submittedBy: string;
+    isValidated: boolean;
+    formData: any;
+    doctorComment?: string;
+  } | null;
 }> => {
   try {
-    const response = await apiClient.get(`/bookings/${id}`);
+    const response = await apiClient.get<BookingDetailResponse>(`/bookings/${id}`);
     
     if (response.data.success) {
+      const transformedBooking = transformBookingData(response.data.data.booking);
+      const result = response.data.data.result;
+      
       return {
         success: true,
-        data: transformBookingData(response.data.data.booking),
-        result: response.data.data.result
+        data: transformedBooking,
+        result,
+        resultFormInfo: result ? {
+          id: result._id,
+          reviewStatus: result.review_status,
+          reviewedBy: result.reviewed_by?.full_name || '',
+          reviewedAt: result.reviewed_at || '',
+          submittedAt: result.submitted_at,
+          reviewNotes: result.review_notes || '',
+          submittedBy: result.submitted_by.full_name,
+          isValidated: result.is_validated,
+          formData: result.form_data,
+          doctorComment: result.form_data.doctor_comment || ''
+        } : null
       };
     }
     
@@ -237,7 +384,7 @@ export const getBookingDetailRaw = async (id: string): Promise<{
   };
 }> => {
   try {
-    const response = await apiClient.get(`/bookings/${id}`);
+    const response = await apiClient.get<BookingDetailResponse>(`/bookings/${id}`);
     
     if (response.data.success) {
       return {
@@ -297,7 +444,7 @@ export const updateBookingStatus = async (id: string, status: string): Promise<{
 };
 export const BookingHistory = async (params?: BookingHistoryParams): Promise<{
   success: boolean;
-  data: ReturnType<typeof transformBookingData>[];
+  data: ReturnType<typeof transformBookingHistoryData>[];
   pagination: {
     currentPage: number;
     totalPages: number;
@@ -305,22 +452,36 @@ export const BookingHistory = async (params?: BookingHistoryParams): Promise<{
     hasNext: boolean;
     hasPrev: boolean;
   };
+  stats: {
+    completedCount: number;
+    withResultsCount: number;
+  };
 }> => {
   try {
-    const response = await apiClient.get<BookingHistoryResponse>('/bookings/history', { params });
+    const response = await apiClient.get<BookingHistoryResponse>('/bookings/results-from-forms', { params });
     
     if (response.data.success) {
-      const transformedData = response.data.data.map(transformBookingData);
+      const transformedData = response.data.data.map(transformBookingHistoryData);
+      
+      // Since the new API doesn't provide pagination info, we'll calculate based on current data
+      const page = params?.page || 1;
+      const limit = params?.limit || 10;
+      const totalBookings = response.data.count;
+      const totalPages = Math.ceil(totalBookings / limit);
       
       return {
         success: true,
         data: transformedData,
         pagination: {
-          currentPage: response.data.page,
-          totalPages: response.data.pages,
-          totalBookings: response.data.total,
-          hasNext: response.data.page < response.data.pages,
-          hasPrev: response.data.page > 1
+          currentPage: page,
+          totalPages,
+          totalBookings,
+          hasNext: page < totalPages,
+          hasPrev: page > 1
+        },
+        stats: {
+          completedCount: response.data.completed_count,
+          withResultsCount: response.data.with_results_count
         }
       };
     }
@@ -338,5 +499,9 @@ export default {
   getBookingDetailRaw,
   deleteBooking,
   updateBookingStatus,
-  transformBookingData
+  BookingHistory,
+  transformBookingData,
+  transformBookingHistoryData,
+  formatTestResultData,
+  formatParameterName
 };
