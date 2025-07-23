@@ -1,28 +1,35 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getServiceById } from "../service/api/serviceAPI";
-import { FaCheckCircle, FaStar } from "react-icons/fa";
+import { getFeedbacksByService, type FeedbackService } from "../service/api/feedbackAPI";
+import { FaCheckCircle, FaStar, FaClock, FaVial, FaUsers, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import type { Service } from "../components/admin/service/ServiceTypes";
 
-interface Feedback {
-  _id: string;
-  user: { name: string };
-  rating: number;
-  comment: string;
-}
-
-const Accordion: React.FC<{ title: string; content: React.ReactNode }> = ({ title, content }) => {
+const Accordion: React.FC<{ title: string; content: React.ReactNode; icon?: React.ReactNode }> = ({ 
+  title, 
+  content, 
+  icon 
+}) => {
   const [open, setOpen] = useState(false);
   return (
-    <div className="mb-3">
+    <div className="mb-4 bg-white rounded-xl shadow-lg overflow-hidden">
       <button
-        className="w-full text-left px-6 py-4 bg-[#1A466E] text-white rounded-t-md focus:outline-none flex justify-between items-center"
+        className="w-full text-left px-6 py-5 bg-gradient-to-r from-blue-600 to-blue-700 text-white focus:outline-none flex justify-between items-center hover:from-blue-700 hover:to-blue-800 transition-all duration-300"
         onClick={() => setOpen((o) => !o)}
       >
-        <span>{title}</span>
-        <span>{open ? "-" : "+"}</span>
+        <div className="flex items-center gap-3">
+          {icon}
+          <span className="font-medium text-lg">{title}</span>
+        </div>
+        <div className="transform transition-transform duration-300">
+          {open ? <FaChevronUp /> : <FaChevronDown />}
+        </div>
       </button>
-      {open && <div className="bg-white px-6 py-4 border border-t-0 rounded-b-md">{content}</div>}
+      <div className={`transition-all duration-300 ease-in-out ${open ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'} overflow-hidden`}>
+        <div className="px-6 py-5 bg-gray-50 border-t">
+          {content}
+        </div>
+      </div>
     </div>
   );
 };
@@ -30,30 +37,55 @@ const Accordion: React.FC<{ title: string; content: React.ReactNode }> = ({ titl
 const ServiceDetail: React.FC = () => {
   const { serviceId } = useParams<{ serviceId: string }>();
   const [service, setService] = useState<Service | null>(null);
-  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
+  const [feedbacks, setFeedbacks] = useState<FeedbackService[]>([]);
   const [loading, setLoading] = useState(true);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [serviceId]);
 
   useEffect(() => {
-    const fetchDetail = async () => {
+    const fetchServiceDetail = async () => {
       setLoading(true);
       try {
         if (serviceId) {
           const res = await getServiceById(serviceId);
           setService(res.data.service);
-          setFeedbacks((res.data.feedbacks || []) as Feedback[]);
         }
+      } catch (error) {
+        console.error('Error fetching service:', error);
       } finally {
         setLoading(false);
       }
     };
-    fetchDetail();
+
+    const fetchFeedbacks = async () => {
+      setFeedbackLoading(true);
+      try {
+        if (serviceId) {
+          const feedbackRes = await getFeedbacksByService(serviceId, {
+            page: 1,
+            limit: 10,
+            sort_by: 'created_at',
+            sort_order: 'desc'
+          });
+          setFeedbacks(feedbackRes.data);
+        }
+      } catch (error) {
+        console.error('Error fetching feedbacks:', error);
+      } finally {
+        setFeedbackLoading(false);
+      }
+    };
+
+    if (serviceId) {
+      fetchServiceDetail();
+      fetchFeedbacks();
+    }
   }, [serviceId]);
 
-  if (loading) return <div className="text-center py-16">Đang tải...</div>;
+  if (loading) return <div className="text-center py-16">Đang tải dịch vụ...</div>;
   if (!service) return <div className="text-center py-16 text-red-500">Không tìm thấy dịch vụ</div>;
 
   return (
@@ -127,20 +159,47 @@ const ServiceDetail: React.FC = () => {
         {/* Đánh giá */}
         <div className="mb-8">
           <h2 className="text-xl font-bold mb-4">Đánh giá</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {feedbacks.length === 0 && <div className="col-span-3 text-gray-500">Chưa có đánh giá</div>}
-            {feedbacks.map((fb) => (
-              <div key={fb._id} className="bg-white rounded-lg shadow p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  {[...Array(5)].map((_, i) => (
-                    <FaStar key={i} className={i < Math.round(fb.rating) ? 'text-yellow-400' : 'text-gray-300'} />
-                  ))}
-                  <span className="ml-2 font-semibold">{fb.user?.name || 'Ẩn danh'}</span>
+          {feedbackLoading ? (
+            <div className="text-center py-4">Đang tải đánh giá...</div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {feedbacks.length === 0 && <div className="col-span-3 text-gray-500">Chưa có đánh giá</div>}
+              {feedbacks.map((fb) => (
+                <div key={fb._id} className="bg-white rounded-lg shadow p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    {[...Array(5)].map((_, i) => (
+                      <FaStar key={i} className={i < Math.round(fb.rating) ? 'text-yellow-400' : 'text-gray-300'} />
+                    ))}
+                    <span className="ml-2 font-semibold">
+                      {fb.is_anonymous ? 'Ẩn danh' : fb.user_id?.full_name || 'Người dùng'}
+                    </span>
+                  </div>
+                  <div className="text-gray-700 text-sm mb-2">{fb.comment}</div>
+                  {fb.service_quality_rating && (
+                    <div className="text-xs text-gray-500">
+                      Chất lượng dịch vụ: {fb.service_quality_rating}/5
+                    </div>
+                  )}
+                  {fb.consultant_rating && (
+                    <div className="text-xs text-gray-500">
+                      Tư vấn viên: {fb.consultant_rating}/5
+                    </div>
+                  )}
+                  {fb.result_accuracy_rating && (
+                    <div className="text-xs text-gray-500">
+                      Độ chính xác: {fb.result_accuracy_rating}/5
+                    </div>
+                  )}
+                  {fb.admin_reply && (
+                    <div className="mt-3 p-2 bg-blue-50 rounded text-sm">
+                      <div className="font-semibold text-blue-700">Phản hồi từ quản trị:</div>
+                      <div className="text-blue-600">{fb.admin_reply}</div>
+                    </div>
+                  )}
                 </div>
-                <div className="text-gray-700 text-sm">{fb.comment}</div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Gói xét nghiệm liên quan */}
