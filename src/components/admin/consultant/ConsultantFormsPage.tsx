@@ -13,15 +13,20 @@ const steps = [
   { title: 'Hoàn tất', description: 'Xác nhận và hoàn tất quy trình.' },
 ];
 
-const updateBookingStatus = async (bookingId: string, status: string, notes: string) => {
+const updateBookingStatus = async (submitFormId: string, status: string, notes: string) => {
   try {
-    const res = await apiClient.put(`/dynamic-forms/data/${bookingId}/review`, {
+    const res = await apiClient.put(`/dynamic-forms/data/${submitFormId}/review`, {
       status,
       notes,
     });
     console.log('API update status response:', res.data);
     if (res.data && res.data.success) {
-      message.success('Đã cập nhật trạng thái thành công!');
+      const updatedStatus = res.data.data?.status || res.data.data?.review_status;
+      if (updatedStatus === 'completed') {
+        message.success('Đã cập nhật trạng thái thành công!');
+      } else {
+        message.warning(`Trạng thái hiện tại: ${updatedStatus}`);
+      }
     } else {
       message.error('Không thể cập nhật trạng thái.');
     }
@@ -47,6 +52,7 @@ const ConsultantFormsPage: React.FC = () => {
   const [bookingFormSchemaLoading, setBookingFormSchemaLoading] = useState(false);
   const [resultFormSchema, setResultFormSchema] = useState<any | null>(null);
   const [resultFormSchemaLoading, setResultFormSchemaLoading] = useState(false);
+  const [submitFormId, setSubmitFormId] = useState<string | null>(null); // Thêm state này
 
   // Lấy danh sách lịch hẹn xét nghiệm khi vào trang
   useEffect(() => {
@@ -124,11 +130,11 @@ const ConsultantFormsPage: React.FC = () => {
   }, [current, selectedBooking]);
 
   useEffect(() => {
-    if (current === 3 && selectedBooking) {
-      updateBookingStatus(selectedBooking.raw._id, 'completed', 'Hoàn tất quy trình nhập liệu');
+    if (current === 3 && submitFormId) {
+      updateBookingStatus(submitFormId, 'completed', 'Hoàn tất quy trình nhập liệu');
     }
     // eslint-disable-next-line
-  }, [current]);
+  }, [current, submitFormId]);
 
   const next = () => setCurrent((c) => c + 1);
   const prev = () => setCurrent((c) => c - 1);
@@ -203,6 +209,7 @@ const ConsultantFormsPage: React.FC = () => {
       .then(res => {
         if (res.data && res.data.success) {
           setResultFormData(res.data.data);
+          setSubmitFormId(res.data.data._id || res.data.data.id); // Lưu lại submitFormId
           message.success('Đã lưu phiếu kết quả!');
           next();
         } else {
@@ -258,7 +265,7 @@ const ConsultantFormsPage: React.FC = () => {
                 onSubmit={handleSubmitBookingForm}
                 onBack={prev}
               />
-              <div style={{ textAlign: 'center', color: '#d4380d', padding: 40 }}>Không thể tải biểu mẫu đặt lịch.</div>
+              
             </>
           ) : (
             <div style={{ textAlign: 'center', color: '#d4380d', padding: 40 }}>Không thể tải biểu mẫu đặt lịch.</div>
