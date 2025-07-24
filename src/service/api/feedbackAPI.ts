@@ -8,8 +8,50 @@ export interface FeedbackUser {
 
 export interface FeedbackService {
   _id: string;
-  title: string;
-  image_url: string;
+  user_id: {
+    _id: string;
+    full_name: string;
+  };
+  service_id: string;
+  booking_id: {
+    _id: string;
+    scheduled_date: string;
+    time_slot: string;
+  };
+  rating: number;
+  comment: string;
+  service_quality_rating?: number;
+  consultant_rating?: number;
+  result_accuracy_rating?: number;
+  is_anonymous: boolean;
+  status: string;
+  is_featured: boolean;
+  reported_count: number;
+  created_at: string;
+  updated_at: string;
+  __v: number;
+  admin_reply?: string;
+  admin_reply_at?: string;
+  admin_reply_by?: {
+    _id: string;
+    full_name: string;
+  };
+  moderation_notes?: string;
+}
+export interface FeedbackServiceResponse {
+  success: boolean;
+  count: number;
+  total: number;
+  page: number;
+  pages: number;
+  data: FeedbackService[];
+}
+export interface FeedbackServiceRequest {
+  page?: number;
+  limit?: number;
+  min_rating?: number;
+  sort_by?: 'created_at' | 'rating';
+  sort_order?: 'asc' | 'desc';
 }
 
 export interface FeedbackBooking {
@@ -241,3 +283,9 @@ export const deleteFeedback = async (id: string): Promise<{ success: boolean; me
     };
   }
 }; 
+
+// Lấy danh sách feedback của một dịch vụ
+export const getFeedbacksByService = async (serviceId: string, request: FeedbackServiceRequest): Promise<FeedbackServiceResponse> => {
+  const response = await instance.get(`/services/${serviceId}/feedback`, { params: request });
+  return response.data;
+};

@@ -24,15 +24,14 @@ import {
   MedicineBoxOutlined,
   ExperimentOutlined,
 } from "@ant-design/icons";
-import type { BookingHistoryModalProps } from "../../types/bookingHistory";
-import { STATUS_TEXT } from "../../types/bookingHistory";
+import type { BookingHistoryModalProps } from "../../../types/bookingHistory";
+import { STATUS_TEXT } from "../../../types/bookingHistory";
 import {
   formatDate,
   formatDateTime,
   normalizeBookingData,
-} from "../../utils/bookingHistoryUtils";
-import styles from "../../styles/components/BookingHistoryModal.module.css";
-
+} from "../../../utils/bookingHistoryUtils";
+import styles from "../../../styles/components/BookingHistoryModal.module.css"
 const { Title, Text, Paragraph } = Typography;
 
 const BookingHistoryModal: React.FC<BookingHistoryModalProps> = ({
@@ -270,11 +269,79 @@ const BookingHistoryModal: React.FC<BookingHistoryModalProps> = ({
                 style={{ marginBottom: 16 }}
               />
 
-              <Card size="small" className={styles.resultCard}>
-                <pre className={styles.resultCode}>
-                  {JSON.stringify(resultData, null, 2)}
-                </pre>
-              </Card>
+              {/* Thông tin review */}
+              {resultData.reviewInfo && (
+                <Card size="small" style={{ marginBottom: 16 }}>
+                  <Row gutter={[16, 8]}>
+                    <Col xs={24} sm={12}>
+                      <Space direction="vertical" size="small">
+                        <Text type="secondary">Trạng thái:</Text>
+                        <Tag color={resultData.reviewInfo.status === 'approved' ? 'green' : 'orange'}>
+                          {resultData.reviewInfo.status === 'approved' ? 'Đã duyệt' : 'Chờ duyệt'}
+                        </Tag>
+                      </Space>
+                    </Col>
+                    <Col xs={24} sm={12}>
+                      <Space direction="vertical" size="small">
+                        <Text type="secondary">Người duyệt:</Text>
+                        <Text strong>{resultData.reviewInfo.reviewedBy || 'Chưa có'}</Text>
+                      </Space>
+                    </Col>
+                    <Col xs={24} sm={12}>
+                      <Space direction="vertical" size="small">
+                        <Text type="secondary">Ngày nộp:</Text>
+                        <Text>{formatDateTime(resultData.reviewInfo.submittedAt)}</Text>
+                      </Space>
+                    </Col>
+                    <Col xs={24} sm={12}>
+                      <Space direction="vertical" size="small">
+                        <Text type="secondary">Ngày duyệt:</Text>
+                        <Text>{resultData.reviewInfo.reviewedAt ? formatDateTime(resultData.reviewInfo.reviewedAt) : 'Chưa duyệt'}</Text>
+                      </Space>
+                    </Col>
+                  </Row>
+                </Card>
+              )}
+
+              {/* Kết quả các chỉ số test */}
+              {resultData.testValues && resultData.testValues.length > 0 && (
+                <Card size="small" style={{ marginBottom: 16 }}>
+                  <Title level={5}>Kết quả các chỉ số:</Title>
+                  <Row gutter={[16, 8]}>
+                    {resultData.testValues.map((test: any, index: number) => (
+                      <Col xs={24} sm={12} md={8} key={index}>
+                        <Card size="small" style={{ textAlign: 'center' }}>
+                          <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>
+                            {test.displayName}
+                          </Text>
+                          <Text strong style={{ fontSize: '16px', color: '#1890ff' }}>
+                            {test.value}
+                          </Text>
+                        </Card>
+                      </Col>
+                    ))}
+                  </Row>
+                </Card>
+              )}
+
+              {/* Nhận xét của bác sĩ */}
+              {resultData.doctorComment && (
+                <Card size="small">
+                  <Title level={5}>Nhận xét của bác sĩ:</Title>
+                  <Paragraph>
+                    <Text>{resultData.doctorComment}</Text>
+                  </Paragraph>
+                </Card>
+              )}
+
+              {/* Fallback: hiển thị raw data nếu không có format */}
+              {!resultData.testValues && !resultData.doctorComment && (
+                <Card size="small" className={styles.resultCard}>
+                  <pre className={styles.resultCode}>
+                    {JSON.stringify(resultData, null, 2)}
+                  </pre>
+                </Card>
+              )}
             </div>
           ) : (
             <div className={styles.noResultContainer}>

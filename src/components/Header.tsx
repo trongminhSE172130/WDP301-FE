@@ -101,7 +101,7 @@ const Header: React.FC = () => {
                 icon: <CrownOutlined />,
                 label: "Mua gói",
               },
-              { to: "/contact", icon: <PhoneOutlined />, label: "Liên hệ" },
+              // { to: "/contact", icon: <PhoneOutlined />, label: "Liên hệ" },
             ].map((item) => (
               <li key={item.to}>
                 <Link
