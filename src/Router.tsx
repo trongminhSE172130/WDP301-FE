@@ -31,11 +31,8 @@ import UsersPage from "./pages/admin/UsersPage";
 import AdminLoginPage from "./pages/admin/AdminLoginPage";
 import AppointmentPage from "./pages/admin/AppointmentPage";
 import AppointmentDetailPage from "./pages/admin/AppointmentDetailPage";
-import PatientPage from "./pages/admin/PatientPage";
-import PatientDetailPage from "./pages/admin/PatientDetailPage";
 import ServiceManagePage from "./pages/admin/ServicePage";
 import ConsultantSchedulePage from "./pages/admin/ConsultantSchedulePage";
-import DocumentPage from "./pages/admin/DocumentPage";
 import BlogPage from "./pages/admin/BlogPage";
 import BlogCategoriesPage from "./pages/admin/BlogCategoriesPage";
 import ServiceCategoriesPage from "./pages/admin/ServiceCategoriesPage";
@@ -260,13 +257,10 @@ const router = createBrowserRouter([
           { path: "dashboard", element: <DashboardPage /> },
           { path: "appointments", element: <AppointmentPage /> },
           { path: "appointments/:id", element: <AppointmentDetailPage /> },
-          { path: "patients", element: <PatientPage /> },
-          { path: "patients/:id", element: <PatientDetailPage /> },
           { path: "schedules", element: <ConsultantScheduleBookings /> },
           { path: "consultations", element: <ConsultantConsultations /> },
-          { path: "documents", element: <DocumentPage /> },
           { path: "availability", element: <ConsultantAvailability /> },
-          { path: "messages", element: <ConsultantMessages /> },
+          { path: "messages", element: <ChatPage /> },
           { path: "forms", element: <ConsultantFormsPage /> },
           { path: "*", element: <UnderDevelopmentPage /> },
         ],
@@ -287,12 +281,9 @@ const router = createBrowserRouter([
           { path: "users", element: <UsersPage /> },
           { path: "appointments", element: <AppointmentPage /> },
           { path: "appointments/:id", element: <AppointmentDetailPage /> },
-          { path: "patients", element: <PatientPage /> },
-          { path: "patients/:id", element: <PatientDetailPage /> },
           { path: "services", element: <ServiceManagePage /> },
           { path: "schedules", element: <ConsultantSchedulePage /> },
           { path: "consultations", element: <ConsultantConsultations /> },
-          { path: "documents", element: <DocumentPage /> },
           { path: "consultants", element: <ConsultantManagement /> },
           { path: "consultants/:id", element: <ConsultantDetail /> },
           { path: "consultants/:id/edit", element: <UnderDevelopmentPage /> },

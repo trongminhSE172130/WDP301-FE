@@ -21,7 +21,7 @@ export interface UnreadCount {
 export interface ChatConversation {
   _id: string;
   user_id: ChatUser | string;
-  assigned_to: string | null;
+  assigned_to: string | ChatUser | null;
   status: 'pending' | 'active' | 'closed';
   title: string;
   priority: 'low' | 'normal' | 'high' | 'urgent';
@@ -124,6 +124,14 @@ const chatAPI = {
   // Đóng hội thoại
   closeConversation: async (conversationId: string): Promise<CloseConversationResponse> => {
     const response = await apiClient.put<CloseConversationResponse>(`/chat/conversations/${conversationId}/close`);
+    return response.data;
+  },
+
+  // Thêm hàm API để gửi tin nhắn hệ thống
+  sendSystemMessage: async (conversationId: string, content: string): Promise<SendMessageResponse> => {
+    const response = await apiClient.post<SendMessageResponse>(`/chat/conversations/${conversationId}/system-message`, {
+      content
+    });
     return response.data;
   }
 };

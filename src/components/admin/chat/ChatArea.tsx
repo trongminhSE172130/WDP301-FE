@@ -1,9 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Card, Input, Button, Avatar, Typography, Tag, Spin, message, Alert, Badge } from 'antd';
-import { SendOutlined, UserOutlined, CheckOutlined, WifiOutlined, CloseOutlined } from '@ant-design/icons';
-import type { ChatConversation, ChatMessage } from '../../../service/api/chatAPI';
+import { SendOutlined, UserOutlined, WifiOutlined, CloseOutlined, LockOutlined } from '@ant-design/icons';
+import type { ChatConversation as BaseChatConversation, ChatMessage } from '../../../service/api/chatAPI';
 import chatAPI from '../../../service/api/chatAPI';
 import { useChat } from '../../../context/ChatContext';
+import { getUserById } from '../../../service/api/userAPI';
+
+// Mở rộng interface ChatConversation để thêm trường is_assigned_to_other
+interface ChatConversation extends BaseChatConversation {
+  is_assigned_to_other?: boolean;
+}
 
 const { Text } = Typography;
 
@@ -13,6 +19,7 @@ interface ChatAreaProps {
   loading: boolean;
   sendingMessage: boolean;
   onConversationUpdate?: (conversation: ChatConversation) => void;
+  onMessagesUpdate?: (messages: ChatMessage[]) => void;
 }
 
 const ChatArea: React.FC<ChatAreaProps> = ({
@@ -21,15 +28,45 @@ const ChatArea: React.FC<ChatAreaProps> = ({
   loading,
   sendingMessage,
   onConversationUpdate,
+  onMessagesUpdate,
 }) => {
   const [messageText, setMessageText] = useState('');
   const [acceptingConversation, setAcceptingConversation] = useState(false);
   const [closingConversation, setClosingConversation] = useState(false);
   const [localSending, setLocalSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [assignedUserName, setAssignedUserName] = useState<string>('Người hỗ trợ');
   
   // Sử dụng ChatContext để truy cập WebSocket và API
   const { isConnected, joinConversation, leaveConversation, sendMessage } = useChat();
+
+  // Lấy thông tin người được gán khi conversation thay đổi
+  useEffect(() => {
+    if (conversation && conversation.assigned_to && conversation.status === 'active') {
+      if (typeof conversation.assigned_to === 'object' && conversation.assigned_to.full_name) {
+        // Nếu assigned_to là đối tượng, lấy full_name trực tiếp
+        setAssignedUserName(conversation.assigned_to.full_name);
+      } else if (typeof conversation.assigned_to === 'string') {
+        // Nếu assigned_to là string, gọi API để lấy thông tin
+        fetchAssignedUser(conversation.assigned_to);
+      }
+    } else {
+      setAssignedUserName('Người hỗ trợ');
+    }
+  }, [conversation]);
+
+  // Hàm lấy thông tin người được gán từ API
+  const fetchAssignedUser = async (userId: string) => {
+    try {
+      const response = await getUserById(userId);
+      if (response.success && response.data) {
+        setAssignedUserName(response.data.full_name || 'Người hỗ trợ');
+      }
+    } catch (error) {
+      console.error('Error fetching assigned user:', error);
+      setAssignedUserName('Người hỗ trợ');
+    }
+  };
 
   // Cuộn xuống cuối cùng khi có tin nhắn mới
   useEffect(() => {
@@ -94,12 +131,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       
       if (success) {
         // Tin nhắn đã được gửi thành công và sẽ được cập nhật qua callback
-        console.log('Message sent successfully');
         message.success('Tin nhắn đã được gửi');
       } else {
         // Khôi phục tin nhắn nếu gửi thất bại
         setMessageText(textToSend);
-        message.error('Không thể gửi tin nhắn. Vui lòng thử lại sau.');
+        message.error('Không thể gửi tin nhắn. Vì đã consultant/admin chấp nhận đoạn chat.');
       }
     } catch (error) {
       console.error('Error sending message:', error);
@@ -118,13 +154,31 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     }
 
     try {
-      console.log('Attempting to close conversation with ID:', conversation._id);
       setClosingConversation(true);
+      
+      // Lấy thông tin người dùng hiện tại từ localStorage
+      const userStr = localStorage.getItem('user');
+      let closedBy = null;
+      let closedByName = 'Người hỗ trợ';
+      
+      if (userStr) {
+        try {
+          const userData = JSON.parse(userStr);
+          if (userData) {
+            // Lấy ID người dùng - xử lý cả trường hợp id và _id
+            const userId = userData.id || userData._id;
+            closedBy = userId;
+            closedByName = userData.full_name || 'Người hỗ trợ';
+          }
+        } catch (error) {
+          console.error('Lỗi khi phân tích dữ liệu người dùng:', error);
+        }
+      }
       
       // Gọi API trực tiếp không qua hộp thoại xác nhận
       const response = await chatAPI.closeConversation(conversation._id);
-      console.log('Close conversation API response:', response);
       
+      // Cập nhật phần xử lý đóng cuộc hội thoại
       if (response && response.success) {
         message.success('Đã đóng hội thoại');
         
@@ -134,13 +188,47 @@ const ChatArea: React.FC<ChatAreaProps> = ({
             ...conversation,
             status: 'closed' as const,
             closed_at: new Date().toISOString(),
-            closed_by: 'admin' // Giả định ID admin
+            closed_by: closedBy // Sử dụng ID người dùng hiện tại
           };
-          console.log('Updating conversation with:', updatedConversation);
           onConversationUpdate(updatedConversation);
+          
+          // Thêm tin nhắn hệ thống thông báo đóng cuộc hội thoại
+          try {
+            const systemMessageContent = `${closedByName} đã đóng cuộc hội thoại.`;
+            
+            // Tạo tin nhắn hệ thống để hiển thị ngay lập tức
+            const systemMessage: ChatMessage = {
+              _id: `local_system_${Date.now()}`,
+              conversation_id: conversation._id,
+              sender_id: closedBy || 'system',
+              content: systemMessageContent,
+              message_type: 'system',
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+              is_read: true
+            };
+            
+            // Thêm tin nhắn vào danh sách tin nhắn hiện tại
+            const updatedMessages = [...messages, systemMessage];
+            
+            // Cập nhật danh sách tin nhắn trong component cha
+            if (typeof onMessagesUpdate === 'function') {
+              onMessagesUpdate(updatedMessages);
+            }
+            
+            // Gọi API để gửi tin nhắn hệ thống
+            const systemMessageResponse = await chatAPI.sendSystemMessage(conversation._id, systemMessageContent);
+            
+            if (systemMessageResponse && systemMessageResponse.success) {
+              // Tin nhắn hệ thống đã được gửi thành công
+              message.success('Đã gửi thông báo đóng cuộc hội thoại');
+            } else {
+              console.error('Không thể gửi tin nhắn hệ thống:', systemMessageResponse);
+            }
+          } catch (error) {
+            console.error('Lỗi khi gửi tin nhắn hệ thống:', error);
+          }
         }
-        
-        // Không gửi tin nhắn hệ thống để tránh gọi API messages
       } else {
         message.error('Không thể đóng hội thoại: ' + (response?.message || 'Lỗi không xác định'));
       }
@@ -160,6 +248,35 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     
     setAcceptingConversation(true);
     try {
+      // Lấy thông tin người dùng từ localStorage trước khi gọi API
+      const userStr = localStorage.getItem('user');
+      let assignedTo = null; // Giá trị mặc định
+      let currentUserName = 'Người hỗ trợ';
+      let userId = null;
+      
+      if (userStr) {
+        try {
+          const userData = JSON.parse(userStr);
+          if (userData) {
+            // Lấy ID người dùng - xử lý cả trường hợp id và _id
+            userId = userData.id || userData._id;
+            
+            // Tạo đối tượng assigned_to
+            assignedTo = {
+              _id: userId,
+              role: userData.role || 'admin',
+              full_name: userData.full_name || 'Người hỗ trợ'
+            };
+            currentUserName = userData.full_name || 'Người hỗ trợ';
+            // Cập nhật tên người được gán ngay lập tức
+            setAssignedUserName(currentUserName);
+          }
+        } catch (error) {
+          console.error('Lỗi khi phân tích dữ liệu người dùng:', error);
+        }
+      }
+      
+      // Gọi API để chấp nhận cuộc hội thoại
       const response = await chatAPI.acceptConversation(conversation._id);
       if (response.success) {
         message.success('Đã chấp nhận yêu cầu hỗ trợ');
@@ -169,8 +286,45 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           onConversationUpdate({
             ...conversation,
             status: 'active',
-            assigned_to: 'admin' // Giả định ID admin
+            assigned_to: assignedTo
           });
+        }
+        
+        // Thêm tin nhắn hệ thống thông báo chấp nhận cuộc hội thoại
+        try {
+          const systemMessageContent = `${currentUserName} (${assignedTo?.role || 'admin'}) đã tiếp nhận yêu cầu hỗ trợ của bạn.`;
+          
+          // Tạo tin nhắn hệ thống để hiển thị ngay lập tức
+          const systemMessage: ChatMessage = {
+            _id: `local_system_${Date.now()}`,
+            conversation_id: conversation._id,
+            sender_id: userId || 'system',
+            content: systemMessageContent,
+            message_type: 'system',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+            is_read: true
+          };
+          
+          // Thêm tin nhắn vào danh sách tin nhắn hiện tại
+          const updatedMessages = [...messages, systemMessage];
+          
+          // Cập nhật danh sách tin nhắn trong component cha
+          if (typeof onMessagesUpdate === 'function') {
+            onMessagesUpdate(updatedMessages);
+          }
+          
+          // Gọi API để gửi tin nhắn hệ thống
+          const systemMessageResponse = await chatAPI.sendSystemMessage(conversation._id, systemMessageContent);
+          
+          if (systemMessageResponse && systemMessageResponse.success) {
+            // Tin nhắn hệ thống chấp nhận cuộc hội thoại đã được gửi thành công
+            message.success('Đã gửi thông báo chấp nhận cuộc hội thoại');
+          } else {
+            console.error('Không thể gửi tin nhắn hệ thống chấp nhận cuộc hội thoại:', systemMessageResponse);
+          }
+        } catch (error) {
+          console.error('Lỗi khi gửi tin nhắn hệ thống chấp nhận cuộc hội thoại:', error);
         }
       } else {
         message.error('Không thể chấp nhận yêu cầu');
@@ -231,10 +385,51 @@ const ChatArea: React.FC<ChatAreaProps> = ({
       return 'Không xác định';
     }
     
+    // Nếu đây là tin nhắn từ admin/consultant và có conversation
+    if (conversation && isAdminMessage(message)) {
+      // Nếu có assigned_to, hiển thị tên người được gán
+      if (conversation.assigned_to) {
+        // Nếu assigned_to là đối tượng có full_name
+        if (typeof conversation.assigned_to === 'object' && conversation.assigned_to.full_name) {
+          return conversation.assigned_to.full_name;
+        }
+        
+        // Nếu assigned_to là string, kiểm tra xem có phải là người dùng hiện tại không
+        if (typeof conversation.assigned_to === 'string') {
+          const userStr = localStorage.getItem('user');
+          if (userStr) {
+            try {
+              const userData = JSON.parse(userStr);
+              if (userData && userData._id === conversation.assigned_to) {
+                return 'Bạn';
+              }
+            } catch (error) {
+              console.error('Lỗi khi phân tích dữ liệu người dùng:', error);
+            }
+          }
+          return assignedUserName; // Sử dụng tên đã lấy từ API
+        }
+      }
+      
+      // Nếu không có assigned_to, hiển thị tên từ sender_id
+      if (typeof message.sender_id === 'object' && message.sender_id.full_name) {
+        return message.sender_id.full_name;
+      }
+      
+      return 'Người hỗ trợ';
+    }
+    
+    // Xử lý các trường hợp khác
     if (typeof message.sender_id === 'string') {
-      return message.sender_id === 'admin' ? 'Admin' : 'Người dùng';
+      if (message.sender_id === 'admin') return 'Admin';
+      if (message.sender_id === 'consultant') return 'Tư vấn viên';
+      return 'Người dùng';
     } else {
-      return message.sender_id?.full_name || (message.sender_id?.role === 'admin' ? 'Admin' : 'Người dùng');
+      // Ưu tiên hiển thị tên thực nếu có
+      return message.sender_id?.full_name || 
+             (message.sender_id?.role === 'admin' ? 'Admin' : 
+             (message.sender_id?.role === 'Consultant' || message.sender_id?.role === 'consultant') ? 
+             'Tư vấn viên' : 'Người dùng');
     }
   };
 
@@ -244,9 +439,11 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     }
     
     if (typeof message.sender_id === 'string') {
-      return message.sender_id === 'admin';
+      return message.sender_id === 'admin' || message.sender_id === 'consultant';
     } else {
-      return message.sender_id?.role === 'admin';
+      return message.sender_id?.role === 'admin' || 
+             message.sender_id?.role === 'Consultant' || 
+             message.sender_id?.role === 'consultant';
     }
   };
 
@@ -284,6 +481,232 @@ const ChatArea: React.FC<ChatAreaProps> = ({
     }
   };
 
+  // Kiểm tra xem cuộc hội thoại đã được gán cho người khác chưa
+  const isAssignedToOther = () => {
+    if (!conversation) return false;
+    
+    // Nếu đã đánh dấu là được gán cho người khác
+    if ('is_assigned_to_other' in conversation && conversation.is_assigned_to_other) {
+      return true;
+    }
+    
+    // Nếu không có assigned_to, không được gán cho ai
+    if (!conversation.assigned_to) {
+      return false;
+    }
+    
+    // Kiểm tra xem assigned_to có phải là người dùng hiện tại không
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const userData = JSON.parse(userStr);
+        if (userData) {
+          if (userData._id) {
+            // Nếu assigned_to là string
+            if (typeof conversation.assigned_to === 'string') {
+              return conversation.assigned_to !== userData._id;
+            }
+            // Nếu assigned_to là object
+            if (typeof conversation.assigned_to === 'object' && conversation.assigned_to !== null) {
+              return conversation.assigned_to._id !== userData._id;
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Lỗi khi phân tích dữ liệu người dùng:', error);
+      }
+    }
+    
+    return false;
+  };
+  
+  // Kiểm tra xem người dùng hiện tại có phải là admin hoặc consultant không
+  const isCurrentUserAdmin = () => {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      try {
+        const userData = JSON.parse(userStr);
+        return userData && (userData.role === 'admin' || userData.role === 'consultant');
+      } catch (error) {
+        console.error('Lỗi khi phân tích dữ liệu người dùng:', error);
+      }
+    }
+    return false;
+  };
+  
+  // Kiểm tra xem có thể xem tin nhắn không
+  const canViewMessages = () => {
+    // Admin luôn có thể xem tin nhắn
+    if (isCurrentUserAdmin()) {
+      return true;
+    }
+    
+    // Người khác chỉ có thể xem nếu không bị gán cho người khác
+    return !isAssignedToOther();
+  };
+  
+  // Kiểm tra xem người dùng có thể gửi tin nhắn không
+  const canSendMessages = (): boolean => {
+    // Nếu không có cuộc hội thoại được chọn hoặc đang tải dữ liệu, không cho phép gửi tin nhắn
+    if (!conversation || loading) {
+      return false;
+    }
+
+    // Nếu cuộc hội thoại đã đóng, không cho phép gửi tin nhắn
+    if (conversation.status === 'closed') {
+      return false;
+    }
+
+    // Lấy thông tin người dùng hiện tại
+    const userStr = localStorage.getItem('user');
+    
+    if (!userStr) {
+      return false;
+    }
+    
+    try {
+      const userData = JSON.parse(userStr);
+      
+      // Lấy ID người dùng - xử lý cả trường hợp id và _id
+      const userId = userData.id || userData._id;
+      
+      if (!userData || !userId) {
+        return false;
+      }
+      
+      // Nếu cuộc hội thoại chưa được assign cho ai
+      if (!conversation.assigned_to) {
+        // Chỉ cho phép admin hoặc consultant gửi tin nhắn
+        const isAdminOrConsultant = userData.role === 'admin' || userData.role === 'consultant';
+        return isAdminOrConsultant;
+      }
+      
+      // Nếu cuộc hội thoại đã được assign
+      
+      // Nếu assigned_to là string, so sánh trực tiếp
+      if (typeof conversation.assigned_to === 'string') {
+        const result = conversation.assigned_to === userId;
+        return result;
+      }
+      
+      // Nếu assigned_to là object, so sánh _id
+      if (typeof conversation.assigned_to === 'object' && conversation.assigned_to !== null) {
+        const result = conversation.assigned_to._id === userId;
+        return result;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('Lỗi khi phân tích dữ liệu người dùng:', error);
+      return false;
+    }
+  };
+
+  // Phần render form nhập tin nhắn dựa trên trạng thái cuộc hội thoại
+  const renderMessageInput = () => {
+    if (!conversation) {
+      return (
+        <Alert
+          message="Vui lòng chọn một cuộc hội thoại"
+          type="info"
+          showIcon
+        />
+      );
+    }
+
+    if (conversation.status === 'closed') {
+      return (
+        <Alert
+          message="Cuộc hội thoại đã đóng"
+          type="info"
+          showIcon
+        />
+      );
+    }
+
+    if (conversation.status === 'pending') {
+      return (
+        <Button
+          type="primary"
+          block
+          size="large"
+          className="bg-blue-500 hover:bg-blue-600"
+          onClick={handleAcceptConversation}
+          loading={acceptingConversation}
+        >
+          Vui lòng chấp nhận yêu cầu hỗ trợ để bắt đầu trò chuyện
+        </Button>
+      );
+    }
+
+    if (!canSendMessages()) {
+      // Lấy thông tin người dùng để hiển thị thông báo phù hợp
+      let message = 'Bạn không có quyền gửi tin nhắn trong cuộc hội thoại này.';
+      
+      if (conversation.assigned_to) {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          try {
+            const userData = JSON.parse(userStr);
+            // Lấy ID người dùng - xử lý cả trường hợp id và _id
+            const userId = userData.id || userData._id;
+            
+            if (userData && userId) {
+              // Kiểm tra xem assigned_to có phải là người dùng hiện tại không
+              let isAssignedToCurrentUser = false;
+              
+              if (typeof conversation.assigned_to === 'string') {
+                isAssignedToCurrentUser = conversation.assigned_to === userId;
+              } else if (typeof conversation.assigned_to === 'object' && conversation.assigned_to !== null) {
+                isAssignedToCurrentUser = conversation.assigned_to._id === userId;
+              }
+              
+              if (!isAssignedToCurrentUser) {
+                message = `Cuộc hội thoại này đã được gán cho ${typeof conversation.assigned_to === 'object' && conversation.assigned_to.full_name ? conversation.assigned_to.full_name : 'người khác'}. Bạn chỉ có thể xem tin nhắn.`;
+              }
+            }
+          } catch (error) {
+            console.error('Lỗi khi phân tích dữ liệu người dùng:', error);
+          }
+        }
+      }
+      
+      return (
+        <Alert
+          message={message}
+          type="info"
+          showIcon
+        />
+      );
+    }
+
+    return (
+      <div className="flex">
+        <Input
+          placeholder="Nhập tin nhắn..."
+          value={messageText}
+          onChange={(e) => setMessageText(e.target.value)}
+          onPressEnter={(e) => {
+            if (!e.shiftKey) {
+              e.preventDefault();
+              handleSendMessage();
+            }
+          }}
+          disabled={sendingMessage || localSending}
+          className="flex-grow mr-2"
+        />
+        <Button
+          type="primary"
+          icon={<SendOutlined />}
+          onClick={handleSendMessage}
+          loading={sendingMessage || localSending}
+        >
+          Gửi
+        </Button>
+      </div>
+    );
+  };
+
   return (
     <Card
       bordered={false}
@@ -315,7 +738,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                   </Text>
                 }
               />
-              {conversation.status === 'active' && (
+              {conversation.status === 'active' && !isAssignedToOther() && (
                 <Button
                   danger
                   onClick={handleCloseConversation}
@@ -337,7 +760,17 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           
           {/* Messages */}
           <div className="flex-grow p-4 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 250px)', scrollBehavior: 'smooth' }}>
-            {loading ? (
+            {!canViewMessages() ? (
+              <div className="h-full flex items-center justify-center flex-col">
+                <div className="text-gray-400 mb-4 text-5xl">
+                  <LockOutlined />
+                </div>
+                <Text strong className="text-lg mb-2">Cuộc hội thoại đã được gán cho người khác</Text>
+                <Text type="secondary">
+                  Bạn không có quyền xem tin nhắn trong cuộc hội thoại này.
+                </Text>
+              </div>
+            ) : loading ? (
               <div className="h-full flex items-center justify-center">
                 <Spin />
               </div>
@@ -374,7 +807,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
                       >
                         <span>{formatDate(message.created_at)}</span>
                         {!isSystemMessage(message) && (
-                          <span>{isAdminMessage(message) ? 'Admin' : getSenderName(message)}</span>
+                          <span>{getSenderName(message)}</span>
                         )}
                       </div>
                     </div>
@@ -387,42 +820,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({
           
           {/* Message Input */}
           <div className="p-3 border-t">
-            {conversation.status === 'active' ? (
-              <Input.Group compact>
-                <Input
-                  style={{ width: 'calc(100% - 50px)' }}
-                  placeholder="Nhập tin nhắn..."
-                  value={messageText}
-                  onChange={(e) => setMessageText(e.target.value)}
-                  onPressEnter={handleSendMessage}
-                  disabled={sendingMessage || localSending}
-                />
-                <Button
-                  type="primary"
-                  icon={<SendOutlined />}
-                  onClick={handleSendMessage}
-                  loading={sendingMessage || localSending}
-                />
-              </Input.Group>
-            ) : conversation.status === 'pending' ? (
-              <Button
-                type="primary"
-                icon={<CheckOutlined />}
-                block
-                size="large"
-                className="bg-blue-500 hover:bg-blue-600"
-                onClick={handleAcceptConversation}
-                loading={acceptingConversation}
-              >
-                Vui lòng chấp nhận yêu cầu hỗ trợ để bắt đầu trò chuyện
-              </Button>
-            ) : (
-              <Alert
-                message="Hội thoại đã được đóng, không thể gửi tin nhắn mới"
-                type="warning"
-                showIcon
-              />
-            )}
+            {renderMessageInput()}
             {!isConnected && conversation.status === 'active' && (
               <Alert
                 message="Mất kết nối tới máy chủ. Đang thử kết nối lại..."

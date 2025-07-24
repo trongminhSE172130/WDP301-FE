@@ -1,12 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Typography, Row, Col, Divider, message } from 'antd';
+import { Typography, Row, Col, Divider, message, Empty } from 'antd';
 import chatAPI from '../../service/api/chatAPI';
-import type { ChatConversation, ChatMessage, ChatUser } from '../../service/api/chatAPI';
+import type { ChatConversation as BaseChatConversation, ChatMessage, ChatUser } from '../../service/api/chatAPI';
 import ConversationList from '../../components/admin/chat/ConversationList';
 import ChatArea from '../../components/admin/chat/ChatArea';
 import { useChat } from '../../context/ChatContext';
 
 const { Title } = Typography;
+
+// Mở rộng interface ChatConversation để thêm trường is_assigned_to_other
+interface ChatConversation extends BaseChatConversation {
+  is_assigned_to_other?: boolean;
+}
 
 // Hàm loại bỏ tin nhắn trùng lặp
 const removeDuplicateMessages = (messages: ChatMessage[]): ChatMessage[] => {
@@ -43,7 +48,6 @@ const ChatPage: React.FC = () => {
   const handleNewMessage = useCallback((newMessage: ChatMessage) => {
     // Kiểm tra tin nhắn hợp lệ
     if (!newMessage || !newMessage.conversation_id) {
-      console.error('Received invalid message:', newMessage);
       return;
     }
 
@@ -54,12 +58,27 @@ const ChatPage: React.FC = () => {
       
       if (newMessage.sender_id) {
         if (typeof newMessage.sender_id === 'string') {
-          if (newMessage.sender_id === 'admin') {
+          if (newMessage.sender_id === 'admin' || newMessage.sender_id === 'consultant') {
+            // Lấy thông tin người dùng từ localStorage để hiển thị tên thực
+            const userStr = localStorage.getItem('user');
+            let currentUserName = newMessage.sender_id === 'admin' ? 'Admin' : 'Tư vấn viên';
+            
+            if (userStr) {
+              try {
+                const userData = JSON.parse(userStr);
+                if (userData && userData.full_name) {
+                  currentUserName = userData.full_name;
+                }
+              } catch (error) {
+                console.error('Lỗi khi phân tích dữ liệu người dùng:', error);
+              }
+            }
+            
             processedMessage = {
               ...newMessage,
               sender_id: {
-                _id: 'admin',
-                full_name: 'Admin',
+                _id: newMessage.sender_id,
+                full_name: currentUserName,
                 role: 'admin'
               }
             };
@@ -79,6 +98,17 @@ const ChatPage: React.FC = () => {
               }
             };
           }
+        } else if (typeof newMessage.sender_id === 'object' && newMessage.sender_id !== null) {
+          // Đảm bảo role được thiết lập đúng cho consultant
+          if (newMessage.sender_id.role === 'Consultant' || newMessage.sender_id.role === 'consultant') {
+            processedMessage = {
+              ...newMessage,
+              sender_id: {
+                ...newMessage.sender_id,
+                role: 'admin' // Đặt role thành admin để hiển thị đúng bên phải
+              }
+            };
+          }
         }
       } else {
         // Nếu không có sender_id, tạo một giá trị mặc định
@@ -91,7 +121,6 @@ const ChatPage: React.FC = () => {
       
       // Thêm tin nhắn vào danh sách
       setMessages(prevMessages => {
-        console.log('Adding new message to messages list');
         const newMessagesList = [...prevMessages, processedMessage];
         // Loại bỏ tin nhắn trùng lặp
         return removeDuplicateMessages(newMessagesList);
@@ -267,13 +296,28 @@ const ChatPage: React.FC = () => {
               if (!message) return message;
               
               if (typeof message.sender_id === 'string') {
-                // Nếu sender_id là admin, giữ nguyên
-                if (message.sender_id === 'admin') {
+                // Nếu sender_id là admin hoặc consultant, hiển thị bên phải
+                if (message.sender_id === 'admin' || message.sender_id === 'consultant') {
+                  // Lấy thông tin người dùng từ localStorage để hiển thị tên thực
+                  const userStr = localStorage.getItem('user');
+                  let currentUserName = message.sender_id === 'admin' ? 'Admin' : 'Tư vấn viên';
+                  
+                  if (userStr) {
+                    try {
+                      const userData = JSON.parse(userStr);
+                      if (userData && userData.full_name) {
+                        currentUserName = userData.full_name;
+                      }
+                    } catch (error) {
+                      console.error('Lỗi khi phân tích dữ liệu người dùng:', error);
+                    }
+                  }
+                  
                   return {
                     ...message,
                     sender_id: {
-                      _id: 'admin',
-                      full_name: 'Admin',
+                      _id: message.sender_id,
+                      full_name: currentUserName,
                       role: 'admin'
                     }
                   };
@@ -300,6 +344,17 @@ const ChatPage: React.FC = () => {
                     role: 'user'
                   }
                 };
+              } else if (typeof message.sender_id === 'object' && message.sender_id !== null) {
+                // Đảm bảo role được thiết lập đúng cho consultant
+                if (message.sender_id.role === 'Consultant' || message.sender_id.role === 'consultant') {
+                  return {
+                    ...message,
+                    sender_id: {
+                      ...message.sender_id,
+                      role: 'admin' // Đặt role thành admin để hiển thị đúng bên phải
+                    }
+                  };
+                }
               }
               return message;
             });
@@ -358,9 +413,56 @@ const ChatPage: React.FC = () => {
           } else {
             message.error('Không thể tải tin nhắn');
           }
-        } catch (error) {
+        } catch (error: unknown) {
           console.error('Error fetching conversation detail:', error);
-          message.error('Có lỗi xảy ra khi tải tin nhắn');
+          
+          // Xử lý lỗi khi không có quyền xem hội thoại
+          const axiosError = error as { response?: { data?: { error?: string } } };
+          if (axiosError.response?.data?.error) {
+            message.error(axiosError.response.data.error);
+            
+            // Kiểm tra xem người dùng hiện tại có phải là admin không
+            const userStr = localStorage.getItem('user');
+            let isAdmin = false;
+            let currentUserId = '';
+            
+            if (userStr) {
+              try {
+                const userData = JSON.parse(userStr);
+                if (userData) {
+                  isAdmin = userData.role === 'admin';
+                  currentUserId = userData._id || '';
+                }
+              } catch (error) {
+                console.error('Lỗi khi phân tích dữ liệu người dùng:', error);
+              }
+            }
+            
+            // Kiểm tra xem cuộc hội thoại đã được gán cho ai
+            const assignedTo = selectedConversation?.assigned_to;
+            const isAssignedToCurrentUser = assignedTo && 
+              (typeof assignedTo === 'string' ? assignedTo === currentUserId : assignedTo._id === currentUserId);
+            
+            // Đánh dấu is_assigned_to_other nếu không phải admin và không phải người được gán
+            if (!isAdmin && !isAssignedToCurrentUser) {
+              // Cập nhật lại danh sách hội thoại để hiển thị trạng thái assigned
+              setConversations(prevConversations => 
+                prevConversations.map(conv => 
+                  conv._id === selectedConversation._id 
+                    ? { ...conv, is_assigned_to_other: true } 
+                    : conv
+                )
+              );
+            }
+            
+            // Bỏ chọn hội thoại hiện tại
+            setSelectedConversation(null);
+          } else {
+            message.error('Có lỗi xảy ra khi tải tin nhắn');
+            
+            // Bỏ chọn hội thoại hiện tại
+            setSelectedConversation(null);
+          }
         } finally {
           setLoading(false);
         }
@@ -385,6 +487,24 @@ const ChatPage: React.FC = () => {
     if (!updatedConversation || !updatedConversation._id) {
       console.error('Invalid conversation update:', updatedConversation);
       return;
+    }
+    
+    // Nếu đang chấp nhận hội thoại, thêm thông tin người được gán từ localStorage
+    if (updatedConversation.status === 'active' && !updatedConversation.assigned_to) {
+      const userStr = localStorage.getItem('user');
+      if (userStr) {
+        try {
+          const userData = JSON.parse(userStr);
+          if (userData && userData._id) {
+            updatedConversation = {
+              ...updatedConversation,
+              assigned_to: userData._id
+            };
+          }
+        } catch (error) {
+          console.error('Lỗi khi phân tích dữ liệu người dùng:', error);
+        }
+      }
     }
     
     // Cập nhật conversation được chọn
@@ -425,6 +545,11 @@ const ChatPage: React.FC = () => {
     setMessages(prevMessages => [...prevMessages, systemMessage]);
   };
 
+  // Thêm hàm xử lý cập nhật danh sách tin nhắn
+  const handleMessagesUpdate = (updatedMessages: ChatMessage[]) => {
+    setMessages(updatedMessages);
+  };
+
   return (
     <div>
       <Title level={2}>Chat hệ thống</Title>
@@ -445,13 +570,20 @@ const ChatPage: React.FC = () => {
         
         {/* Chat Area Component */}
         <Col xs={24} sm={24} md={16} lg={18}>
-          <ChatArea 
-            conversation={selectedConversation}
-            messages={messages}
-            loading={loading && !!selectedConversation}
-            sendingMessage={false}
-            onConversationUpdate={handleConversationUpdate}
-          />
+          {selectedConversation ? (
+            <ChatArea
+              conversation={selectedConversation}
+              messages={messages}
+              loading={loading}
+              sendingMessage={false}
+              onConversationUpdate={handleConversationUpdate}
+              onMessagesUpdate={handleMessagesUpdate}
+            />
+          ) : (
+            <div className="h-full flex items-center justify-center">
+              <Empty description="Chọn một hội thoại để bắt đầu" />
+            </div>
+          )}
         </Col>
       </Row>
     </div>
