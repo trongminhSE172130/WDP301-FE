@@ -44,11 +44,7 @@ const AdminLoginPage: React.FC = () => {
         let redirectPath = '/admin/dashboard';
         
         if (userRole === 'consultant') {
-          redirectPath = '/consultant/dashboard';
-        } else if (userRole === 'manager') {
-          redirectPath = '/manager/dashboard';
-        } else if (userRole === 'staff') {
-          redirectPath = '/staff/dashboard';
+          redirectPath = '/consultant/consultations';
         } else if (userRole === 'admin') {
           redirectPath = '/admin/dashboard';
         }

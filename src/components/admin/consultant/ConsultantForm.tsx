@@ -230,33 +230,33 @@ const ConsultantForm: React.FC<ConsultantFormProps> = ({
             </Col>
           
             {isEditing && (
-              <Col xs={24} md={12}>
-                <Form.Item
-                  name="services"
-                  label={
-                    <span className="text-sm font-medium text-gray-700">
-                      Dịch vụ đảm nhiệm
+            <Col xs={24} md={12}>
+            <Form.Item
+                name="services"
+                label={
+                  <span className="text-sm font-medium text-gray-700">
+                    Dịch vụ đảm nhiệm
                       <span className="ml-2 text-xs text-orange-500">(Không thể chỉnh sửa)</span>
-                    </span>
-                  }
-                >
-                  <Select 
-                    mode="multiple"
-                    placeholder="Chọn dịch vụ (tùy chọn)"
-                    size="large"
-                    className="rounded-lg"
-                    optionFilterProp="children"
-                    allowClear
+                  </span>
+                }
+            >
+              <Select 
+                  mode="multiple"
+                  placeholder="Chọn dịch vụ (tùy chọn)"
+                  size="large"
+                  className="rounded-lg"
+                  optionFilterProp="children"
+                  allowClear
                     disabled={true}
-                  >
-                    {services.map((service) => (
-                      <Option key={service._id} value={service._id}>
-                        {service.title}
-                      </Option>
-                    ))}
-                  </Select>
-                </Form.Item>
-              </Col>
+              >
+                  {services.map((service) => (
+                    <Option key={service._id} value={service._id}>
+                      {service.title}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+            </Col>
             )}
           </Row>
 

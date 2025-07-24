@@ -18,11 +18,17 @@ export interface FeedbackBooking {
   time_slot: string;
 }
 
+export interface AdminUser {
+  _id: string;
+  full_name: string;
+  email: string;
+}
+
 export interface Feedback {
   _id: string;
   user_id: FeedbackUser | string;
   service_id: FeedbackService | string;
-  booking_id: FeedbackBooking | string;
+  booking_id: FeedbackBooking | string | null;
   rating: number;
   comment: string;
   service_quality_rating: number;
@@ -34,10 +40,11 @@ export interface Feedback {
   __v: number;
   admin_reply?: string;
   admin_reply_at?: string;
-  admin_reply_by?: string;
+  admin_reply_by?: string | AdminUser;
   is_featured?: boolean;
   moderation_notes?: string;
   status?: string;
+  reported_count?: number;
 }
 
 export interface FeedbackListResponse {
@@ -47,11 +54,13 @@ export interface FeedbackListResponse {
   page: number;
   pages: number;
   data: Feedback[];
+  error?: string;
 }
 
 export interface FeedbackDetailResponse {
   success: boolean;
-  data: Feedback;
+  data?: Feedback;
+  error?: string;
 }
 
 export interface ServiceWithStats {
@@ -124,6 +133,7 @@ export interface FeedbackStatistics {
 export interface FeedbackStatisticsResponse {
   success: boolean;
   data: FeedbackStatistics;
+  error?: string;
 }
 
 export interface FeedbackFilter {
@@ -142,20 +152,57 @@ export interface FeedbackFilter {
 
 // Lấy danh sách tất cả feedback với filter
 export const getAllFeedbacks = async (filters?: FeedbackFilter): Promise<FeedbackListResponse> => {
-  const response = await instance.get('/admin/feedbacks', { params: filters });
-  return response.data;
+  try {
+    // Thêm tham số strictPopulate=false vào request
+    const params = { ...filters, strictPopulate: false };
+    const response = await instance.get('/admin/feedbacks', { params });
+    return response.data;
+  } catch (error: unknown) {
+    console.error('Error fetching feedbacks:', error);
+    const err = error as { response?: { data?: { error?: string } } };
+    return {
+      success: false,
+      count: 0,
+      total: 0,
+      page: 1,
+      pages: 0,
+      data: [],
+      error: err?.response?.data?.error || 'Không thể lấy danh sách feedback'
+    };
+  }
 };
 
 // Lấy thống kê feedback
 export const getFeedbackStatistics = async (): Promise<FeedbackStatisticsResponse> => {
-  const response = await instance.get('/admin/feedbacks/statistics');
-  return response.data;
+  try {
+    // Thêm tham số strictPopulate=false vào request
+    const response = await instance.get('/admin/feedbacks/statistics?strictPopulate=false');
+    return response.data;
+  } catch (error: unknown) {
+    console.error('Error fetching feedback statistics:', error);
+    const err = error as { response?: { data?: { error?: string } } };
+    return {
+      success: false,
+      error: err?.response?.data?.error || 'Không thể lấy thống kê feedback',
+      data: {} as FeedbackStatistics
+    };
+  }
 };
 
 // Lấy chi tiết một feedback theo ID
 export const getFeedbackById = async (id: string): Promise<FeedbackDetailResponse> => {
-  const response = await instance.get(`/admin/feedbacks/${id}`);
-  return response.data;
+  try {
+    // Thêm tham số strictPopulate=false để tránh lỗi populate
+    const response = await instance.get(`/admin/feedbacks/${id}?strictPopulate=false`);
+    return response.data;
+  } catch (error: unknown) {
+    console.error('Error fetching feedback detail:', error);
+    const err = error as { response?: { data?: { error?: string } } };
+    return {
+      success: false,
+      error: err?.response?.data?.error || 'Không thể lấy chi tiết feedback'
+    };
+  }
 };
 
 // Cập nhật feedback (phản hồi, trạng thái, đánh dấu nổi bật)
@@ -165,12 +212,32 @@ export const updateFeedback = async (id: string, data: {
   is_featured?: boolean;
   moderation_notes?: string;
 }): Promise<FeedbackDetailResponse> => {
-  const response = await instance.put(`/admin/feedbacks/${id}`, data);
-  return response.data;
+  try {
+    // Thêm tham số strictPopulate=false vào URL
+    const response = await instance.put(`/admin/feedbacks/${id}?strictPopulate=false`, data);
+    return response.data;
+  } catch (error: unknown) {
+    console.error('Error updating feedback:', error);
+    const err = error as { response?: { data?: { error?: string } } };
+    return {
+      success: false,
+      error: err?.response?.data?.error || 'Không thể cập nhật feedback'
+    };
+  }
 };
 
 // Xóa một feedback
-export const deleteFeedback = async (id: string): Promise<{ success: boolean; message: string }> => {
-  const response = await instance.delete(`/admin/feedbacks/${id}`);
-  return response.data;
+export const deleteFeedback = async (id: string): Promise<{ success: boolean; message?: string; error?: string }> => {
+  try {
+    // Thêm tham số strictPopulate=false vào URL
+    const response = await instance.delete(`/admin/feedbacks/${id}?strictPopulate=false`);
+    return response.data;
+  } catch (error: unknown) {
+    console.error('Error deleting feedback:', error);
+    const err = error as { response?: { data?: { error?: string } } };
+    return {
+      success: false,
+      error: err?.response?.data?.error || 'Không thể xóa feedback'
+    };
+  }
 }; 

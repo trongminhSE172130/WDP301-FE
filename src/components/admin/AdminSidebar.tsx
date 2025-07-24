@@ -44,7 +44,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, role }) => {
     switch (role) {
       case 'Consultant':
         return [
-          { key: 'dashboard', icon: <DashboardOutlined />, label: 'Tổng quan', link: '/consultant/dashboard' },
           { key: 'consultations', icon: <TeamOutlined />, label: 'Hàng đợi tư vấn', link: '/consultant/consultations' },
           { key: 'schedule', icon: <CalendarOutlined />, label: 'Lịch hẹn xét nghiệm', link: '/consultant/schedules' },
           { key: 'availability', icon: <ScheduleOutlined />, label: 'Lịch làm việc', link: '/consultant/availability' },

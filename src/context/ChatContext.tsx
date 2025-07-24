@@ -70,7 +70,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
 
       // Lắng nghe sự kiện tin nhắn mới
       socketInstance.on('new_message', (messageData: unknown) => {
-        console.log('WebSocket received new_message event:', messageData);
         try {
           // Kiểm tra và xử lý dữ liệu tin nhắn
           if (!messageData) {
@@ -85,7 +84,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
           if (typeof messageData === 'object' && messageData !== null &&
               'message' in messageData && typeof messageData.message === 'object' && messageData.message !== null) {
             // Trường hợp tin nhắn được bọc trong thuộc tính message
-            console.log('Message is wrapped in message property, extracting...');
             
             const wrappedMessage = messageData as { conversation_id?: string; message: Record<string, unknown> };
             
@@ -98,7 +96,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
             }
             
             actualMessage = extractedMessage as unknown as ChatMessage;
-            console.log('Extracted message:', actualMessage);
           } else if (typeof messageData === 'string') {
             // Xử lý trường hợp nhận được dữ liệu dạng string
             try {
@@ -115,7 +112,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
                 actualMessage = parsedData as unknown as ChatMessage;
               }
               
-              console.log('Parsed message from string:', actualMessage);
             } catch (parseError) {
               console.error('Failed to parse message data:', parseError);
               return;
@@ -123,7 +119,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
           } else {
             // Trường hợp thông thường, messageData là tin nhắn trực tiếp
             actualMessage = messageData as ChatMessage;
-            console.log('Received direct message object:', actualMessage);
           }
           
           // Kiểm tra tin nhắn hợp lệ
@@ -134,7 +129,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
           
           // Kiểm tra xem tin nhắn đã được xử lý trước đó chưa
           if (processedMessageIds.has(actualMessage._id)) {
-            console.log('Message already processed, skipping:', actualMessage._id);
             return;
           }
           
@@ -144,17 +138,12 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
           // Thêm timestamp vào ID tin nhắn để đảm bảo tính duy nhất khi hiển thị
           actualMessage._id = `${actualMessage._id}_${Date.now()}`;
           
-          console.log('Adding message ID to processed list:', actualMessage._id);
-          
-          console.log('Message is valid, notifying listeners. Active listeners:', messageListeners.size);
-          
           // Thông báo cho các listener
           if (messageListeners && messageListeners.size > 0) {
             messageListeners.forEach(listener => {
               if (listener) {
                 try {
                   listener(actualMessage);
-                  console.log('Successfully notified listener about new message');
                 } catch (error) {
                   console.error('Error in message listener:', error);
                 }
@@ -241,7 +230,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     if (socket && isConnected) {
       try {
         socket.emit('join_conversation', { conversation_id: conversationId });
-        console.log(`Joined conversation: ${conversationId}`);
       } catch (error) {
         console.error(`Error joining conversation ${conversationId}:`, error);
       }
@@ -260,7 +248,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     if (socket && isConnected) {
       try {
         socket.emit('leave_conversation', { conversation_id: conversationId });
-        console.log(`Left conversation: ${conversationId}`);
       } catch (error) {
         console.error(`Error leaving conversation ${conversationId}:`, error);
       }
@@ -284,7 +271,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       const response = await chatAPI.sendMessage(conversationId, content);
       
       if (response && response.success && response.data) {
-        console.log('Message sent successfully via API:', response.data);
         
         // Kiểm tra dữ liệu trả về
         if (!response.data._id || !response.data.conversation_id) {
