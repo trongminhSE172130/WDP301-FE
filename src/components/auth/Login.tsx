@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   EyeOutlined,
   EyeInvisibleOutlined,
@@ -11,7 +11,20 @@ import {
 } from "@ant-design/icons";
 import { motion } from "framer-motion";
 
-const Login = ({
+interface LoginProps {
+  formData: {
+    email: string;
+    password: string;
+    [key: string]: any;
+  };
+  setFormData: React.Dispatch<React.SetStateAction<{ email: string; password: string; [key: string]: any }>>;
+  showPassword: boolean;
+  setShowPassword: React.Dispatch<React.SetStateAction<boolean>>;
+  handleSubmit: (e: React.FormEvent<HTMLFormElement>) => Promise<void>;
+  onSwitchToRegister: () => void;
+}
+
+const Login: React.FC<LoginProps> = ({
   formData,
   setFormData,
   showPassword,
@@ -20,17 +33,17 @@ const Login = ({
   onSwitchToRegister,
 }) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState({});
-  const [fieldStates, setFieldStates] = useState({});
+  const [errors, setErrors] = useState<{ [key: string]: string | null }>({});
+  const [fieldStates, setFieldStates] = useState<{ [key: string]: 'success' | 'error' | undefined }>({});
 
   // Validate email
-  const validateEmail = (email) => {
+  const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
   };
 
   // Handle input change with validation
-  const handleInputChange = (field, value) => {
+  const handleInputChange = (field: string, value: string) => {
     setFormData((f) => ({ ...f, [field]: value }));
 
     // Clear error when user starts typing
@@ -53,12 +66,12 @@ const Login = ({
   };
 
   // Enhanced submit handler
-  const handleFormSubmit = async (e) => {
+  const handleFormSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
 
     // Validation
-    const newErrors = {};
+    const newErrors: { [key: string]: string } = {};
     if (!formData.email) {
       newErrors.email = "Email là bắt buộc";
     } else if (!validateEmail(formData.email)) {
@@ -87,7 +100,7 @@ const Login = ({
   };
 
   // Get field validation icon
-  const getFieldIcon = (field, defaultIcon) => {
+  const getFieldIcon = (field: string, defaultIcon: React.ReactNode) => {
     const state = fieldStates[field];
     if (state === "success")
       return <CheckCircleOutlined className="text-green-500" />;
