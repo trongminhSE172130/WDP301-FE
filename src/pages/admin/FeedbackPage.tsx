@@ -1,25 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Card, Table, Button, Space, Input, Select, Modal, Form, Rate, 
-  Typography, Tooltip, message, Row, Col, Statistic, Switch, DatePicker 
-} from 'antd';
-import { 
-  SearchOutlined, DeleteOutlined, EyeOutlined, 
-  ExclamationCircleOutlined, ReloadOutlined, StarOutlined, CommentOutlined 
-} from '@ant-design/icons';
-import type { ColumnsType } from 'antd/es/table';
-import type { Feedback, FeedbackStatistics, FeedbackFilter } from '../../service/api/feedbackAPI';
+import { Card, Form, message, Typography } from 'antd';
+import { ExclamationCircleOutlined } from '@ant-design/icons';
+import { Modal } from 'antd';
+import type { Feedback, FeedbackStatistics, FeedbackFilter as ApiFeedbackFilter } from '../../service/api/feedbackAPI';
 import { 
   getAllFeedbacks, 
   getFeedbackStatistics, 
   updateFeedback, 
-  deleteFeedback 
+  deleteFeedback,
+  getFeedbackById
 } from '../../service/api/feedbackAPI';
+import FeedbackTable from '../../components/admin/feedback/FeedbackTable';
+import FeedbackFilterComponent from '../../components/admin/feedback/FeedbackFilter';
+import FeedbackDetailModal from '../../components/admin/feedback/FeedbackDetailModal';
+import FeedbackStats from '../../components/admin/feedback/FeedbackStats';
+import type { FeedbackResponseFormValues } from '../../components/admin/feedback/FeedbackTypes';
 
-const { Title, Text } = Typography;
-const { Option } = Select;
+const { Title } = Typography;
 const { confirm } = Modal;
-const { RangePicker } = DatePicker;
 
 const FeedbackPage: React.FC = () => {
   const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
@@ -40,6 +38,7 @@ const FeedbackPage: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(10);
   const [total, setTotal] = useState<number>(0);
+  const [detailLoading, setDetailLoading] = useState<boolean>(false);
 
   // Lấy thống kê feedback
   const fetchStatistics = async () => {
@@ -63,7 +62,7 @@ const FeedbackPage: React.FC = () => {
   const fetchFeedbacks = async (page: number = currentPage) => {
     setLoading(true);
     try {
-      const filters: FeedbackFilter = {
+      const filters: ApiFeedbackFilter = {
         page,
         limit: pageSize,
         sort_by: sortBy,
@@ -97,6 +96,36 @@ const FeedbackPage: React.FC = () => {
     }
   };
 
+  // Lấy chi tiết feedback từ API
+  const fetchFeedbackDetail = async (id: string) => {
+    setDetailLoading(true);
+    try {
+      const response = await getFeedbackById(id);
+      if (response.success && response.data) {
+        setSelectedFeedback(response.data);
+        
+        // Nếu đã có phản hồi, hiển thị trong form
+        if (response.data.admin_reply) {
+          responseForm.setFieldsValue({ 
+            response: response.data.admin_reply,
+            status: response.data.status || 'pending',
+            moderation_notes: response.data.moderation_notes || ''
+          });
+        } else {
+          responseForm.resetFields();
+          responseForm.setFieldsValue({ status: response.data.status || 'pending' });
+        }
+      } else {
+        message.error('Không thể lấy chi tiết feedback');
+      }
+    } catch (error) {
+      console.error('Error fetching feedback detail:', error);
+      message.error('Có lỗi xảy ra khi lấy chi tiết feedback');
+    } finally {
+      setDetailLoading(false);
+    }
+  };
+
   // Lấy dữ liệu ban đầu
   useEffect(() => {
     fetchFeedbacks(1);
@@ -104,7 +133,7 @@ const FeedbackPage: React.FC = () => {
   }, []);
 
   // Xử lý phản hồi feedback
-  const handleResponse = async (values: { response: string; moderation_notes?: string; status: string }) => {
+  const handleResponse = async (values: FeedbackResponseFormValues) => {
     if (!selectedFeedback) return;
     
     message.loading({ content: 'Đang gửi phản hồi...', key: 'response' });
@@ -116,13 +145,13 @@ const FeedbackPage: React.FC = () => {
         moderation_notes: values.moderation_notes || ''
       });
       
-      if (response.success) {
+      if (response.success && response.data) {
         message.success({ content: 'Đã gửi phản hồi thành công!', key: 'response' });
         
         // Cập nhật state
         setFeedbacks(prevFeedbacks => 
           prevFeedbacks.map(feedback => 
-            feedback._id === selectedFeedback._id ? response.data : feedback
+            feedback._id === selectedFeedback._id ? response.data! : feedback
           )
         );
         
@@ -202,15 +231,9 @@ const FeedbackPage: React.FC = () => {
 
   // Xử lý xem chi tiết và phản hồi
   const showResponseModal = (feedback: Feedback) => {
-    setSelectedFeedback(feedback);
+    setSelectedFeedback(null); // Reset trước khi lấy dữ liệu mới
     setIsModalVisible(true);
-    
-    // Nếu đã có phản hồi, hiển thị trong form
-    if (feedback.admin_reply) {
-      responseForm.setFieldsValue({ response: feedback.admin_reply });
-    } else {
-      responseForm.resetFields();
-    }
+    fetchFeedbackDetail(feedback._id);
   };
 
   // Xử lý thay đổi trang
@@ -241,403 +264,54 @@ const FeedbackPage: React.FC = () => {
     fetchStatistics();
   };
 
-  // Định nghĩa các cột cho bảng
-  const columns: ColumnsType<Feedback> = [
-    {
-      title: 'ID',
-      dataIndex: '_id',
-      key: '_id',
-      width: 100,
-      ellipsis: true,
-      render: (id: string) => <Tooltip title={id}>{id.substring(0, 8)}...</Tooltip>
-    },
-    {
-      title: 'Người dùng',
-      dataIndex: 'user_id',
-      key: 'user',
-      render: (user_id) => (
-        typeof user_id === 'object' ? (
-          <div>
-            <div>{user_id.full_name}</div>
-            <Text type="secondary" className="text-xs">{user_id.email}</Text>
-          </div>
-        ) : 'Không xác định'
-      )
-    },
-    {
-      title: 'Dịch vụ',
-      dataIndex: 'service_id',
-      key: 'service',
-      render: (service_id) => (
-        typeof service_id === 'object' ? service_id.title : 'Không xác định'
-      )
-    },
-    {
-      title: 'Đánh giá',
-      dataIndex: 'rating',
-      key: 'rating',
-      width: 120,
-      sorter: (a, b) => a.rating - b.rating,
-      render: (rating: number) => <Rate disabled defaultValue={rating} />
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
-      width: 120,
-      render: (status: string) => {
-        let color = 'default';
-        let text = 'Chờ xử lý';
-        
-        switch(status) {
-          case 'approved':
-            color = 'green';
-            text = 'Đã duyệt';
-            break;
-          case 'rejected':
-            color = 'red';
-            text = 'Từ chối';
-            break;
-          case 'hidden':
-            color = 'gray';
-            text = 'Ẩn';
-            break;
-          default:
-            color = 'gold';
-            text = 'Chờ xử lý';
-        }
-        
-        return <span className={`px-2 py-1 rounded text-xs text-white bg-${color}-500`}>{text}</span>;
-      }
-    },
-    {
-      title: 'Nội dung',
-      dataIndex: 'comment',
-      key: 'comment',
-      render: (comment) => (
-        <Tooltip title={comment}>
-          <div className="truncate max-w-[200px]">{comment}</div>
-        </Tooltip>
-      )
-    },
-    {
-      title: 'Nổi bật',
-      dataIndex: 'is_featured',
-      key: 'is_featured',
-      render: (is_featured, record) => (
-        <Switch 
-          checked={!!is_featured} 
-          size="small" 
-          onChange={() => handleToggleFeatured(record._id, !!is_featured)}
-        />
-      )
-    },
-    {
-      title: 'Ngày tạo',
-      dataIndex: 'created_at',
-      key: 'created_at',
-      render: (date) => new Date(date).toLocaleDateString('vi-VN')
-    },
-    {
-      title: 'Thao tác',
-      key: 'action',
-      render: (_, record) => (
-        <Space size="middle">
-          <Button 
-            type="primary" 
-            icon={<EyeOutlined />} 
-            size="small"
-            onClick={() => showResponseModal(record)}
-          >
-            {record.admin_reply ? 'Xem phản hồi' : 'Phản hồi'}
-          </Button>
-          <Button 
-            danger 
-            icon={<DeleteOutlined />} 
-            size="small"
-            onClick={() => handleDelete(record._id)}
-          />
-        </Space>
-      )
-    }
-  ];
-
   return (
     <div>
       <Title level={2}>Quản lý Feedback</Title>
       
       {/* Thống kê */}
-      <Card className="mb-4" loading={statisticsLoading}>
-        <Row gutter={[16, 16]}>
-          <Col span={6}>
-            <Statistic 
-              title="Tổng số feedback" 
-              value={statistics?.total || 0} 
-              prefix={<CommentOutlined />} 
-            />
-          </Col>
-          <Col span={6}>
-            <Statistic 
-              title="Đánh giá trung bình" 
-              value={statistics?.avg_ratings?.avg_rating?.toFixed(1) || 0} 
-              prefix={<StarOutlined />} 
-              suffix="/ 5"
-            />
-          </Col>
-          <Col span={6}>
-            <Statistic 
-              title="Đánh giá dịch vụ" 
-              value={statistics?.avg_ratings?.avg_service_quality?.toFixed(1) || 0} 
-              suffix="/ 5"
-            />
-          </Col>
-          <Col span={6}>
-            <Statistic 
-              title="Đánh giá tư vấn viên" 
-              value={statistics?.avg_ratings?.avg_consultant?.toFixed(1) || 0} 
-              suffix="/ 5"
-            />
-          </Col>
-        </Row>
-      </Card>
+      <FeedbackStats statistics={statistics} loading={statisticsLoading} />
       
       {/* Các bộ lọc và tìm kiếm */}
       <Card className="mb-4">
-        <Row gutter={[16, 16]}>
-          <Col span={8}>
-            <Input
-              placeholder="Tìm kiếm theo nội dung, tên người dùng..."
-              prefix={<SearchOutlined />}
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              onPressEnter={handleSearch}
-            />
-          </Col>
-          
-          <Col span={8}>
-            <Select 
-              placeholder="Lọc theo đánh giá" 
-              style={{ width: '100%' }}
-              value={ratingFilter || undefined}
-              onChange={(value) => setRatingFilter(value)}
-              allowClear
-            >
-              <Option value={5}>5 sao</Option>
-              <Option value={4}>4 sao</Option>
-              <Option value={3}>3 sao</Option>
-              <Option value={2}>2 sao</Option>
-              <Option value={1}>1 sao</Option>
-            </Select>
-          </Col>
-          
-          <Col span={8}>
-            <Select 
-              placeholder="Lọc theo nổi bật" 
-              style={{ width: '100%' }}
-              value={featuredFilter === null ? undefined : featuredFilter}
-              onChange={(value) => setFeaturedFilter(value)}
-              allowClear
-            >
-              <Option value={true}>Nổi bật</Option>
-              <Option value={false}>Không nổi bật</Option>
-            </Select>
-          </Col>
-          
-          <Col span={8}>
-            <RangePicker 
-              style={{ width: '100%' }}
-              onChange={(dates) => {
-                if (dates) {
-                  setDateRange([
-                    dates[0]?.format('YYYY-MM-DD') || '',
-                    dates[1]?.format('YYYY-MM-DD') || ''
-                  ]);
-                } else {
-                  setDateRange(null);
-                }
-              }}
-            />
-          </Col>
-          
-          <Col span={8}>
-            <Space>
-              <Button 
-                type="primary" 
-                icon={<SearchOutlined />}
-                onClick={handleSearch}
-              >
-                Tìm kiếm
-              </Button>
-              
-              <Button 
-                icon={<ReloadOutlined />}
-                onClick={handleReset}
-              >
-                Làm mới
-              </Button>
-            </Space>
-          </Col>
-        </Row>
+        <FeedbackFilterComponent 
+          searchText={searchText}
+          ratingFilter={ratingFilter}
+          featuredFilter={featuredFilter}
+          dateRange={dateRange}
+          onSearchTextChange={setSearchText}
+          onRatingFilterChange={setRatingFilter}
+          onFeaturedFilterChange={setFeaturedFilter}
+          onDateRangeChange={setDateRange}
+          onSearch={handleSearch}
+          onReset={handleReset}
+        />
       </Card>
       
       {/* Bảng dữ liệu */}
       <Card>
-        <Table 
-          columns={columns} 
-          dataSource={feedbacks} 
-          rowKey="_id"
+        <FeedbackTable 
+          feedbacks={feedbacks}
           loading={loading}
-          pagination={{
-            current: currentPage,
-            pageSize: pageSize,
-            total: total,
-            onChange: handlePageChange,
-            showSizeChanger: true,
-            showTotal: (total) => `Tổng ${total} mục`
-          }}
+          currentPage={currentPage}
+          pageSize={pageSize}
+          total={total}
+          onPageChange={handlePageChange}
+          onViewDetail={showResponseModal}
+          onDelete={handleDelete}
+          onToggleFeatured={handleToggleFeatured}
         />
       </Card>
       
       {/* Modal phản hồi */}
-      <Modal
-        title={
-          <div className="flex justify-between items-center">
-            <span>Chi tiết Feedback</span>
-            {selectedFeedback && (
-              <div className="ml-4">
-                <span className={`px-2 py-1 rounded text-xs text-white ${
-                  selectedFeedback.status === 'approved' ? 'bg-green-500' :
-                  selectedFeedback.status === 'rejected' ? 'bg-red-500' :
-                  selectedFeedback.status === 'hidden' ? 'bg-gray-500' :
-                  'bg-gold-500'
-                }`}>
-                  {selectedFeedback.status === 'approved' ? 'Đã duyệt' :
-                   selectedFeedback.status === 'rejected' ? 'Từ chối' :
-                   selectedFeedback.status === 'hidden' ? 'Ẩn' :
-                   'Chờ xử lý'}
-                </span>
-              </div>
-            )}
-          </div>
-        }
+      <FeedbackDetailModal 
         visible={isModalVisible}
+        loading={detailLoading}
+        feedback={selectedFeedback}
+        form={responseForm}
         onCancel={() => setIsModalVisible(false)}
-        footer={selectedFeedback?.admin_reply ? [
-          <Button key="back" onClick={() => setIsModalVisible(false)}>
-            Đóng
-          </Button>
-        ] : null}
-        onOk={() => responseForm.submit()}
-      >
-        {selectedFeedback && (
-          <div>
-            <div className="mb-4">
-              <div className="font-bold">Người dùng:</div>
-              <div>
-                {typeof selectedFeedback.user_id === 'object' 
-                  ? selectedFeedback.user_id.full_name 
-                  : 'Không xác định'}
-              </div>
-            </div>
-            
-            <div className="mb-4">
-              <div className="font-bold">Dịch vụ:</div>
-              <div>
-                {typeof selectedFeedback.service_id === 'object' 
-                  ? selectedFeedback.service_id.title 
-                  : 'Không xác định'}
-              </div>
-            </div>
-            
-            <div className="mb-4">
-              <div className="font-bold">Đánh giá:</div>
-              <div>
-                <Rate disabled defaultValue={selectedFeedback.rating} /> (Tổng thể)
-              </div>
-              <div className="mt-2">
-                <div><strong>Chất lượng dịch vụ:</strong> <Rate disabled defaultValue={selectedFeedback.service_quality_rating} /></div>
-                <div><strong>Tư vấn viên:</strong> <Rate disabled defaultValue={selectedFeedback.consultant_rating} /></div>
-                <div><strong>Độ chính xác kết quả:</strong> <Rate disabled defaultValue={selectedFeedback.result_accuracy_rating} /></div>
-              </div>
-            </div>
-            
-            <div className="mb-4">
-              <div className="font-bold">Nội dung feedback:</div>
-              <div className="bg-gray-50 p-3 rounded">{selectedFeedback.comment}</div>
-            </div>
-            
-            <div className="mb-4">
-              <div className="font-bold">Ngày gửi:</div>
-              <div>{new Date(selectedFeedback.created_at).toLocaleString('vi-VN')}</div>
-            </div>
-            
-            <div className="mb-4">
-              <div className="font-bold">Nổi bật:</div>
-              <Switch 
-                checked={!!selectedFeedback.is_featured} 
-                onChange={() => handleToggleFeatured(selectedFeedback._id, !!selectedFeedback.is_featured)}
-              />
-            </div>
-            
-            {selectedFeedback.admin_reply ? (
-              <div>
-                <div className="font-bold">Phản hồi:</div>
-                <div className="bg-blue-50 p-3 rounded">{selectedFeedback.admin_reply}</div>
-                <div className="text-sm text-gray-500 mt-2">
-                  Phản hồi bởi: Admin vào lúc {new Date(selectedFeedback.admin_reply_at || '').toLocaleString('vi-VN')}
-                </div>
-                
-                {selectedFeedback.moderation_notes && (
-                  <div className="mt-4">
-                    <div className="font-bold">Ghi chú kiểm duyệt:</div>
-                    <div className="bg-yellow-50 p-3 rounded border border-yellow-200">{selectedFeedback.moderation_notes}</div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <Form
-                form={responseForm}
-                layout="vertical"
-                onFinish={handleResponse}
-              >
-                <Form.Item
-                  name="response"
-                  label="Phản hồi của bạn"
-                  rules={[{ required: true, message: 'Vui lòng nhập nội dung phản hồi!' }]}
-                >
-                  <Input.TextArea rows={4} placeholder="Nhập nội dung phản hồi..." />
-                </Form.Item>
-                
-                <Form.Item
-                  name="status"
-                  label="Trạng thái"
-                  initialValue="pending"
-                >
-                  <Select>
-                    <Option value="pending">Chờ xử lý</Option>
-                    <Option value="approved">Đã duyệt</Option>
-                    <Option value="rejected">Từ chối</Option>
-                    <Option value="hidden">Ẩn</Option>
-                  </Select>
-                </Form.Item>
-                
-                <Form.Item
-                  name="moderation_notes"
-                  label="Ghi chú kiểm duyệt (chỉ admin nhìn thấy)"
-                >
-                  <Input.TextArea rows={2} placeholder="Nhập ghi chú nội bộ (không hiển thị cho người dùng)..." />
-                </Form.Item>
-                
-                <Form.Item>
-                  <Button type="primary" htmlType="submit">
-                    Gửi phản hồi
-                  </Button>
-                </Form.Item>
-              </Form>
-            )}
-          </div>
-        )}
-      </Modal>
+        onSubmit={(values) => handleResponse(values)}
+        onToggleFeatured={handleToggleFeatured}
+      />
     </div>
   );
 };

@@ -184,12 +184,12 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
   const handleNext = () => {
     form.validateFields()
       .then(values => {
-        setFormBasicData(values);
-        setCurrentStep(1);
-      })
+          setFormBasicData(values);
+          setCurrentStep(1);
+        })
       .catch(errorInfo => {
         console.log('Validate Failed:', errorInfo);
-      });
+        });
   };
 
   const handlePrev = () => {
@@ -280,13 +280,13 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
         }
       } else {
         response = await createDynamicForm(formData);
-        if (response.success) {
-          message.success('Tạo form schema thành công!');
-          onSuccess();
+      if (response.success) {
+        message.success('Tạo form schema thành công!');
+        onSuccess();
         } else if (response.data && typeof response.data === 'object' && 'error' in response.data && typeof response.data.error === 'string') {
           message.error(response.data.error);
-        } else {
-          throw new Error('Tạo form thất bại');
+      } else {
+        throw new Error('Tạo form thất bại');
         }
       }
     } catch (error) {
@@ -302,7 +302,7 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
           message.error(`Lỗi HTTP ${axiosError.response?.status}: ${axiosError.response?.statusText}`);
         }
       } else {
-        message.error(error instanceof Error ? error.message : 'Có lỗi xảy ra khi tạo form');
+      message.error(error instanceof Error ? error.message : 'Có lỗi xảy ra khi tạo form');
       }
     } finally {
       setLoading(false);
@@ -424,35 +424,35 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
           </div>
 
           <div className="max-h-[calc(100vh-400px)] overflow-y-auto pr-1">
-            {sections.length === 0 ? (
-              <Card className="text-center">
-                <p className="text-gray-500">Chưa có section nào. Hãy thêm section đầu tiên!</p>
+          {sections.length === 0 ? (
+            <Card className="text-center">
+              <p className="text-gray-500">Chưa có section nào. Hãy thêm section đầu tiên!</p>
+            </Card>
+          ) : (
+            sections.map((section, index) => (
+              <Card
+                key={index}
+                className="mb-4"
+                title={
+                  <div className="flex justify-between items-center">
+                    <span>{section.section_label || `Section ${index + 1}`}</span>
+                    <Button
+                      type="text"
+                      danger
+                      icon={<DeleteOutlined />}
+                      onClick={() => removeSection(index)}
+                      size="small"
+                    />
+                  </div>
+                }
+              >
+                <DynamicFormSectionBuilder
+                  section={section}
+                  onChange={(updatedSection) => updateSection(index, updatedSection)}
+                />
               </Card>
-            ) : (
-              sections.map((section, index) => (
-                <Card
-                  key={index}
-                  className="mb-4"
-                  title={
-                    <div className="flex justify-between items-center">
-                      <span>{section.section_label || `Section ${index + 1}`}</span>
-                      <Button
-                        type="text"
-                        danger
-                        icon={<DeleteOutlined />}
-                        onClick={() => removeSection(index)}
-                        size="small"
-                      />
-                    </div>
-                  }
-                >
-                  <DynamicFormSectionBuilder
-                    section={section}
-                    onChange={(updatedSection) => updateSection(index, updatedSection)}
-                  />
-                </Card>
-              ))
-            )}
+            ))
+          )}
           </div>
         </div>
       ),

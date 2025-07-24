@@ -2,20 +2,43 @@
 
 export interface BookingData {
   _id: string;
-  service: string;
-  serviceType: string;
-  consultantName: string;
+  patientName: string;
+  patientPhone: string;
+  patientEmail: string;
+  gender: 'Male' | 'Female';
   appointmentDate: string;
   appointmentTime: string;
+  service: string;
+  consultant: string;
+  consultantName: string;
+  reason: string;
   status: string;
   bookingDate: string;
-  resultStatus: string;
-  hasApprovedResult: boolean;
-  canViewResult: boolean;
-  hasFeedback: boolean;
-  canGiveFeedback: boolean;
-  serviceImageUrl?: string;
+  notes: string;
   serviceDescription: string;
+  serviceDuration: string;
+  sampleType: string;
+  consultantEmail: string;
+  subscriptionId: string;
+  subscriptionStatus: string;
+  patientGender: string;
+  patientDob: string;
+  testParameters: string[];
+  testPreparation: string;
+  resultTime: string;
+  updatedAt: string;
+  // New fields from updated API
+  hasResult: boolean;
+  canFeedback: boolean;
+  canViewResult: boolean;
+  resultStatus: 'pending' | 'approved' | 'rejected';
+  resultFormInfo?: {
+    id: string;
+    reviewStatus: 'pending' | 'approved' | 'rejected';
+    reviewedBy: string;
+    reviewedAt: string;
+    submittedAt: string;
+  } | null;
 }
 
 // ===== RAW API RESPONSE TYPES =====
