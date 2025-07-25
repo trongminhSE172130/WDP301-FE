@@ -2,18 +2,18 @@ import React from 'react';
 import { Modal, Descriptions, Tag, Divider, Card, Typography, Space, Select } from 'antd';
 import { FormOutlined, UserOutlined, TagOutlined, CalendarOutlined } from '@ant-design/icons';
 import type { DynamicForm } from '../../../types/dynamicForm';
-import type { Creator } from '../../../types/dynamicForm';
+// import type { Creator } from '../../../types/dynamicForm';
 
 // Mở rộng interface DynamicForm để bao gồm trường created_by
-interface ExtendedDynamicForm extends DynamicForm {
-  created_by?: Creator;
-}
+// interface ExtendedDynamicForm extends DynamicForm {
+//   created_by?: Creator;
+// }
 
 const { Title, Paragraph, Text } = Typography;
 
 interface DynamicFormDetailModalProps {
   visible: boolean;
-  form: ExtendedDynamicForm | null;
+  form: DynamicForm | null;
   onCancel: () => void;
 }
 
@@ -62,7 +62,7 @@ const DynamicFormDetailModal: React.FC<DynamicFormDetailModalProps> = ({
     : '';
     
   // Kiểm tra nếu có thông tin người tạo
-  const hasCreatorInfo = form.created_by && typeof form.created_by === 'object' && form.created_by.full_name;
+  // const hasCreatorInfo = form.created_by && typeof form.created_by === 'object' && form.created_by.full_name;
 
   return (
     <Modal
@@ -132,7 +132,7 @@ const DynamicFormDetailModal: React.FC<DynamicFormDetailModalProps> = ({
             <Descriptions.Item label="Người tạo">
               <Space>
                 <UserOutlined className="text-gray-400" />
-                <Text strong>{hasCreatorInfo && form.created_by ? form.created_by.full_name : 'Không xác định'}</Text>
+                {/* <Text strong>{hasCreatorInfo && form.created_by ? form.created_by.full_name : 'Không xác định'}</Text> */}
               </Space>
             </Descriptions.Item>
             <Descriptions.Item label="Ngày tạo">
