@@ -169,7 +169,7 @@ const ServicesChart: React.FC<ServicesChartProps> = ({ data, loading = false }) 
               labelFormatter={(label) => `Dịch vụ: ${label}`}
             />
             <Bar dataKey="total_bookings" radius={[4, 4, 0, 0]}>
-              {chartData.map((entry, index) => (
+              {chartData.map((_, index) => (
                 <Cell key={`cell-${index}`} fill={colors[index % colors.length]} />
               ))}
             </Bar>

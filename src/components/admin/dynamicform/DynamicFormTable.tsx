@@ -60,17 +60,22 @@ const DynamicFormTable: React.FC<DynamicFormTableProps> = ({
   };
 
   const renderService = (form: DynamicForm) => {
-    if (form.service_id) {
-      return (
-        <div>
-          <div className="font-medium text-gray-800 text-sm">
-            {form.service_id.title}
+    const service = form.service_id;
+    if (service) {
+      if (typeof service === 'object' && service !== null) {
+        return (
+          <div>
+            <div className="font-medium text-gray-800 text-sm">
+              {service.title}
+            </div>
+            <div className="text-xs text-gray-500 mt-1 line-clamp-2">
+              {service.description}
+            </div>
           </div>
-          <div className="text-xs text-gray-500 mt-1 line-clamp-2">
-            {form.service_id.description}
-          </div>
-        </div>
-      );
+        );
+      } else if (typeof service === 'string') {
+        return <span className="font-medium text-gray-800 text-sm">{service}</span>;
+      }
     }
     return <span className="text-gray-400 text-sm">Không có dịch vụ</span>;
   };
@@ -143,12 +148,12 @@ const DynamicFormTable: React.FC<DynamicFormTableProps> = ({
       key: 'creator',
       width: 150,
       render: (_, record) => (
-          <div>
-            <div className="text-sm font-medium text-gray-700">
-              {record.created_by.full_name}
-            </div>
-            <div className="text-xs text-gray-500">
-              {new Date(record.created_at).toLocaleDateString('vi-VN')}
+        <div>
+          <div className="text-sm font-medium text-gray-700">
+            {record.created_by === 'string' ? record.created_by : 'Không xác định'}
+          </div>
+          <div className="text-xs text-gray-500">
+            {new Date(record.created_at).toLocaleDateString('vi-VN')}
           </div>
         </div>
       ),

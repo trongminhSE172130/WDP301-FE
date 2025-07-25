@@ -5,7 +5,6 @@ import {
   AppstoreOutlined,
   BookOutlined,
   CrownOutlined,
-  PhoneOutlined,
   UserOutlined,
   LogoutOutlined,
   DownOutlined,

@@ -6,7 +6,7 @@ export interface ConsultantUser {
 
 export interface Schedule {
   _id: string;
-  consultant_user_id: string | ConsultantUser; // Can be either ID string or populated object
+  consultant_user_id: ConsultantUser; // Can be either ID string or populated object
   date: string;
   time_slot: string;
   schedule_type: 'advice' | 'consultation';

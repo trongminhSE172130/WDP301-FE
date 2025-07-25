@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getServiceById } from "../service/api/serviceAPI";
 import { getFeedbacksByService, type FeedbackService } from "../service/api/feedbackAPI";
-import { FaCheckCircle, FaStar, FaClock, FaVial, FaUsers, FaChevronDown, FaChevronUp } from "react-icons/fa";
+import { FaCheckCircle, FaStar, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import type { Service } from "../components/admin/service/ServiceTypes";
 
 const Accordion: React.FC<{ title: string; content: React.ReactNode; icon?: React.ReactNode }> = ({ 
