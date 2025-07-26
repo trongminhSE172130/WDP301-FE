@@ -127,13 +127,13 @@ export const createConsultant = async (data: CreateConsultantRequest): Promise<C
 
 // Update consultant
 export const updateConsultant = async (id: string, data: UpdateConsultantRequest): Promise<ConsultantDetailResponse> => {
-  const response = await apiClient.put(`/consultants/${id}`, data);
+  const response = await apiClient.put(`admin/consultants/${id}`, data);
   return response.data;
 };
 
 // Delete consultant
 export const deleteConsultant = async (id: string): Promise<{ success: boolean; message: string }> => {
-  const response = await apiClient.delete(`/consultants/${id}`);
+  const response = await apiClient.delete(`admin/consultants/${id}`);
   return response.data;
 };
 

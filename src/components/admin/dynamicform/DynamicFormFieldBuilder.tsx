@@ -1,10 +1,9 @@
 import React, { useEffect } from 'react';
-import { Form, Input, Select, Switch, InputNumber, Collapse, Space, Button, Tag, Alert } from 'antd';
+import { Form, Input, Select, Switch, InputNumber, Space, Button, Tag, Alert } from 'antd';
 import { PlusOutlined, MinusOutlined } from '@ant-design/icons';
 import type { FormField } from '../../../types/dynamicForm';
 
 const { Option } = Select;
-const { Panel } = Collapse;
 const { TextArea } = Input;
 
 interface DynamicFormFieldBuilderProps {
@@ -13,14 +12,14 @@ interface DynamicFormFieldBuilderProps {
 }
 
 const FIELD_TYPES = [
-  { value: 'text', label: 'Text (Văn bản)' },
-  { value: 'textarea', label: 'Textarea (Văn bản dài)' },
-  { value: 'number', label: 'Number (Số)' },
-  { value: 'date', label: 'Date (Ngày tháng)' },
-  { value: 'select', label: 'Select (Chọn từ danh sách)' },
-  { value: 'radio', label: 'Radio (Chọn 1 trong nhiều)' },
-  { value: 'checkbox', label: 'Checkbox (Đánh dấu)' },
-  { value: 'file', label: 'File (Tệp tin)' },
+  { value: 'text', label: 'Văn bản' },
+  { value: 'textarea', label: 'Văn bản dài' },
+  { value: 'number', label: 'Số' },
+  { value: 'date', label: 'Ngày tháng' },
+  { value: 'select', label: 'Danh sách chọn' },
+  { value: 'radio', label: 'Chọn một' },
+  { value: 'checkbox', label: 'Hộp đánh dấu' },
+  { value: 'file', label: 'Tệp tin' },
 ];
 
 const DynamicFormFieldBuilder: React.FC<DynamicFormFieldBuilderProps> = ({
@@ -82,15 +81,13 @@ const DynamicFormFieldBuilder: React.FC<DynamicFormFieldBuilderProps> = ({
 
   const needsOptions = ['select', 'radio', 'checkbox'].includes(field.field_type);
   const needsFileTypes = field.field_type === 'file';
-  const needsLength = ['text', 'textarea'].includes(field.field_type);
-  const needsMinMax = ['number'].includes(field.field_type);
 
   return (
     <div>
       <Form form={form} layout="vertical" size="small">
         {/* Basic Field Info */}
         <div className="grid grid-cols-2 gap-3">
-          <Form.Item label="Tên field (key)" className="mb-2">
+          <Form.Item label="Tên trường (key)" className="mb-2">
             <Input
               value={field.field_name}
               onChange={(e) => handleFieldChange('field_name', e.target.value)}
@@ -110,7 +107,7 @@ const DynamicFormFieldBuilder: React.FC<DynamicFormFieldBuilderProps> = ({
         </div>
 
         <div className="grid grid-cols-2 gap-3">
-          <Form.Item label="Loại field" className="mb-2">
+          <Form.Item label="Loại trường" className="mb-2">
             <Select
               value={field.field_type}
               onChange={(value) => handleFieldChange('field_type', value)}
@@ -140,7 +137,7 @@ const DynamicFormFieldBuilder: React.FC<DynamicFormFieldBuilderProps> = ({
               label={
                 <div className="flex items-center">
                   <span className="mr-2">Các tùy chọn</span>
-                  <Tag color="blue">{field.field_type === 'select' ? 'Dropdown' : field.field_type === 'radio' ? 'Radio Button' : 'Checkbox'}</Tag>
+                  <Tag color="blue">{field.field_type === 'select' ? 'Danh sách' : field.field_type === 'radio' ? 'Chọn một' : 'Hộp đánh dấu'}</Tag>
                 </div>
               } 
               className="mb-2"
@@ -224,73 +221,6 @@ const DynamicFormFieldBuilder: React.FC<DynamicFormFieldBuilderProps> = ({
             </Select>
           </Form.Item>
         )}
-
-        {/* Validation Rules */}
-        <Collapse size="small" className="mt-3">
-          <Panel header="Quy tắc validation nâng cao" key="validation">
-            <div className="space-y-3">
-              {/* Pattern */}
-              {!needsOptions && !needsFileTypes && (
-                <Form.Item label="Pattern (Regex)" className="mb-2">
-                  <Input
-                    value={field.validation_rules.pattern}
-                    onChange={(e) => handleValidationChange('pattern', e.target.value)}
-                    placeholder="^[a-zA-Z0-9]+$"
-                    size="small"
-                  />
-                </Form.Item>
-              )}
-
-              {/* Length validation for text fields */}
-              {needsLength && (
-                <div className="grid grid-cols-2 gap-3">
-                  <Form.Item label="Độ dài tối thiểu" className="mb-2">
-                    <InputNumber
-                      value={field.validation_rules.min_length}
-                      onChange={(value) => handleValidationChange('min_length', value)}
-                      min={0}
-                      size="small"
-                      className="w-full"
-                    />
-                  </Form.Item>
-                  
-                  <Form.Item label="Độ dài tối đa" className="mb-2">
-                    <InputNumber
-                      value={field.validation_rules.max_length}
-                      onChange={(value) => handleValidationChange('max_length', value)}
-                      min={0}
-                      size="small"
-                      className="w-full"
-                    />
-                  </Form.Item>
-                </div>
-              )}
-
-              {/* Min/Max for number fields */}
-              {needsMinMax && (
-                <div className="grid grid-cols-2 gap-3">
-                  <Form.Item label="Giá trị tối thiểu" className="mb-2">
-                    <InputNumber
-                      value={field.validation_rules.min}
-                      onChange={(value) => handleValidationChange('min', value)}
-                      size="small"
-                      className="w-full"
-                    />
-                  </Form.Item>
-                  
-                  <Form.Item label="Giá trị tối đa" className="mb-2">
-                    <InputNumber
-                      value={field.validation_rules.max}
-                      onChange={(value) => handleValidationChange('max', value)}
-                      size="small"
-                      className="w-full"
-                    />
-                  </Form.Item>
-                </div>
-              )}
-            </div>
-          </Panel>
-        </Collapse>
 
         {/* Field Preview */}
         <div className="mt-3 p-3 bg-gray-50 rounded border">

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Form, Select, DatePicker, Row, Col, message } from 'antd';
+import { Form, Select, DatePicker, Row, Col, message, Input } from 'antd';
 import type { Schedule } from './ScheduleTypes';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
@@ -55,7 +55,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({
             consultant_user_id: consultantId,
             date: dayjs(initialValues.date),
             time_slot: initialValues.time_slot,
-            schedule_type: initialValues.schedule_type
+            schedule_type: 'advice' // Luôn set là advice
           });
         }, 0);
       }
@@ -80,11 +80,11 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({
   const handleFinish = (values: FormValues) => {
     if (onFinish) {
       // Convert Dayjs to date string format YYYY-MM-DD (as expected by API)
-      const formattedValues = {
+      const formattedValues: FormOutput = {
         consultant_user_id: values.consultant_user_id,
         date: values.date.format('YYYY-MM-DD'),
         time_slot: values.time_slot,
-        schedule_type: values.schedule_type,
+        schedule_type: 'advice', // Luôn gửi là advice
       };
       onFinish(formattedValues);
     }
@@ -181,13 +181,23 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({
             <Form.Item
             name="schedule_type"
             label="Loại lịch"
-            rules={[{ required: true, message: 'Vui lòng chọn loại lịch' }]}
+            initialValue="advice"
+            hidden
             >
-            <Select placeholder="Chọn loại lịch">
-              <Option value="advice">Tư vấn</Option>
-              <Option value="consultation">Khám bệnh</Option>
-            </Select>
+            <Input disabled />
             </Form.Item>
+            <div className="ant-form-item">
+              <div className="ant-form-item-label">
+                <label>Loại lịch</label>
+              </div>
+              <div className="ant-form-item-control">
+                <div className="ant-form-item-control-input">
+                  <div className="ant-form-item-control-input-content">
+                    <Input value="Tư vấn" disabled style={{ backgroundColor: '#f5f5f5', color: '#333' }} />
+                  </div>
+                </div>
+              </div>
+            </div>
           </Col>
         </Row>
       </Form>

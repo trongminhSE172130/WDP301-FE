@@ -53,6 +53,13 @@ const ScheduleConsultantTableView: React.FC<ScheduleConsultantTableViewProps> = 
   };
 
   const handleDelete = (id: string) => {
+    // Kiểm tra xem lịch có đã được đặt chưa
+    const schedule = selectedConsultant?.schedules.find(s => s._id === id);
+    if (schedule && schedule.is_booked) {
+      message.error('Không thể xóa lịch đã được đặt!');
+      return;
+    }
+    
     if (onDelete) {
       onDelete(id);
       
@@ -175,6 +182,13 @@ const ScheduleConsultantTableView: React.FC<ScheduleConsultantTableViewProps> = 
   };
 
   const handleToggleSelection = (scheduleId: string) => {
+    // Kiểm tra xem lịch có đã được đặt chưa
+    const schedule = selectedConsultant?.schedules.find(s => s._id === scheduleId);
+    if (schedule && schedule.is_booked) {
+      message.warning('Không thể chọn lịch đã được đặt để xóa!');
+      return;
+    }
+    
     setSelectedScheduleIds(prev => {
       if (prev.includes(scheduleId)) {
         return prev.filter(id => id !== scheduleId);
@@ -192,9 +206,21 @@ const ScheduleConsultantTableView: React.FC<ScheduleConsultantTableViewProps> = 
   };
 
   const handleSelectAll = () => {
-    if (selectedConsultant) {
-      const allIds = selectedConsultant.schedules.map(s => s._id);
-      setSelectedScheduleIds(allIds);
+    if (!selectedConsultant) return;
+    
+    // Chỉ chọn các lịch chưa được đặt
+    const availableScheduleIds = selectedConsultant.schedules
+      .filter(schedule => !schedule.is_booked)
+      .map(schedule => schedule._id);
+    
+    setSelectedScheduleIds(availableScheduleIds);
+    
+    // Hiển thị thông báo nếu có lịch đã đặt không được chọn
+    const bookedCount = selectedConsultant.schedules.filter(s => s.is_booked).length;
+    if (bookedCount > 0) {
+      message.info(`Đã chọn ${availableScheduleIds.length} lịch trình. ${bookedCount} lịch đã đặt không được chọn để xóa.`);
+    } else {
+      message.success(`Đã chọn tất cả ${availableScheduleIds.length} lịch trình.`);
     }
   };
 
@@ -205,6 +231,16 @@ const ScheduleConsultantTableView: React.FC<ScheduleConsultantTableViewProps> = 
   const handleBulkDelete = async () => {
     if (selectedScheduleIds.length === 0) {
       message.warning('Vui lòng chọn ít nhất một lịch trình để xóa');
+      return;
+    }
+
+    // Kiểm tra xem có lịch đã đặt trong danh sách được chọn không
+    const hasBookedSchedules = selectedConsultant?.schedules.some(
+      schedule => selectedScheduleIds.includes(schedule._id) && schedule.is_booked
+    );
+
+    if (hasBookedSchedules) {
+      message.error('Không thể xóa lịch đã được đặt! Vui lòng bỏ chọn các lịch đã đặt.');
       return;
     }
 
@@ -487,13 +523,15 @@ const ScheduleConsultantTableView: React.FC<ScheduleConsultantTableViewProps> = 
                     key={schedule._id}
                     size="small"
                     className={`border transition-all duration-200 ${
-                      isSelectionMode && isSelected
-                        ? 'border-blue-500 bg-blue-50 shadow-md'
-                        : 'border-gray-200 hover:border-blue-300 hover:shadow-md'
+                      schedule.is_booked 
+                        ? 'border-orange-300 bg-orange-50' 
+                        : isSelectionMode && isSelected
+                          ? 'border-blue-500 bg-blue-50 shadow-md'
+                          : 'border-gray-200 hover:border-blue-300 hover:shadow-md'
                     }`}
                     bodyStyle={{ padding: '16px' }}
-                    onClick={isSelectionMode ? () => handleToggleSelection(schedule._id) : undefined}
-                    style={{ cursor: isSelectionMode ? 'pointer' : 'default' }}
+                    onClick={isSelectionMode && !schedule.is_booked ? () => handleToggleSelection(schedule._id) : undefined}
+                    style={{ cursor: isSelectionMode && !schedule.is_booked ? 'pointer' : 'default' }}
                   >
                                         <div className="space-y-3">
                         {/* Selection Checkbox */}
@@ -503,6 +541,7 @@ const ScheduleConsultantTableView: React.FC<ScheduleConsultantTableViewProps> = 
                               checked={isSelected}
                               onChange={() => handleToggleSelection(schedule._id)}
                               onClick={(e) => e.stopPropagation()}
+                              disabled={schedule.is_booked}
                             />
                           </div>
                         )}
@@ -548,18 +587,20 @@ const ScheduleConsultantTableView: React.FC<ScheduleConsultantTableViewProps> = 
                             
                             <Popconfirm
                               title="Xác nhận xóa"
-                              description="Bạn có chắc chắn muốn xóa lịch trình này?"
-                              onConfirm={() => handleDelete(schedule._id)}
+                              description={schedule.is_booked ? "Không thể xóa lịch đã được đặt!" : "Bạn có chắc chắn muốn xóa lịch trình này?"}
+                              onConfirm={() => !schedule.is_booked && handleDelete(schedule._id)}
                               okText="Xóa"
                               cancelText="Hủy"
-                              okButtonProps={{ danger: true }}
+                              okButtonProps={{ danger: true, disabled: schedule.is_booked }}
+                              cancelButtonProps={{ disabled: schedule.is_booked }}
                             >
-                              <Tooltip title="Xóa">
+                              <Tooltip title={schedule.is_booked ? "Không thể xóa lịch đã đặt" : "Xóa"}>
                                 <Button
                                   type="text"
                                   size="small"
                                   icon={<DeleteOutlined />}
-                                  className="text-red-600 hover:text-red-800"
+                                  className={schedule.is_booked ? "text-gray-400" : "text-red-600 hover:text-red-800"}
+                                  disabled={schedule.is_booked}
                                 />
                               </Tooltip>
                             </Popconfirm>

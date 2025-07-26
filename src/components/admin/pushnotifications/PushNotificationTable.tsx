@@ -29,32 +29,6 @@ const PushNotificationTable: React.FC<PushNotificationTableProps> = ({
   pagination,
   onTableChange
 }) => {
-  // Render status tag
-  const renderStatus = (status: string) => {
-    const statusConfig = {
-      draft: { color: 'default', text: 'Bản nháp' },
-      sent: { color: 'success', text: 'Đã gửi' }
-    };
-    
-    const config = statusConfig[status as keyof typeof statusConfig] || { color: 'default', text: status };
-    return <Tag color={config.color}>{config.text}</Tag>;
-  };
-
-  // Render role/target info
-  const renderTarget = (record: NotificationItem) => {
-    if (record.target_info.role) {
-      return <Tag color="blue">{record.target_info.role}</Tag>;
-    }
-    if (record.target_info.user_id) {
-      return (
-        <Tooltip title={`Gửi cho: ${record.target_info.user_id.full_name} (${record.target_info.user_id.email})`}>
-          <Tag color="green">Người dùng cụ thể</Tag>
-        </Tooltip>
-      );
-    }
-    return <Tag color="default">Không xác định</Tag>;
-  };
-
   const columns: ColumnsType<NotificationItem> = [
     {
       title: 'Tiêu đề',
@@ -77,31 +51,18 @@ const PushNotificationTable: React.FC<PushNotificationTableProps> = ({
       )
     },
     {
-      title: 'Đối tượng',
-      key: 'target',
-      width: 150,
-      render: (_, record) => renderTarget(record)
-    },
-    {
       title: 'Loại gửi',
       dataIndex: 'send_type',
       key: 'send_type',
       width: 120,
       render: (sendType: string) => {
         const typeConfig = {
-          role: { color: 'blue', text: 'Theo vai trò' },
+          role: { color: 'blue', text: 'Cho tất cả người dùng' },
           user: { color: 'green', text: 'Cá nhân' }
         };
         const config = typeConfig[sendType as keyof typeof typeConfig] || { color: 'default', text: sendType };
         return <Tag color={config.color}>{config.text}</Tag>;
       }
-    },
-    {
-      title: 'Trạng thái',
-      dataIndex: 'status',
-      key: 'status',
-      width: 120,
-      render: renderStatus
     },
     {
       title: 'Thời gian gửi',
@@ -128,7 +89,7 @@ const PushNotificationTable: React.FC<PushNotificationTableProps> = ({
       dataSource={notifications}
       loading={loading}
       rowKey="_id"
-      scroll={{ x: 1300 }}
+      scroll={{ x: 1100 }}
       pagination={{
         current: pagination.current,
         pageSize: pagination.pageSize,

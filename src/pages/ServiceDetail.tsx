@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { getServiceById } from "../service/api/serviceAPI";
-import { getFeedbacksByService, type FeedbackService } from "../service/api/feedbackAPI";
+import { getFeedbacksByService, type Feedback } from "../service/api/feedbackAPI";
 import { FaCheckCircle, FaStar, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import type { Service } from "../components/admin/service/ServiceTypes";
 
@@ -37,7 +37,7 @@ const Accordion: React.FC<{ title: string; content: React.ReactNode; icon?: Reac
 const ServiceDetail: React.FC = () => {
   const { serviceId } = useParams<{ serviceId: string }>();
   const [service, setService] = useState<Service | null>(null);
-  const [feedbacks, setFeedbacks] = useState<FeedbackService[]>([]);
+  const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
   const [loading, setLoading] = useState(true);
   const [feedbackLoading, setFeedbackLoading] = useState(false);
 
@@ -171,7 +171,7 @@ const ServiceDetail: React.FC = () => {
                       <FaStar key={i} className={i < Math.round(fb.rating) ? 'text-yellow-400' : 'text-gray-300'} />
                     ))}
                     <span className="ml-2 font-semibold">
-                      {fb.is_anonymous ? 'Ẩn danh' : fb.user_id?.full_name || 'Người dùng'}
+                      {fb.is_anonymous ? 'Ẩn danh' : typeof fb.user_id === 'object' ? fb.user_id?.full_name : 'Người dùng'}
                     </span>
                   </div>
                   <div className="text-gray-700 text-sm mb-2">{fb.comment}</div>

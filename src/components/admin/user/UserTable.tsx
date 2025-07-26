@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Table, Button, Tag, Space, Card, Modal, Typography } from 'antd';
-import { DeleteOutlined, UserOutlined, EyeOutlined } from '@ant-design/icons';
+import { Table, Button, Tag, Space, Card, Typography } from 'antd';
+import { UserOutlined, EyeOutlined } from '@ant-design/icons';
 import UserDetailModal from './UserDetailModal';
 import type { ColumnsType } from 'antd/es/table';
 import type { Pagination } from '../../../service/api/userAPI';
@@ -24,7 +24,6 @@ export type User = {
 
 interface UserTableProps {
   data: User[];
-  onDelete: (userId: string) => void;
   loading?: boolean;
   title?: string;
   pagination?: Pagination;
@@ -34,33 +33,18 @@ interface UserTableProps {
 
 const UserTable: React.FC<UserTableProps> = ({ 
   data, 
-  onDelete, 
   loading = false,
   title = "Danh sách người dùng",
   pagination,
   onPageChange,
   currentPageSize = 10
 }) => {
-  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-
-  const handleDelete = (user: User) => {
-    setSelectedUser(user);
-    setDeleteModalVisible(true);
-  };
 
   const handleViewDetail = (user: User) => {
     setSelectedUserId(user._id);
     setDetailModalVisible(true);
-  };
-
-  const confirmDelete = () => {
-    if (selectedUser) {
-      onDelete(selectedUser._id);
-      setDeleteModalVisible(false);
-    }
   };
 
   const columns: ColumnsType<User> = [
@@ -133,13 +117,6 @@ const UserTable: React.FC<UserTableProps> = ({
             className="border border-green-500 hover:bg-green-50"
             title="Xem chi tiết"
           />
-          <Button 
-            type="text" 
-            icon={<DeleteOutlined className="text-red-500" />} 
-            onClick={() => handleDelete(record)}
-            className="border border-red-500 hover:bg-red-50"
-            title="Xóa"
-          />
         </Space>
       ),
     },
@@ -168,19 +145,6 @@ const UserTable: React.FC<UserTableProps> = ({
           } : false}
         />
       </Card>
-      
-      <Modal
-        title="Xác nhận xóa"
-        open={deleteModalVisible}
-        onOk={confirmDelete}
-        onCancel={() => setDeleteModalVisible(false)}
-        okText="Xóa"
-        cancelText="Hủy"
-        okButtonProps={{ danger: true }}
-      >
-        <p>Bạn có chắc chắn muốn xóa người dùng {selectedUser?.full_name}?</p>
-        <p>Hành động này không thể hoàn tác.</p>
-      </Modal>
 
       <UserDetailModal
         visible={detailModalVisible}

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Form, Select, DatePicker, Checkbox, Card, Tag, message } from 'antd';
-import { CalendarOutlined, ClockCircleOutlined, UserOutlined } from '@ant-design/icons';
+import { Form, Select, DatePicker, Checkbox, Card, Tag, message, Input } from 'antd';
+import { CalendarOutlined, ClockCircleOutlined, UserOutlined, FileTextOutlined } from '@ant-design/icons';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
 import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
@@ -23,6 +23,7 @@ interface FormValues {
   dateRange: [Dayjs, Dayjs];
   daysOfWeek: number[];
   timeSlots: string[];
+  schedule_type: 'advice' | 'consultation';
 }
 
 const BatchScheduleForm: React.FC<BatchScheduleFormProps> = ({
@@ -58,6 +59,10 @@ const BatchScheduleForm: React.FC<BatchScheduleFormProps> = ({
   useEffect(() => {
     if (visible) {
       form.resetFields();
+      // Đặt giá trị mặc định cho schedule_type
+      form.setFieldsValue({
+        schedule_type: 'advice'
+      });
       loadConsultants();
     }
   }, [visible, form]);
@@ -170,6 +175,7 @@ const BatchScheduleForm: React.FC<BatchScheduleFormProps> = ({
         endDate: endDate.format('YYYY-MM-DD'),
         daysOfWeek: values.daysOfWeek,
         timeSlots: values.timeSlots,
+        schedule_type: 'advice', // Luôn gửi là advice
       };
       
       onFinish(batchData);
@@ -184,6 +190,9 @@ const BatchScheduleForm: React.FC<BatchScheduleFormProps> = ({
       onFinish={handleFinish}
       onValuesChange={handleValuesChange}
       className="space-y-4"
+      initialValues={{
+        schedule_type: 'advice'
+      }}
     >
       {/* Consultant Selection */}
       <Card 
@@ -310,6 +319,37 @@ const BatchScheduleForm: React.FC<BatchScheduleFormProps> = ({
             ))}
           </Select>
         </Form.Item>
+      </Card>
+
+      {/* Loại lịch */}
+      <Card 
+        title={
+          <div className="flex items-center space-x-2">
+            <FileTextOutlined className="text-cyan-500" />
+            <span>Loại lịch</span>
+          </div>
+        }
+        size="small"
+      >
+        <Form.Item
+          name="schedule_type"
+          label="Loại lịch"
+          hidden
+        >
+          <Input type="hidden" />
+        </Form.Item>
+        <div className="ant-form-item">
+          <div className="ant-form-item-label">
+            <label>Loại lịch</label>
+          </div>
+          <div className="ant-form-item-control">
+            <div className="ant-form-item-control-input">
+              <div className="ant-form-item-control-input-content">
+                <Input value="Tư vấn" disabled style={{ backgroundColor: '#f5f5f5', color: '#333' }} />
+              </div>
+            </div>
+          </div>
+        </div>
       </Card>
 
       {/* Preview */}

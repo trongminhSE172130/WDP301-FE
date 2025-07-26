@@ -1,6 +1,6 @@
 import React from 'react';
-import { Table, Button, Space, Popconfirm, Tag, Tooltip, Modal, Select } from 'antd';
-import { EditOutlined, DeleteOutlined, UserOutlined, EyeOutlined, AppstoreAddOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Tag, Tooltip, Modal, Select } from 'antd';
+import { EditOutlined, UserOutlined, EyeOutlined, AppstoreAddOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { Service } from '../service/ServiceTypes';
 import { useState } from 'react';
@@ -21,7 +21,6 @@ export interface Consultant {
 interface ConsultantTableProps {
   data: Consultant[];
   onEdit: (consultant: Consultant) => void;
-  onDelete: (consultantId: string) => Promise<void>;
   onViewProfile: (consultantId: string) => void;
   onAssignServices?: (consultantId: string, serviceIds: string[]) => Promise<void>;
   loading: boolean;
@@ -32,7 +31,6 @@ interface ConsultantTableProps {
 const ConsultantTable: React.FC<ConsultantTableProps> = ({
   data,
   onEdit,
-  onDelete,
   onViewProfile,
   onAssignServices,
   loading,
@@ -207,23 +205,6 @@ const ConsultantTable: React.FC<ConsultantTableProps> = ({
               />
             </Tooltip>
           )}
-          
-          <Popconfirm
-            title="Xác nhận xóa"
-            description="Bạn có chắc chắn muốn xóa tư vấn viên này?"
-            onConfirm={() => onDelete(record._id)}
-            okText="Xóa"
-            cancelText="Hủy"
-            okButtonProps={{ danger: true }}
-          >
-            <Tooltip title="Xóa">
-              <Button
-                type="text"
-                icon={<DeleteOutlined />}
-                className="text-red-600 hover:text-red-800"
-              />
-            </Tooltip>
-          </Popconfirm>
         </Space>
       ),
     },

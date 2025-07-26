@@ -74,7 +74,7 @@ const DynamicFormSectionBuilder: React.FC<DynamicFormSectionBuilderProps> = ({
       {/* Section Information */}
       <Form form={form} layout="vertical">
         <div className="grid grid-cols-2 gap-4">
-          <Form.Item label="Tên section (key)">
+          <Form.Item label="Tên phần (key)">
             <Input
               value={section.section_name}
               onChange={(e) => handleSectionChange('section_name', e.target.value)}
@@ -91,12 +91,12 @@ const DynamicFormSectionBuilder: React.FC<DynamicFormSectionBuilderProps> = ({
           </Form.Item>
         </div>
 
-        <Form.Item label="Mô tả section">
+        <Form.Item label="Mô tả phần">
           <TextArea
             rows={2}
             value={section.description}
             onChange={(e) => handleSectionChange('description', e.target.value)}
-            placeholder="Mô tả về section này"
+            placeholder="Mô tả về phần này"
           />
         </Form.Item>
       </Form>
@@ -113,13 +113,13 @@ const DynamicFormSectionBuilder: React.FC<DynamicFormSectionBuilderProps> = ({
             onClick={addField}
             size="small"
           >
-            Thêm Field
+            Thêm trường
           </Button>
         </div>
 
         {section.fields.length === 0 ? (
           <div className="text-center text-gray-500 py-4 border border-dashed border-gray-300 rounded">
-            Chưa có field nào. Hãy thêm field đầu tiên!
+            Chưa có trường nào. Hãy thêm trường đầu tiên!
           </div>
         ) : (
           <Space direction="vertical" className="w-full">
@@ -131,7 +131,7 @@ const DynamicFormSectionBuilder: React.FC<DynamicFormSectionBuilderProps> = ({
                 title={
                   <div className="flex justify-between items-center">
                     <span className="text-sm">
-                      {field.field_label || `Field ${fieldIndex + 1}`}
+                      {field.field_label || `Trường ${fieldIndex + 1}`}
                       {field.is_required && <span className="text-red-500 ml-1">*</span>}
                     </span>
                     <Button

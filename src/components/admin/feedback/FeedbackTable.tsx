@@ -32,14 +32,6 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({
   // Định nghĩa các cột cho bảng
   const columns: ColumnsType<Feedback> = [
     {
-      title: 'ID',
-      dataIndex: '_id',
-      key: '_id',
-      width: 100,
-      ellipsis: true,
-      render: (id: string) => <Tooltip title={id}>{id.substring(0, 8)}...</Tooltip>
-    },
-    {
       title: 'Người dùng',
       dataIndex: 'user_id',
       key: 'user',

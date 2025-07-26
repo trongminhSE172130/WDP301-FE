@@ -195,7 +195,7 @@ const PushNotificationPage: React.FC = () => {
               onClick={handleSendToUser}
               loading={loading}
             >
-              Gửi cho người dùng
+              Gửi cho người dùng cụ thể
             </Button>
             <Button 
               type="primary" 
@@ -203,7 +203,7 @@ const PushNotificationPage: React.FC = () => {
               onClick={handleBroadcast}
               loading={loading}
             >
-              Gửi thông báo broadcast
+              Gửi thông báo cho tất cả người dùng
             </Button>
           </Space>
         </div>

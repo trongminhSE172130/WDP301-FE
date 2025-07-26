@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Modal, Form, Input, Select, Button, message, Steps, Card, Space, Divider, Alert, Switch, Tag } from 'antd';
+import { Modal, Form, Input, Select, Button, message, Steps, Card, Space, Alert, Switch, Tag } from 'antd';
 import { PlusOutlined, DeleteOutlined, SaveOutlined, EditOutlined } from '@ant-design/icons';
 import type { FormSection, Service, DynamicFormCreate } from '../../../types/dynamicForm';
 import type { DynamicForm } from '../../../types/dynamicForm';
@@ -141,11 +141,11 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
         // Tạo thông báo cho người dùng
         let message = '';
         if (response.data.booking_form && response.data.result_form) {
-          message = 'Dịch vụ này đã có cả Form đặt lịch và Form kết quả.\nMỗi dịch vụ chỉ được có 1 Form đặt lịch và 1 Form kết quả.';
+          message = 'Dịch vụ này đã có cả Đơn đặt lịch và Đơn kết quả.\nMỗi dịch vụ chỉ được có 1 Đơn đặt lịch và 1 Form kết quả.';
         } else if (response.data.booking_form) {
-          message = 'Dịch vụ này đã có Form đặt lịch.\nBạn chỉ có thể tạo thêm Form kết quả.';
+          message = 'Dịch vụ này đã có Đơn đặt lịch.\nBạn chỉ có thể tạo thêm Đơn kết quả.';
         } else if (response.data.result_form) {
-          message = 'Dịch vụ này đã có Form kết quả.\nBạn chỉ có thể tạo thêm Form đặt lịch.';
+          message = 'Dịch vụ này đã có Đơn kết quả.\nBạn chỉ có thể tạo thêm Đơn đặt lịch.';
         }
         
         setValidationMessage(message);
@@ -153,9 +153,9 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
         // Nếu đang trong edit mode và form hiện tại là một trong các form đã tồn tại
         if (isEditMode && editForm) {
           if (editForm.form_type === 'booking_form' && response.data.booking_form?._id !== editForm._id) {
-            setValidationMessage('Dịch vụ này đã có Form đặt lịch khác. Bạn không thể thay đổi loại form.');
+            setValidationMessage('Dịch vụ này đã có Đơn đặt lịch khác. Bạn không thể thay đổi loại Đơn.');
           } else if (editForm.form_type === 'result_form' && response.data.result_form?._id !== editForm._id) {
-            setValidationMessage('Dịch vụ này đã có Form kết quả khác. Bạn không thể thay đổi loại form.');
+            setValidationMessage('Dịch vụ này đã có Đơn kết quả khác. Bạn không thể thay đổi loại Đơn.');
           }
         }
       }
@@ -224,11 +224,11 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
       // Validation form type đã tồn tại (chỉ khi tạo mới hoặc edit mà thay đổi form_type)
       if (!isEditMode || (isEditMode && editForm?.form_type !== basicData.form_type)) {
         if (basicData.form_type === 'booking_form' && existingForms.booking_form) {
-          message.error('Dịch vụ này đã có Form đặt lịch. Mỗi dịch vụ chỉ được có 1 Form đặt lịch và 1 Form kết quả.');
+          message.error('Dịch vụ này đã có Đơn đặt lịch. Mỗi dịch vụ chỉ được có 1 Đơn đặt lịch và 1 Đơn kết quả.');
           return;
         }
         if (basicData.form_type === 'result_form' && existingForms.result_form) {
-          message.error('Dịch vụ này đã có Form kết quả. Mỗi dịch vụ chỉ được có 1 Form đặt lịch và 1 Form kết quả.');
+          message.error('Dịch vụ này đã có Đơn kết quả. Mỗi dịch vụ chỉ được có 1 Đơn đặt lịch và 1 Đơn kết quả.');
           return;
         }
       }
@@ -271,22 +271,22 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
         
         response = await updateDynamicForm(editForm._id, updateData);
         if (response.success) {
-          message.success('Cập nhật form schema thành công!');
+          message.success('Cập nhật đơn schema thành công!');
           onSuccess();
         } else if (response.data && typeof response.data === 'object' && 'error' in response.data && typeof response.data.error === 'string') {
           message.error(response.data.error);
         } else {
-          throw new Error('Cập nhật form thất bại');
+          throw new Error('Cập nhật đơn thất bại');
         }
       } else {
         response = await createDynamicForm(formData);
       if (response.success) {
-        message.success('Tạo form schema thành công!');
+        message.success('Tạo đơn schema thành công!');
         onSuccess();
         } else if (response.data && typeof response.data === 'object' && 'error' in response.data && typeof response.data.error === 'string') {
           message.error(response.data.error);
       } else {
-        throw new Error('Tạo form thất bại');
+        throw new Error('Tạo đơn thất bại');
         }
       }
     } catch (error) {
@@ -302,7 +302,7 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
           message.error(`Lỗi HTTP ${axiosError.response?.status}: ${axiosError.response?.statusText}`);
         }
       } else {
-      message.error(error instanceof Error ? error.message : 'Có lỗi xảy ra khi tạo form');
+      message.error(error instanceof Error ? error.message : 'Có lỗi xảy ra khi tạo đơn');
       }
     } finally {
       setLoading(false);
@@ -347,14 +347,14 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
 
           <Form.Item
             name="form_type"
-            label="Loại form"
-            rules={[{ required: true, message: 'Vui lòng chọn loại form' }]}
+            label="Loại đơn"
+            rules={[{ required: true, message: 'Vui lòng chọn loại đơn' }]}
           >
             <Select 
               placeholder={
                 getAvailableFormTypes().length === 0 
-                  ? "Dịch vụ này đã có đủ 2 loại form" 
-                  : "Chọn loại form"
+                  ? "Dịch vụ này đã có đủ 2 loại đơn" 
+                  : "Chọn loại đơn"
               }
               disabled={getAvailableFormTypes().length === 0}
             >
@@ -368,18 +368,18 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
 
           <Form.Item
             name="form_name"
-            label="Tên form"
-            rules={[{ required: true, message: 'Vui lòng nhập tên form' }]}
+            label="Tên đơn"
+            rules={[{ required: true, message: 'Vui lòng nhập tên đơn' }]}
           >
-            <Input placeholder="Nhập tên form" />
+            <Input placeholder="Nhập tên đơn" />
           </Form.Item>
 
           <Form.Item
             name="form_description"
-            label="Mô tả form"
-            rules={[{ required: true, message: 'Vui lòng nhập mô tả form' }]}
+            label="Mô tả đơn"
+            rules={[{ required: true, message: 'Vui lòng nhập mô tả đơn' }]}
           >
-            <TextArea rows={4} placeholder="Nhập mô tả form" />
+            <TextArea rows={4} placeholder="Nhập mô tả đơn" />
           </Form.Item>
 
           {isEditMode && (
@@ -409,24 +409,24 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
       ),
     },
     {
-      title: 'Xây dựng sections',
+      title: 'Xây dựng các phần',
       content: (
         <div className="mt-4 pb-4">
-          <div className="flex justify-between items-center mb-4 sticky top-0 bg-white z-10 py-2">
-            <h3 className="text-lg font-semibold">Sections & Fields</h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold">Phần và Trường dữ liệu</h3>
             <Button
               type="primary"
               icon={<PlusOutlined />}
               onClick={addSection}
             >
-              Thêm Section
+              Thêm Phần
             </Button>
           </div>
 
           <div className="max-h-[calc(100vh-400px)] overflow-y-auto pr-1">
           {sections.length === 0 ? (
             <Card className="text-center">
-              <p className="text-gray-500">Chưa có section nào. Hãy thêm section đầu tiên!</p>
+              <p className="text-gray-500">Chưa có phần nào. Hãy thêm phần đầu tiên!</p>
             </Card>
           ) : (
             sections.map((section, index) => (
@@ -435,7 +435,7 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
                 className="mb-4"
                 title={
                   <div className="flex justify-between items-center">
-                    <span>{section.section_label || `Section ${index + 1}`}</span>
+                    <span>{section.section_label || `Phần ${index + 1}`}</span>
                     <Button
                       type="text"
                       danger
@@ -461,15 +461,15 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
 
   return (
     <Modal
-      title={isEditMode ? 'Chỉnh sửa Form Schema' : 'Tạo Form Schema Mới'}
+      title={isEditMode ? 'Chỉnh sửa Đơn' : 'Tạo Đơn Mới'}
       open={visible}
       onCancel={onCancel}
       width={900}
       footer={null}
       destroyOnClose
-      bodyStyle={{ maxHeight: 'calc(100vh - 200px)', overflow: 'auto' }}
+      bodyStyle={{ padding: '24px', overflow: 'hidden' }}
     >
-      <Steps current={currentStep} className="mb-6 sticky top-0 bg-white z-10 pt-2 pb-2">
+      <Steps current={currentStep} className="mb-6">
         {steps.map(step => (
           <Steps.Step key={step.title} title={step.title} />
         ))}
@@ -479,9 +479,7 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
         {steps[currentStep].content}
       </div>
 
-      <Divider />
-
-      <div className="flex justify-between sticky bottom-0 bg-white pt-3 pb-2 z-10">
+      <div className="flex justify-between mt-6 pt-4 border-t">
         <div>
           {currentStep > 0 && (
             <Button onClick={handlePrev}>
@@ -505,7 +503,7 @@ const DynamicFormCreator: React.FC<DynamicFormCreatorProps> = ({
               onClick={handleSubmit}
               loading={loading}
             >
-              {isEditMode ? 'Cập nhật Form Schema' : 'Tạo Form Schema'}
+              {isEditMode ? 'Cập nhật Đơn' : 'Tạo Đơn'}
             </Button>
           )}
         </Space>

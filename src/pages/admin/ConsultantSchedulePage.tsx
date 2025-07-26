@@ -286,7 +286,7 @@ const ConsultantSchedulePage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen ">
       <div>
         {/* Header */}
         <div className="mb-8">

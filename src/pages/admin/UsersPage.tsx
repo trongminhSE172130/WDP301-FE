@@ -4,7 +4,11 @@ import UserTable from '../../components/admin/user/UserTable';
 import type { User } from '../../components/admin/user/UserTable';
 import UserSearch from '../../components/admin/user/UserSearch';
 import type { SearchFormValues } from '../../components/admin/user/UserSearch';
-import { getAllUsers, deleteUser, type GetUsersParams, type Pagination } from '../../service/api/userAPI';
+import { 
+  getAllUsers, 
+  type GetUsersParams, 
+  type Pagination 
+} from '../../service/api/userAPI';
   
 const { Title } = Typography;
 
@@ -80,25 +84,6 @@ const UsersPage: React.FC = () => {
     fetchUsers({ page: 1, limit: currentPageSize });
   };
 
-  // Xử lý xóa người dùng
-  const handleDelete = async (userId: string) => {
-    try {
-      setLoading(true);
-      const response = await deleteUser(userId);
-      
-      if (response.success) {
-        message.success('Xóa người dùng thành công!');
-        // Refresh danh sách
-        fetchUsers({ page: pagination.currentPage, limit: currentPageSize });
-      }
-    } catch (error) {
-      console.error('Error deleting user:', error);
-      message.error('Có lỗi xảy ra khi xóa người dùng');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="w-full">
       <Title level={2}>Quản lý người dùng</Title>
@@ -115,7 +100,6 @@ const UsersPage: React.FC = () => {
       {/* User Table */}
       <UserTable 
         data={users} 
-        onDelete={handleDelete}
         loading={loading}
         pagination={pagination}
         onPageChange={handlePageChange}

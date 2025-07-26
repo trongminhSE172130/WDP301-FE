@@ -7,7 +7,7 @@ import ConsultantSearch from '../../components/admin/consultant/ConsultantSearch
 import ConsultantForm from '../../components/admin/consultant/ConsultantForm';
 import type { SearchFormValues } from '../../components/admin/consultant/ConsultantSearch';
 import type { FormValues } from '../../components/admin/consultant/ConsultantForm';
-import { getAllConsultants, createConsultant, updateConsultant, deleteConsultant, assignServices } from '../../service/api/consultantAPI';
+import { getAllConsultants, createConsultant, updateConsultant, assignServices } from '../../service/api/consultantAPI';
 import { getAllServices } from '../../service/api/serviceAPI';
 import type { Service } from '../../components/admin/service/ServiceTypes';
 
@@ -95,24 +95,6 @@ const ConsultantManagement: React.FC = () => {
     setShowForm(true);
   };
 
-  // Xử lý xóa tư vấn viên
-  const handleDelete = async (consultantId: string) => {
-    try {
-    setLoading(true);
-      const response = await deleteConsultant(consultantId);
-      if (response.success) {
-        message.success('Xóa tư vấn viên thành công!');
-        await loadConsultants(); // Reload danh sách
-      } else {
-        message.error('Không thể xóa tư vấn viên');
-      }
-    } catch (error) {
-      console.error('Error deleting consultant:', error);
-      message.error('Có lỗi xảy ra khi xóa tư vấn viên');
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Xử lý xem hồ sơ tư vấn viên
   const handleViewProfile = (consultantId: string) => {
@@ -233,7 +215,7 @@ const ConsultantManagement: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 ">
+    <div className="min-h-screen  ">
       <div >
         {/* Header */}
         <div className="mb-8">
@@ -257,7 +239,7 @@ const ConsultantManagement: React.FC = () => {
         <ConsultantTable 
           data={consultants} 
           onEdit={handleEdit} 
-          onDelete={handleDelete}
+         
           onViewProfile={handleViewProfile}
           onAssignServices={handleAssignServices}
           loading={loading}
