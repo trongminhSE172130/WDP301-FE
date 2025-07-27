@@ -34,6 +34,29 @@ function convertInitialValues(form: any, initialValues: Record<string, any>) {
   return result;
 }
 
+// Style button mềm mại, gradient, bo góc
+const primaryButtonStyle: React.CSSProperties = {
+  borderRadius: 20,
+  fontWeight: 600,
+  padding: '0 32px',
+  height: 44,
+  background: 'linear-gradient(90deg, #36cfc9 0%, #08979c 100%)',
+  border: 'none',
+  boxShadow: '0 2px 12px rgba(8,151,156,0.10)',
+  transition: 'all 0.2s',
+};
+const secondaryButtonStyle: React.CSSProperties = {
+  borderRadius: 20,
+  fontWeight: 500,
+  padding: '0 28px',
+  height: 44,
+  background: '#fff',
+  border: '1.5px solid #b5f5ec',
+  color: '#08979c',
+  boxShadow: '0 2px 8px rgba(8,151,156,0.06)',
+  transition: 'all 0.2s',
+};
+
 const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
   form,
   initialValues = {},
@@ -90,8 +113,24 @@ const DynamicFormRenderer: React.FC<DynamicFormRendererProps> = ({
         </div>
       ))}
       <div style={{ textAlign: 'right' }}>
-        {onBack && <Button style={{ marginRight: 8 }} onClick={onBack}>Quay lại</Button>}
-        <Button type="primary" htmlType="submit">Lưu và tiếp tục</Button>
+        <Button
+          onClick={onBack}
+          style={secondaryButtonStyle}
+          onMouseOver={e => (e.currentTarget.style.background = '#e6fffb')}
+          onMouseOut={e => (e.currentTarget.style.background = '#fff')}
+        >
+          Quay lại
+        </Button>
+        <Button
+          type="primary"
+          htmlType="submit"
+          
+          style={primaryButtonStyle}
+          onMouseOver={e => (e.currentTarget.style.background = '#13c2c2')}
+          onMouseOut={e => (e.currentTarget.style.background = 'linear-gradient(90deg, #36cfc9 0%, #08979c 100%)')}
+        >
+          Lưu và tiếp tục
+        </Button>
       </div>
     </Form>
   );

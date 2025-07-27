@@ -49,7 +49,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ collapsed, role }) => {
           { key: 'availability', icon: <ScheduleOutlined />, label: 'Lịch làm việc', link: '/consultant/availability' },
           { key: 'forms', icon: <FormOutlined />, label: 'Biểu mẫu', link: '/consultant/forms' },
           { key: 'messages', icon: <MessageOutlined />, label: 'Tin nhắn', link: '/consultant/messages' },
-          { key: 'profile', icon: <UserOutlined />, label: 'Cài đặt hồ sơ', link: '/consultant/profile' },
+          
         ];
       case 'Admin':
         return [
