@@ -40,12 +40,33 @@ const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 const { Option } = Select;
 
+// Hàm helper để đảm bảo giá trị có thể render được
+const ensureRenderableValue = (value: unknown): string | React.ReactNode => {
+  if (value === null || value === undefined) {
+    return '';
+  }
+  
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return value.toString();
+  }
+  
+  if (React.isValidElement(value)) {
+    return value;
+  }
+  
+  if (typeof value === 'object') {
+    return JSON.stringify(value);
+  }
+  
+  return '';
+};
+
 const BookingHistoryPage: React.FC = () => {
   const [bookings, setBookings] = useState<BookingData[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedBookingDetail, setSelectedBookingDetail] = useState<any>(null);
-  const [resultData, setResultData] = useState<any>(null);
+  const [selectedBookingDetail, setSelectedBookingDetail] = useState<BookingData | null>(null);
+  const [resultData, setResultData] = useState<Record<string, unknown> | null>(null);
   const [viewingResult, setViewingResult] = useState<string | null>(null);
   const [stats, setStats] = useState({
     completedCount: 0,
@@ -139,7 +160,21 @@ const BookingHistoryPage: React.FC = () => {
       const response = await getBookingById(bookingId);
       if (response.success) {
         // API trả về response.data (transformed booking), response.result (raw result), và response.resultFormInfo
-        setSelectedBookingDetail(response.data);
+        // Thêm các thuộc tính còn thiếu theo interface BookingData
+        const bookingData: BookingData = {
+          ...response.data,
+          hasResult: !!response.result,
+          canFeedback: true,
+          canViewResult: !!response.result,
+          resultStatus: response.resultFormInfo?.reviewStatus || 'pending',
+          // Đảm bảo các thuộc tính không undefined
+          patientGender: response.data.patientGender || '',
+          patientDob: response.data.patientDob || '',
+          testParameters: response.data.testParameters || [],
+          testPreparation: response.data.testPreparation || '',
+          resultTime: response.data.resultTime || '',
+        };
+        setSelectedBookingDetail(bookingData);
         
         // Format result data for better display if result exists
         const formattedResult = response.result ? formatTestResultData(response.result) : null;
@@ -406,7 +441,7 @@ const BookingHistoryPage: React.FC = () => {
                           </Space>
                         }
                       >
-                        {booking.consultantName}
+                        {ensureRenderableValue(booking.consultantName)}
                       </Descriptions.Item>
 
                       <Descriptions.Item

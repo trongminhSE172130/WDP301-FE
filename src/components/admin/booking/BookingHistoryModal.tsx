@@ -34,6 +34,27 @@ import {
 import styles from "../../../styles/components/BookingHistoryModal.module.css"
 const { Title, Text, Paragraph } = Typography;
 
+// Hàm helper để đảm bảo giá trị có thể render được
+const ensureRenderableValue = (value: unknown): string | React.ReactNode => {
+  if (value === null || value === undefined) {
+    return '';
+  }
+  
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return value.toString();
+  }
+  
+  if (React.isValidElement(value)) {
+    return value;
+  }
+  
+  if (typeof value === 'object') {
+    return JSON.stringify(value);
+  }
+  
+  return '';
+};
+
 const BookingHistoryModal: React.FC<BookingHistoryModalProps> = ({
   isOpen,
   onClose,
@@ -112,7 +133,7 @@ const BookingHistoryModal: React.FC<BookingHistoryModalProps> = ({
                 </Space>
               }
             >
-              <Text copyable>{data.id}</Text>
+              <Text copyable>{ensureRenderableValue(data.id)}</Text>
             </Descriptions.Item>
 
             <Descriptions.Item
@@ -123,7 +144,7 @@ const BookingHistoryModal: React.FC<BookingHistoryModalProps> = ({
                 </Space>
               }
             >
-              <Text strong>{data.patientName}</Text>
+              <Text strong>{ensureRenderableValue(data.patientName)}</Text>
             </Descriptions.Item>
 
             <Descriptions.Item
@@ -148,7 +169,7 @@ const BookingHistoryModal: React.FC<BookingHistoryModalProps> = ({
                 </Space>
               }
             >
-              <Text strong>{data.timeSlot}</Text>
+              <Text strong>{ensureRenderableValue(data.timeSlot)}</Text>
             </Descriptions.Item>
           </Descriptions>
         </Card>
@@ -165,9 +186,9 @@ const BookingHistoryModal: React.FC<BookingHistoryModalProps> = ({
           <Row gutter={[16, 16]}>
             <Col span={24}>
               <Title level={5} className={styles.serviceTitle}>
-                {data.serviceTitle}
+                {ensureRenderableValue(data.serviceTitle)}
               </Title>
-              <Paragraph type="secondary">{data.serviceDescription}</Paragraph>
+              <Paragraph type="secondary">{ensureRenderableValue(data.serviceDescription)}</Paragraph>
             </Col>
 
             <Col xs={24} md={12}>
@@ -177,7 +198,7 @@ const BookingHistoryModal: React.FC<BookingHistoryModalProps> = ({
                 className={styles.spaceStyle}
               >
                 <Text type="secondary">Thời gian thực hiện:</Text>
-                <Text strong>{data.duration}</Text>
+                <Text strong>{ensureRenderableValue(data.duration)}</Text>
               </Space>
             </Col>
 
@@ -188,7 +209,7 @@ const BookingHistoryModal: React.FC<BookingHistoryModalProps> = ({
                 className={styles.spaceStyle}
               >
                 <Text type="secondary">Loại mẫu:</Text>
-                <Tag color="blue">{data.sampleType}</Tag>
+                <Tag color="blue">{ensureRenderableValue(data.sampleType)}</Tag>
               </Space>
             </Col>
 
@@ -208,7 +229,7 @@ const BookingHistoryModal: React.FC<BookingHistoryModalProps> = ({
                             color="cyan"
                             className={styles.parameterTag}
                           >
-                            {param}
+                            {ensureRenderableValue(param)}
                           </Tag>
                         )
                       )}
@@ -223,7 +244,7 @@ const BookingHistoryModal: React.FC<BookingHistoryModalProps> = ({
                     >
                       <Text type="secondary">Chuẩn bị trước xét nghiệm:</Text>
                       <Alert
-                        message={data.testDetails.preparation}
+                        message={ensureRenderableValue(data.testDetails.preparation)}
                         type="info"
                         showIcon
                         className={styles.noResultSubText}
@@ -239,7 +260,7 @@ const BookingHistoryModal: React.FC<BookingHistoryModalProps> = ({
                     >
                       <Text type="secondary">Thời gian có kết quả:</Text>
                       <Tag color="green" icon={<ClockCircleOutlined />}>
-                        {data.testDetails.result_time}
+                        {ensureRenderableValue(data.testDetails.result_time)}
                       </Tag>
                     </Space>
                   </Col>
@@ -284,7 +305,7 @@ const BookingHistoryModal: React.FC<BookingHistoryModalProps> = ({
                     <Col xs={24} sm={12}>
                       <Space direction="vertical" size="small">
                         <Text type="secondary">Người duyệt:</Text>
-                        <Text strong>{resultData.reviewInfo.reviewedBy || 'Chưa có'}</Text>
+                        <Text strong>{ensureRenderableValue(resultData.reviewInfo.reviewedBy) || 'Chưa có'}</Text>
                       </Space>
                     </Col>
                     <Col xs={24} sm={12}>
@@ -308,14 +329,14 @@ const BookingHistoryModal: React.FC<BookingHistoryModalProps> = ({
                 <Card size="small" style={{ marginBottom: 16 }}>
                   <Title level={5}>Kết quả các chỉ số:</Title>
                   <Row gutter={[16, 8]}>
-                    {resultData.testValues.map((test: any, index: number) => (
+                    {resultData.testValues.map((test: Record<string, unknown>, index: number) => (
                       <Col xs={24} sm={12} md={8} key={index}>
                         <Card size="small" style={{ textAlign: 'center' }}>
                           <Text type="secondary" style={{ fontSize: '12px', display: 'block' }}>
-                            {test.displayName}
+                            {ensureRenderableValue(test.displayName)}
                           </Text>
                           <Text strong style={{ fontSize: '16px', color: '#1890ff' }}>
-                            {test.value}
+                            {ensureRenderableValue(test.value)}
                           </Text>
                         </Card>
                       </Col>
@@ -329,7 +350,7 @@ const BookingHistoryModal: React.FC<BookingHistoryModalProps> = ({
                 <Card size="small">
                   <Title level={5}>Nhận xét của bác sĩ:</Title>
                   <Paragraph>
-                    <Text>{resultData.doctorComment}</Text>
+                    <Text>{ensureRenderableValue(resultData.doctorComment)}</Text>
                   </Paragraph>
                 </Card>
               )}
@@ -338,7 +359,16 @@ const BookingHistoryModal: React.FC<BookingHistoryModalProps> = ({
               {!resultData.testValues && !resultData.doctorComment && (
                 <Card size="small" className={styles.resultCard}>
                   <pre className={styles.resultCode}>
-                    {JSON.stringify(resultData, null, 2)}
+                    {(() => {
+                      // Loại bỏ _metadata trước khi hiển thị
+                      if (resultData.form_data && resultData.form_data._metadata) {
+                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                        const { _metadata, ...cleanFormData } = resultData.form_data;
+                        const cleanResultData = { ...resultData, form_data: cleanFormData };
+                        return JSON.stringify(cleanResultData, null, 2);
+                      }
+                      return JSON.stringify(resultData, null, 2);
+                    })()}
                   </pre>
                 </Card>
               )}
@@ -354,7 +384,7 @@ const BookingHistoryModal: React.FC<BookingHistoryModalProps> = ({
                   <Text type="secondary" className={styles.noResultSubText}>
                     Kết quả sẽ có trong{" "}
                     <Text strong>
-                      {data.testDetails?.result_time || "3-5 ngày"}
+                      {ensureRenderableValue(data.testDetails?.result_time) || "3-5 ngày"}
                     </Text>
                   </Text>
                 </div>
@@ -395,7 +425,7 @@ const BookingHistoryModal: React.FC<BookingHistoryModalProps> = ({
               <Text strong>Ngày hẹn khám</Text>
               <br />
               <Text type="secondary">
-                {formatDate(data.scheduledDate)} lúc {data.timeSlot}
+                {formatDate(data.scheduledDate)} lúc {ensureRenderableValue(data.timeSlot)}
               </Text>
             </Timeline.Item>
           </Timeline>

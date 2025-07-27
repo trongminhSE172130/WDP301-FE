@@ -237,7 +237,8 @@ export const formatTestResultData = (result: BookingResult) => {
   const { form_data, ...otherData } = result;
   
   // Extract test parameters and doctor comment
-  const { doctor_comment, ...testValues } = form_data;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { doctor_comment, _metadata, ...testValues } = form_data;
   
   // Format test values for display
   const formattedTestValues = Object.entries(testValues).map(([key, value]) => ({
