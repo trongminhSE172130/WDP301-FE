@@ -48,6 +48,7 @@ interface BookingDetail {
   cancellation_reason: string | null;
   cancelled_by: string | null;
   meeting_link: string | null;
+  consultation_note: string | null;
 }
 
 const statusOptions = [
@@ -82,6 +83,9 @@ const ConsultantConsultations: React.FC = () => {
   const [updateMeetingModalVisible, setUpdateMeetingModalVisible] = useState(false);
   const [newMeetingLink, setNewMeetingLink] = useState('');
   const [updatingMeeting, setUpdatingMeeting] = useState(false);
+  const [noteModalVisible, setNoteModalVisible] = useState(false);
+  const [consultationNote, setConsultationNote] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
 
   useEffect(() => {
     fetchList();
@@ -129,6 +133,10 @@ const ConsultantConsultations: React.FC = () => {
     })
       .then(() => {
         message.success('Cập nhật trạng thái thành công!');
+        // Nếu chuyển sang completed thì mở modal nhập note
+        if (value === 'completed') {
+          openNoteModal();
+        }
         return apiClient.get(`/consultants/bookings/${bookingDetail._id}`);
       })
       .then(res => {
@@ -164,6 +172,24 @@ const ConsultantConsultations: React.FC = () => {
         message.error('Cập nhật link tư vấn thất bại!');
       })
       .finally(() => setUpdatingMeeting(false));
+  };
+
+  const handleSaveConsultationNote = () => {
+    if (!bookingDetail) return;
+    setSavingNote(true);
+    apiClient.put(`/consultants/bookings/${bookingDetail._id}/note`, {
+      consultation_note: consultationNote
+    })
+      .then(res => {
+        message.success(res.data.message || 'Đã lưu ghi chú tư vấn!');
+        setBookingDetail(prev => prev ? { ...prev, consultation_note: consultationNote } : prev);
+        setNoteModalVisible(false);
+        fetchList();
+      })
+      .catch(() => {
+        message.error('Lưu ghi chú tư vấn thất bại!');
+      })
+      .finally(() => setSavingNote(false));
   };
 
   const columns = [
@@ -226,6 +252,12 @@ const ConsultantConsultations: React.FC = () => {
       },
     },
   ];
+
+  // Thay vì gọi trực tiếp setNoteModalVisible(true), tạo hàm này:
+  const openNoteModal = () => {
+    setConsultationNote('');
+    setNoteModalVisible(true);
+  };
 
   return (
     <div style={{ padding: 24 }}>
@@ -338,6 +370,17 @@ const ConsultantConsultations: React.FC = () => {
               </Descriptions.Item>
             )}
             <Descriptions.Item label="Câu hỏi tư vấn">{bookingDetail.question}</Descriptions.Item>
+            {bookingDetail.status === 'completed' && (
+              <Descriptions.Item label="Ghi chú tư vấn">
+                {bookingDetail.consultation_note ? (
+                  <span>{bookingDetail.consultation_note}</span>
+                ) : (
+                  <Button type="primary" onClick={openNoteModal} disabled={!!bookingDetail.consultation_note}>
+                    Nhập ghi chú tư vấn
+                  </Button>
+                )}
+              </Descriptions.Item>
+            )}
           </Descriptions>
         ) : <Alert type="error" message="Không thể tải chi tiết lịch hẹn." showIcon />}
       </Modal>
@@ -357,6 +400,26 @@ const ConsultantConsultations: React.FC = () => {
             onChange={e => setNewMeetingLink(e.target.value)}
             style={{ width: '100%', padding: 8, marginTop: 4, borderRadius: 4, border: '1px solid #d9d9d9' }}
             placeholder="https://..."
+          />
+        </div>
+      </Modal>
+      {/* Modal nhập ghi chú tư vấn */}
+      <Modal
+        open={noteModalVisible}
+        onCancel={() => setNoteModalVisible(false)}
+        onOk={handleSaveConsultationNote}
+        title="Nhập ghi chú tư vấn cho buổi tư vấn"
+        okText="Lưu ghi chú"
+        confirmLoading={savingNote}
+        destroyOnClose
+      >
+        <div style={{ marginBottom: 8 }}>
+          <label>Ghi chú tư vấn:</label>
+          <textarea
+            value={consultationNote}
+            onChange={e => setConsultationNote(e.target.value)}
+            style={{ width: '100%', padding: 8, marginTop: 4, borderRadius: 4, border: '1px solid #d9d9d9', minHeight: 80 }}
+            placeholder="Nhập ghi chú kết quả buổi tư vấn..."
           />
         </div>
       </Modal>
