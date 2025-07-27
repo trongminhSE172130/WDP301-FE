@@ -113,7 +113,9 @@ export const createDynamicForm = async (formData: DynamicFormCreate): Promise<{ 
             created_at: '',
             updated_at: '',
             __v: 0,
-            error: 'Dịch vụ này đã có Form đặt lịch. Mỗi dịch vụ chỉ được có 1 Form đặt lịch và 1 Form kết quả.'
+            error: 'Dịch vụ này đã có Form đặt lịch. Mỗi dịch vụ chỉ được có 1 Form đặt lịch và 1 Form kết quả.',
+            version: 1, // <-- thêm trường này
+  created_by: '', // <-- thêm trường này
           }
         };
       }
@@ -132,7 +134,9 @@ export const createDynamicForm = async (formData: DynamicFormCreate): Promise<{ 
             created_at: '',
             updated_at: '',
             __v: 0,
-            error: 'Dịch vụ này đã có Form kết quả. Mỗi dịch vụ chỉ được có 1 Form đặt lịch và 1 Form kết quả.'
+            error: 'Dịch vụ này đã có Form kết quả. Mỗi dịch vụ chỉ được có 1 Form đặt lịch và 1 Form kết quả.',
+            version: 1, // <-- thêm trường này
+            created_by: '', // <-- thêm trường này
           }
         };
       }
@@ -180,7 +184,9 @@ export const createDynamicForm = async (formData: DynamicFormCreate): Promise<{ 
             created_at: '',
             updated_at: '',
             __v: 0,
-            error: 'Dịch vụ này đã có form với loại này. Mỗi dịch vụ chỉ được có 1 Form đặt lịch và 1 Form kết quả.'
+            error: 'Dịch vụ này đã có form với loại này. Mỗi dịch vụ chỉ được có 1 Form đặt lịch và 1 Form kết quả.',
+            version: 1, // <-- thêm trường này
+            created_by: '', // <-- thêm trường này
           }
         };
       }

@@ -57,6 +57,8 @@ export interface NotificationStats {
   total: number;
   sent: number;
   draft: number;
+  scheduled:number;
+  cancelled: number;
 }
 
 export interface CreateNotificationRequest {

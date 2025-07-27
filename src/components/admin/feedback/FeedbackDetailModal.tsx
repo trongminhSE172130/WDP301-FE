@@ -78,7 +78,7 @@ const FeedbackDetailModal: React.FC<FeedbackDetailModalProps> = ({
             <div className="font-bold">Dịch vụ:</div>
             <div>
               {typeof feedback.service_id === 'object' 
-                ? feedback.service_id.title 
+                ? feedback.service_id.service_id.title
                 : 'Không xác định'}
             </div>
           </div>

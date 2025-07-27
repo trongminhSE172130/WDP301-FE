@@ -55,7 +55,9 @@ export interface DynamicForm {
   form_name: string;
   form_description: string;
   sections: FormSection[];
+  version: number;
   is_active: boolean;
+  created_by: string;
   created_at: string;
   updated_at: string;
   __v: number;

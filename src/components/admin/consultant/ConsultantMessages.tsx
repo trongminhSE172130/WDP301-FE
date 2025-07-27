@@ -49,11 +49,11 @@ interface ChatMessage {
   created_at: string;
 }
 
-const mockMessages = [
-  { from: 'user', text: 'Xin chào bác sĩ!', time: '09:00' },
-  { from: 'consultant', text: 'Chào bạn, bạn cần tư vấn gì?', time: '09:01' },
-  { from: 'user', text: 'Tôi muốn hỏi về sức khỏe.', time: '09:02' },
-];
+// const mockMessages = [
+//   { from: 'user', text: 'Xin chào bác sĩ!', time: '09:00' },
+//   { from: 'consultant', text: 'Chào bạn, bạn cần tư vấn gì?', time: '09:01' },
+//   { from: 'user', text: 'Tôi muốn hỏi về sức khỏe.', time: '09:02' },
+// ];
 
 const ConsultantMessages: React.FC = () => {
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
@@ -170,7 +170,7 @@ const ConsultantMessages: React.FC = () => {
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 0 }}>
         <div style={{ padding: 16, borderBottom: '1px solid #f0f0f0', background: '#fafafa' }}>
           <span style={{ fontWeight: 600, fontSize: 18 }}>{selected?.participants?.user?.name || 'Không xác định'}</span>
-          <span style={{ color: '#13c2c2', marginLeft: 16 }}>{statusLabel[selected?.booking_status]}</span>
+          <span style={{ color: '#13c2c2', marginLeft: 16 }}>{selected?.booking_status ? statusLabel[selected.booking_status] || selected.booking_status : ''}</span>
         </div>
         <div style={{ flex: 1, padding: 24, overflowY: 'auto', background: '#f7f7f7' }}>
           {msgLoading ? <Spin /> : (

@@ -12,11 +12,30 @@ export interface FeedbackService {
     _id: string;
     full_name: string;
   };
-  service_id: string;
+  service_id: {
+    _id: string;
+    title: string;
+    description: string;
+    image_url: string;
+  };
   booking_id: {
     _id: string;
-    scheduled_date: string;
+    user_id: string;
+    service_id: string;
+    consultant_schedule_id:{
+      _id:string;
+      consultant_user_id:{
+        _id: string;
+        full_name: string;
+        email: string;
+      }
+    }
+    date: string;
+    schedule_type: string;
     time_slot: string;
+    is_booked:boolean;
+    created_at: string;
+    updated_at: string;
   };
   rating: number;
   comment: string;

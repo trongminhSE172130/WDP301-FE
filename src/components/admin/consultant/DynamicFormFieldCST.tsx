@@ -2,7 +2,7 @@ import React from 'react';
 import { Input, Select, Radio, Checkbox, DatePicker, InputNumber, Upload, Form } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import type { FormField, FormSubmissionData } from '../../../types/dynamicForm';
-import dayjs, { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import type { Rule } from 'antd/es/form';
 import 'dayjs/locale/vi'; // hoặc 'en' nếu dùng tiếng Anh
 dayjs.locale('vi'); // hoặc 'en'
